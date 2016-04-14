@@ -4,10 +4,12 @@ import {Renderer} from 'reflex-virtual-dom-driver';
 import * as App from './app';
 
 // Start app
-const app = start({
+const application = start({
   init: App.init,
   update: App.update,
   view: App.view
 });
 
-app.view.subscribe(new Renderer({target: document.body}));
+const renderer = new Renderer({target: document.body});
+application.view.subscribe(renderer.address);
+application.task.subscribe(Effects.driver(application.address));
