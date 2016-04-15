@@ -9,11 +9,12 @@ want to use the front-end.)
 
 Prerequisites:
 
-- Node
-- NPM
+- [Node](http://nodejs.org)
+- NPM (comes bundled with Node)
 
 Install:
 
+    cd ~/path/to/openag-ui/
     npm install
 
 Build:
