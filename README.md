@@ -26,6 +26,17 @@ rebuild after you save, you can run
 
     npm run develop
 
+The front-end can also log all the messages that go through the system to the
+console. This is useful for debugging, since the UI is deterministic and will
+reproduce the same UI for the same messages. To turn on this feature, edit
+`openag-config.json` and set the `debug` field to `true`.
+
+```json
+    {
+      debug: true
+      ...
+    }
+```
 
 Status
 ------
