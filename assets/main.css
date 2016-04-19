@@ -1,6 +1,21 @@
+/*
+@note A few rules that will keep this stylesheet from getting out of hand:
+
+- All styles should happen through classes
+- ...except a very small number of "reset" common styles that deal with
+  global fonts, etc.
+- All classes should start with a short 3-5 letter prefix that denotes the
+  module they belong to (.rform-*). A module is a logical unit, like a lightbox.
+
+Don't:
+
+- Leak styles
+- Style tags directly (except to reset styles)
+*/
+
 html {
   color: #333;
-  font: 16px/1.5 Helvetica;
+  font: 16px/1.5 Helvetica, sans-serif;
 }
 
 /* Reset standard dialog styles */
@@ -8,6 +23,53 @@ dialog {
   border: 0;
   margin: 0;
   padding: 0;
+}
+
+
+/* Buttons
+----------------------------------------------------------------------------- */
+
+.btn-primary {
+  background: #00A5ED;
+  border-radius: 18px;
+  border: 0;
+  color: #fff;
+  height: 36px;
+  line-height: 36px;
+  margin-right: 6px;
+  padding: 0 18px;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+}
+
+.btn-primary:focus {
+  outline: 0;
+}
+
+.btn-primary:active {
+  /* Active backgrounds are 10 points less bright in hsb. */
+  background: #0094D4;
+}
+
+.btn-secondary {
+  background: #D8D8D8;
+  border-radius: 18px;
+  border: 0;
+  color: #777;
+  height: 36px;
+  line-height: 36px;
+  padding: 0 18px;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+}
+
+.btn-primary:focus {
+  outline: 0;
+}
+
+.btn-secondary:active {
+  /* Active backgrounds are 10 points less bright in hsb. */
+  background: #BFBFBF;
 }
 
 /* Recipe form
@@ -30,9 +92,16 @@ dialog {
   box-sizing: border-box;
   display: block;
   font-family: Monaco, monospace;
-  height: calc(100% - 20px);
+  height: calc(100% - 20px - 60px);
   width: calc(100% - 20px);
   margin: 10px;
   -webkit-appearance: none;
   -moz-appearance: none;
 }
+
+.rform-footer {
+  background: #F4F4F4;
+  height: 36px;
+  padding: 12px;
+}
+
