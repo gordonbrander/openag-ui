@@ -31,10 +31,10 @@ console. This is useful for debugging, since the UI is deterministic and will
 reproduce the same UI for the same messages. To turn on this feature, edit
 `openag-config.json` and set the `debug` field to `true`.
 
-```json
+```js
     {
-      debug: true
-      ...
+      "debug:: true
+      // ...
     }
 ```
 
