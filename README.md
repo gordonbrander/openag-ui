@@ -33,7 +33,7 @@ reproduce the same UI for the same messages. To turn on this feature, edit
 
 ```js
     {
-      "debug:: true
+      "debug": true
       // ...
     }
 ```
