@@ -10,7 +10,10 @@ export const init = () => {
       recipeForm,
       recipes
     },
-    Effects.none
+    Effects.batch([
+      recipeFormFx,
+      recipesFx
+    ])
   ];
 }
 
