@@ -1,10 +1,5 @@
-const init =
-  ( { name
-    , description
-    , author
-    , operation
-    , format
-    }
-  ) =>
-  ( {
-  } );
+export const init = ({operation}) =>
+  ({
+    operation,
+    format: 'linear@0.0.1'
+  });

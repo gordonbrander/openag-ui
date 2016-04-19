@@ -10,6 +10,8 @@ const application = start({
   view: App.view
 });
 
+window.application = application;
+
 const renderer = new Renderer({target: document.body});
 application.view.subscribe(renderer.address);
 application.task.subscribe(Effects.driver(application.address));
