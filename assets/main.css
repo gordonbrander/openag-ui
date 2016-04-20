@@ -25,6 +25,10 @@ dialog {
   padding: 0;
 }
 
+/* Patch UAs that don't have a built-in stylesheet for dialogs. */
+dialog:not([open]) {
+  display: none;
+}
 
 /* Buttons
 ----------------------------------------------------------------------------- */
