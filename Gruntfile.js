@@ -1,8 +1,14 @@
+const CONFIG = require('./openag-config.json');
+
 module.exports = function (grunt) {
   grunt.initConfig({
     browserify: {
       dist: {
         options: {
+          browserifyOptions: {
+            // Set source maps?
+            debug: CONFIG.debug
+          },
           transform: [
             ["babelify", {
               "presets": ["es2015"]
