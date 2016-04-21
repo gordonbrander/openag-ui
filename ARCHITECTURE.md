@@ -1,6 +1,13 @@
 The architecture of this JavaScript app is heavily inspired by
 [Elm's app architecture](https://github.com/evancz/elm-architecture-tutorial).
-It uses the [reflex](http://github.com/gozala/reflex) library.
+
+We use the following libraries:
+
+- [reflex](http://github.com/gozala/reflex), which provides a JavaScript
+  interpretation of Elm's StartApp package.
+- [reflex-virtual-dom-driver](https://github.com/Gozala/reflex-virtual-dom-driver),
+  which uses the [VirtualDom](https://github.com/Matt-Esch/virtual-dom) library
+  as a rendering backend.
 
 The Elm Architecture is a simple pattern for infinitely nestable components.
 It is great for modularity, code reuse, and testing. Ultimately, this
@@ -48,3 +55,7 @@ export const view = (model, address) =>
     model.value
   ]);
 ```
+
+## Examples
+
+https://github.com/Gozala/reflex-virtual-dom-driver/tree/master/examples
