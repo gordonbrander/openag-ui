@@ -2,6 +2,6 @@
   "sbc_address": "18.85.54.200",
   "db_address": "18.85.54.200:5984",
   "db_environmental_data_point":
-    "environmental_data_point",
+    "http://18.85.54.200:5984/environmental_data_point",
   "debug": true
 }
