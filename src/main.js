@@ -1,5 +1,4 @@
 import * as Config from '../openag-config.json';
-import * as PouchDb from 'pouchdb';
 import {start, Effects} from 'reflex';
 import {Renderer} from 'reflex-virtual-dom-driver';
 import * as App from './app';
