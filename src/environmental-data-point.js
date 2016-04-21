@@ -4,6 +4,7 @@ import {html, forward, Effects, Task} from 'reflex';
 import {merge, tagged, tag} from './common/prelude';
 import {compose} from './lang/functional';
 import * as Unknown from './common/unknown';
+import * as AirTemperature from './environmental-data-point/air-temperature';
 
 const DB = new PouchDB(Config.db_environmental_data_point);
 // Export for debugging
@@ -44,6 +45,17 @@ export const getAll = () =>
       );
   }));
 
+// Action mapping functions
+
+//const AirTemperatureAction = tag('AirTemperature');
+
+//const updateAirTemperature = cursor({
+  //get: model => model.airTemperature,
+  //set: (model, airTemperature) => merge(model, {airTemperature}),
+  //update: AirTemperature.update,
+  //tag: AirTemperatureAction
+//});
+
 // Init and update
 
 export const init = () => [
@@ -60,4 +72,17 @@ export const update = (model, action) =>
   [model, getAll()] :
   action.type === 'Restore' ?
   [merge(model, {entries: action.data}), Effects.none] :
+  action.type === 'AirTemperature' ?
+  updateAirTemperature(model, action.source) :
   Unknown.update(model, action);
+
+// @FIXME temporary measure. Need to give each sensor type its own
+// model field.
+const readAirTemperature = (model) => model.entries[0];
+
+export const view = (model, address) =>
+  html.div({
+    className: 'dash-main'
+  }, model.entries.map(entry =>
+    AirTemperature.view(entry, address)
+  ));
