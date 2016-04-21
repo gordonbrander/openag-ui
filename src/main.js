@@ -6,10 +6,10 @@ import * as App from './app';
 // @TODO this a a temporary measure. Later we may want to replace this with
 // record and replay functionality.
 const logger = update => (model, action) => {
-  console.log('>> Action', action);
+  console.log('>> action', action);
   const next = update(model, action);
   const [nextModel, nextFx] = next;
-  console.log('<< Effects', nextFx);
+  console.log('<< [model, effect]', nextModel, nextFx);
   return next;
 }
 
