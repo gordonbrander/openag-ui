@@ -3,6 +3,7 @@
 
 import {html, forward, Effects} from 'reflex';
 import * as Unknown from '../common/unknown';
+import {merge} from '../common/prelude';
 import * as Recipes from '../recipes';
 
 // Will not create a property field.
@@ -21,10 +22,21 @@ const Create = operations => ({
   operations
 });
 
+const Open = {
+  type: 'Open'
+};
+
+const Close = {
+  type: 'Close'
+};
+
 export const update = (model, action) =>
-  // @TODO
-  //action.type === 'Submit' ?
-  //Recipes.update()
+  //action.type === 'Create' ?
+  //[model, PutToDatabase(action.operations)]
+  action.type === 'Open' ?
+  [merge(model, {isOpen: true}), Effects.none] :
+  action.type === 'Close' ?
+  [merge(model, {isOpen: false}), Effects.none] :
   Unknown.update(model, action)
 
 export const view = (model, address) =>

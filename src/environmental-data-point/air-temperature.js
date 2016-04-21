@@ -5,26 +5,26 @@ import {merge} from '../common/prelude';
 import * as Unknown from '../common/unknown';
 
 // Type here means "sensor type".
-export const init = ({type, title, value}) => [
-  {
-    type,
-    title,
-    value
-  },
-  Effects.none
-];
+//export const init = ({type, title, value}) => [
+  //{
+    //type,
+    //title,
+    //value
+  //},
+  //Effects.none
+//];
 
 // Create a sensor reading value change action
-export const DataPoint = value => ({
-  type: 'DataPoint',
-  value
-});
+//export const DataPoint = value => ({
+  //type: 'DataPoint',
+  //value
+//});
 
-export const update = (model, action) =>
-  // Update current sensor value record from reading action.
-  action.type === 'DataPoint' ?
-  [merge(model, {value: action.value}), Effects.none] :
-  Unknown.update(model, action);
+//export const update = (model, action) =>
+  //// Update current sensor value record from reading action.
+  //action.type === 'DataPoint' ?
+  //[merge(model, {value: action.value}), Effects.none] :
+  //Unknown.update(model, action);
 
 export const view = (model, address) =>
   html.figure({
@@ -33,7 +33,7 @@ export const view = (model, address) =>
     html.figcaption({
       className: 'sense-title'
     }, [
-      model.title
+      model.variable
     ]),
     html.div({
       className: 'sense-value'
