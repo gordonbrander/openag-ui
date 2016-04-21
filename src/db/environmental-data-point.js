@@ -29,16 +29,17 @@ export const FailRestore = () => {
 
 // Effects
 
-// Mapping function to just get the rows from an allDocs response.
-const getRows = database => database.rows;
+// Mapping functions to just get the docs from an allDocs response.
+const readDocFromRow = row => row.doc;
+const readResponse = database => database.rows.map(readDocFromRow);
 
 // Get data from DB as an effect.
 export const getAll = () =>
   Effects.task(new Task((succeed, fail) => {
     DB
-      .allDocs()
+      .allDocs({include_docs: true})
       .then(
-        compose(succeed, Restore, getRows),
+        compose(succeed, Restore, readResponse),
         compose(fail, FailRestore)
       );
   }));
