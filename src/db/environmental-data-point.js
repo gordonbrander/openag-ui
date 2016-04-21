@@ -13,7 +13,7 @@ window.EnvironmentalDataPointDB = DB;
 
 // Request a restore from database.
 export const RequestRestore = {
-  type: 'RequestGetAll'
+  type: 'RequestRestore'
 };
 
 // Restore environmental data points from data
