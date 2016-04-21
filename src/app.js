@@ -2,7 +2,7 @@ import {html, forward, Effects} from 'reflex';
 import {merge, tagged, tag} from './common/prelude';
 import * as Unknown from './common/unknown';
 import {cursor} from './common/cursor';
-import * as EnvironmentalDataPoint from './db/environmental-data-point';
+import * as EnvironmentalDataPoint from './environmental-data-point';
 import * as Recipes from './recipes';
 import * as RecipeForm from './recipe/form';
 

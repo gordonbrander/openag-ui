@@ -1,9 +1,9 @@
-import * as Config from '../../openag-config.json';
+import * as Config from '../openag-config.json';
 import PouchDB from 'pouchdb';
 import {html, forward, Effects, Task} from 'reflex';
-import {merge, tagged, tag} from '../common/prelude';
-import {compose} from '../lang/functional';
-import * as Unknown from '../common/unknown';
+import {merge, tagged, tag} from './common/prelude';
+import {compose} from './lang/functional';
+import * as Unknown from './common/unknown';
 
 const DB = new PouchDB(Config.db_environmental_data_point);
 // Export for debugging
