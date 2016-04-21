@@ -63,7 +63,7 @@ export const init = () => [
     // @TODO make this field a hash-by-id and introduce order field.
     entries: []
   },
-  Effects.none
+  Effects.receive(RequestRestore)
 ];
 
 // Is the problem that I'm not mapping the returned effect?
