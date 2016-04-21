@@ -6,10 +6,6 @@ import * as EnvironmentalDataPoint from './environmental-data-point';
 import * as Recipes from './recipes';
 import * as RecipeForm from './recipe/form';
 
-// @TODO we should move this under a "Dashboard" module and have all the
-// sensor reading modules plug into this parent module.
-import * as AirTemperature from './sensors/air-temperature';
-
 // Actions
 
 const CreateRecipe = operations => ({
@@ -19,7 +15,6 @@ const CreateRecipe = operations => ({
 
 // Action tagging functions
 
-const AirTemperatureAction = tag('AirTemperature');
 const RecipesAction = tag('Recipes');
 const EnvironmentalDataPointAction = tag('EnvironmentalDataPoint');
 
@@ -33,36 +28,22 @@ const RecipeFormAction = action =>
 export const init = () => {
   const [environmentalDataPoint, environmentalDataPointFx] =
     EnvironmentalDataPoint.init();
-  const [airTemperature, airTemperatureFx] = AirTemperature.init({
-    type: 'air_temperature',
-    title: 'Air Temperature',
-    value: null
-  });
   const [recipeForm, recipeFormFx] = RecipeForm.init();
   const [recipes, recipesFx] = Recipes.init([]);
 
   return [
     {
       environmentalDataPoint,
-      airTemperature,
       recipeForm,
       recipes
     },
     Effects.batch([
       environmentalDataPointFx.map(EnvironmentalDataPointAction),
-      airTemperatureFx.map(AirTemperatureAction),
       recipeFormFx.map(RecipeFormAction),
       recipesFx.map(RecipesAction)
     ])
   ];
 }
-
-const updateAirTemperature = cursor({
-  get: model => model.airTemperature,
-  set: (model, airTemperature) => merge(model, {airTemperature}),
-  update: AirTemperature.update,
-  tag: AirTemperatureAction
-});
 
 const updateRecipeForm = cursor({
   get: model => model.recipeForm,
@@ -83,8 +64,6 @@ export const update = (model, action) =>
   updateEnvironmentalDataPoint(model, action.source) :
   //action.type === 'CreateRecipe' ?
   //updateRecipes(model, Recipes.Create(action.operations)) :
-  action.type === 'AirTemperature' ?
-  updateAirTemperature(model, action.source) :
   action.type === 'RecipeForm' ?
   updateRecipeForm(model, action.source) :
   Unknown.update(model, action);
@@ -92,6 +71,9 @@ export const update = (model, action) =>
 export const view = (model, address) => html.div({
   className: 'app-main'
 }, [
-  AirTemperature.view(model.airTemperature, forward(address, AirTemperatureAction)),
+  EnvironmentalDataPoint.view(
+    model.environmentalDataPoint,
+    forward(address, EnvironmentalDataPointAction)
+  ),
   RecipeForm.view(model.recipeForm, forward(address, RecipeFormAction))
 ]);
