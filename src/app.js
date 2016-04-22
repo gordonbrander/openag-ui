@@ -41,6 +41,8 @@ const AppHeaderAction = action =>
 const RecipeFormAction = action =>
   action.type === 'Create' ?
   CreateRecipe(action.operations) :
+  action.type === 'Cancel' ?
+  RequestCloseRecipeForm :
   tagged('RecipeForm', action);
 
 // Init and update
