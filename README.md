@@ -50,3 +50,5 @@ Status
 - [ ] Download recipe
 - [ ] Sync dataset
 - [ ] List recipes
+
+Tin - quick test
