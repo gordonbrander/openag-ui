@@ -166,11 +166,41 @@ dialog:not([open]) {
   padding: 12px;
 }
 
+/* Dashboard
+----------------------------------------------------------------------------- */
+
+.dash-main {
+  background-color: #F4F4F4;
+}
+
 /* Sensors
 ----------------------------------------------------------------------------- */
 
-.sense-value-number {
+.sense-main {
+  margin: 0;
+  padding: 24px;
+}
+
+.sense-main:nth-child(even) {
+  background-color: #EDEDED;
+}
+
+.sense-title {
+  color: #989898;
+  font-size: 14px;
+  text-transform: uppercase;
+}
+
+.sense-number {
   font-weight: bold;
   font-size: 72px;
   line-height: 72px;
+}
+
+.sense-deg {
+  color: #989898;
+  font-size: 24px;
+  font-weight: bold;
+  line-height: 24px;
+  vertical-align: top;
 }

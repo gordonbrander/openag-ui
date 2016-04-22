@@ -27,6 +27,22 @@ import {readName} from './util';
   //[merge(model, {value: action.value}), Effects.none] :
   //Unknown.update(model, action);
 
+// @TODO read C or F
+const templateValue = value => (
+  value ?
+  [
+    html.span({
+      className: 'sense-number'
+    }, [String(value)]),
+    html.span({
+      className: 'sense-deg'
+    }, ['°C'])
+  ] :
+  [
+    '-'
+  ]
+);
+
 export const view = (model, address) =>
   html.figure({
     className: 'sense-main'
@@ -37,8 +53,6 @@ export const view = (model, address) =>
       readName(model.variable)
     ]),
     html.div({
-      className: 'sense-value-number'
-    }, [
-      model.value ? String(model.value) : ''
-    ])
+      className: 'sense-value'
+    }, templateValue(model.value))
   ]);

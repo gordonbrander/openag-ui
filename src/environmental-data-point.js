@@ -76,13 +76,16 @@ export const update = (model, action) =>
   updateAirTemperature(model, action.source) :
   Unknown.update(model, action);
 
-// @FIXME temporary measure. Need to give each sensor type its own
-// model field.
-const readAirTemperature = (model) => model.entries[0];
+// @FIXME get most recent reading of each type.
+// If we're missing a type, we should return a null reading or something.
+const selectRecent = model =>
+  model.entries.length > 0 ?
+  [model.entries[0]] :
+  [];
 
 export const view = (model, address) =>
   html.div({
     className: 'dash-main'
-  }, model.entries.map(entry =>
+  }, selectRecent(model).map(entry =>
     AirTemperature.view(entry, address)
   ));
