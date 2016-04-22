@@ -166,3 +166,11 @@ dialog:not([open]) {
   padding: 12px;
 }
 
+/* Sensors
+----------------------------------------------------------------------------- */
+
+.sense-value-number {
+  font-weight: bold;
+  font-size: 72px;
+  line-height: 72px;
+}
