@@ -3,6 +3,7 @@
 import {html, forward, Effects} from 'reflex';
 import {merge} from '../common/prelude';
 import * as Unknown from '../common/unknown';
+import {readName} from './util';
 
 // Type here means "sensor type".
 //export const init = ({type, title, value}) => [
@@ -33,10 +34,10 @@ export const view = (model, address) =>
     html.figcaption({
       className: 'sense-title'
     }, [
-      model.variable
+      readName(model.variable)
     ]),
     html.div({
-      className: 'sense-value'
+      className: 'sense-value-number'
     }, [
       model.value ? String(model.value) : ''
     ])
