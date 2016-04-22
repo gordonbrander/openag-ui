@@ -67,13 +67,58 @@ dialog:not([open]) {
   -moz-appearance: none;
 }
 
-.btn-primary:focus {
+.btn-secondary:focus {
   outline: 0;
 }
 
 .btn-secondary:active {
   /* Active backgrounds are 10 points less bright in hsb. */
   background: #BFBFBF;
+}
+
+/* App header
+----------------------------------------------------------------------------- */
+
+.app-header {
+  background: #2DC500;
+  color: #fff;
+  height: 84px;
+  position: relative;
+}
+
+.gnav-new-recipe {
+  background: url(./sprite.png) 0 0px no-repeat;
+  background-size: 100px auto;
+  cursor: pointer;
+  display: block;
+  height: 84px;
+  width: 84px;
+  position: absolute;
+  right: 0;
+}
+
+.gnav-new-recipe:active {
+  background-position: 0 -100px;
+}
+
+/* Overlay
+----------------------------------------------------------------------------- */
+
+.ovr-overlay {
+  background: rgba(0, 0, 0, 0.2);
+  height: 100vh;
+  position: fixed;
+  width: 100vw;
+  top: 0;
+  left: 0;
+  opacity: 1;
+  transition: opacity 200ms ease-out;
+}
+
+.ovr-overlay[hidden] {
+  display: block;
+  opacity: 0;
+  pointer-events: none;
 }
 
 /* Recipe form
@@ -87,6 +132,18 @@ dialog:not([open]) {
   top: 10vh;
   height: 80vh;
   width: 80vw;
+  overflow: hidden;
+}
+
+.rform-main:not([open]) {
+  display: block;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.rform-form {
+  height: 100%;
+  /* Contain margins */
   overflow: hidden;
 }
 

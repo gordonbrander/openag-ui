@@ -17,16 +17,16 @@ export const init = () => [
 ];
 
 // Submitting the form
-const Create = operations => ({
+export const Create = operations => ({
   type: 'Create',
   operations
 });
 
-const Open = {
+export const Open = {
   type: 'Open'
 };
 
-const Close = {
+export const Close = {
   type: 'Close'
 };
 
@@ -42,6 +42,11 @@ export const update = (model, action) =>
 export const view = (model, address) =>
   html.dialog({
     className: 'rform-main',
+    className: (
+      model.isOpen ?
+      'rform-main rform-main-open' :
+      'rform-main rform-main-close'
+    ),
     open: (model.isOpen ? 'open' : nil)
   }, [
     html.form({
@@ -66,9 +71,15 @@ export const view = (model, address) =>
       }, [
         html.button({
           className: 'btn-primary',
-          type: 'submit',
+          type: 'submit'
         }, [
           'Create'
+        ]),
+        html.button({
+          className: 'btn-secondary',
+          type: 'cancel'
+        }, [
+          'Cancel'
         ])
       ])
     ])
