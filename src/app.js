@@ -40,7 +40,7 @@ const AppHeaderAction = action =>
 
 const RecipeFormAction = action =>
   action.type === 'Create' ?
-  CreateRecipe(create.operations) :
+  CreateRecipe(action.operations) :
   tagged('RecipeForm', action);
 
 // Init and update
