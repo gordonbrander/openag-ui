@@ -27,6 +27,11 @@ export const RequestCreate = recipe => ({
   recipe
 });
 
+// Sent in the case that parsing the JSON for the recipe fails.
+export const FailRecipeParse = {
+  type: 'FailRecipeParse'
+};
+
 export const Open = {
   type: 'Open'
 };
@@ -39,9 +44,21 @@ export const Cancel = {
   type: 'Cancel'
 };
 
+// Update functions
+
+export const submit = (model, recipeJSON) => {
+  try {
+    const recipe = JSON.parse(recipeJSON);
+    return [model, Effects.receive(RequestCreate(recipe))];
+  } catch (e) {
+    return [model, Effects.receive(FailRecipeParse)];
+  }
+}
+
+
 export const update = (model, action) =>
   action.type === 'Submit' ?
-  [model, Effects.receive(RequestCreate(action.recipe))] :
+  submit(model, action.recipe) :
   action.type === 'Open' ?
   [merge(model, {isOpen: true}), Effects.none] :
   action.type === 'Close' ?
