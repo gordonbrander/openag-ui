@@ -6,7 +6,7 @@ import {compose} from './lang/functional';
 import * as Unknown from './common/unknown';
 import * as AirTemperature from './environmental-data-point/air-temperature';
 
-const DB = new PouchDB(Config.db_environmental_data_point);
+const DB = new PouchDB(Config.db_local_environmental_data_point);
 // Export for debugging
 window.EnvironmentalDataPointDB = DB;
 

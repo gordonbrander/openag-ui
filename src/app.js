@@ -10,9 +10,9 @@ import * as Overlay from './overlay';
 
 // Actions
 
-const CreateRecipe = operations => ({
+const CreateRecipe = recipe => ({
   type: 'CreateRecipe',
-  operations
+  recipe
 });
 
 const RequestOpenRecipeForm = {
@@ -39,8 +39,8 @@ const AppHeaderAction = action =>
   tagged('RecipeForm', action);
 
 const RecipeFormAction = action =>
-  action.type === 'Create' ?
-  CreateRecipe(action.operations) :
+  action.type === 'RequestCreate' ?
+  CreateRecipe(action.recipe) :
   action.type === 'Cancel' ?
   RequestCloseRecipeForm :
   tagged('RecipeForm', action);
@@ -75,6 +75,13 @@ const updateAppHeader = cursor({
   set: (model, header) => merge(model, {header}),
   update: AppHeader.update,
   tag: AppHeaderAction
+});
+
+const updateRecipes = cursor({
+  get: model => model.recipes,
+  set: (model, recipes) => merge(model, {recipes}),
+  update: Recipes.update,
+  tag: RecipesAction
 });
 
 const updateRecipeForm = cursor({
@@ -128,11 +135,14 @@ const closeRecipeForm = model => {
   ];
 }
 
+const createRecipe = (model, recipe) =>
+  updateRecipes(model, Recipes.RequestPut(recipe));
+
 export const update = (model, action) =>
   action.type === 'EnvironmentalDataPoint' ?
   updateEnvironmentalDataPoint(model, action.source) :
-  //action.type === 'CreateRecipe' ?
-  //updateRecipes(model, Recipes.Create(action.operations)) :
+  action.type === 'Recipes' ?
+  updateRecipes(model, action.source) :
   action.type === 'RecipeForm' ?
   updateRecipeForm(model, action.source) :
   action.type === 'Overlay' ?
@@ -141,6 +151,8 @@ export const update = (model, action) =>
   openRecipeForm(model) :
   action.type === 'RequestCloseRecipeForm' ?
   closeRecipeForm(model) :
+  action.type === 'CreateRecipe' ?
+  createRecipe(model, action.recipe) :
   Unknown.update(model, action);
 
 export const view = (model, address) => html.div({

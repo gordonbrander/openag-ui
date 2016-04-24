@@ -17,9 +17,14 @@ export const init = () => [
 ];
 
 // Submitting the form
-export const Create = operations => ({
-  type: 'Create',
-  operations
+export const Submit = recipe => ({
+  type: 'Submit',
+  recipe
+});
+
+export const RequestCreate = recipe => ({
+  type: 'RequestCreate',
+  recipe
 });
 
 export const Open = {
@@ -35,13 +40,13 @@ export const Cancel = {
 };
 
 export const update = (model, action) =>
-  //action.type === 'Create' ?
-  //[model, PutToDatabase(action.operations)]
+  action.type === 'Submit' ?
+  [model, Effects.receive(RequestCreate(action.recipe))] :
   action.type === 'Open' ?
   [merge(model, {isOpen: true}), Effects.none] :
   action.type === 'Close' ?
   [merge(model, {isOpen: false}), Effects.none] :
-  Unknown.update(model, action)
+  Unknown.update(model, action);
 
 export const view = (model, address) =>
   html.dialog({
@@ -74,7 +79,7 @@ export const view = (model, address) =>
             // https://gist.github.com/Gozala/2b6a301846b151aafe807104304dbd06#file-focus-js
             event.preventDefault();
             const el = document.querySelector('#rform-textarea');
-            address(Create(el.value));
+            address(Submit(el.value));
           }
         }, [
           'Create'
