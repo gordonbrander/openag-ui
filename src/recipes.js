@@ -1,6 +1,7 @@
 import {html, forward, Effects, Task} from 'reflex';
 import * as Config from '../openag-config.json';
 import PouchDB from 'pouchdb';
+import {put, restore} from './common/db';
 import {indexWith, getter} from './common/indexed';
 import * as Unknown from './common/unknown';
 import {merge} from './common/prelude';
@@ -21,35 +22,10 @@ DB.sync(Config.db_origin_recipes, {
   retry: true
 });
 
-export const RequestPut = recipe => ({
-  type: 'RequestPut',
-  recipe
-});
-
-export const RespondPut = response => ({
-  type: 'RespondPut',
-  response
-});
-
-export const FailPut = error => ({
-  type: 'FailPut',
-  error
-});
-
-// Get data from DB as an effect.
-export const putRecipe = recipe =>
-  Effects.task(new Task((succeed, fail) => {
-    DB.put(recipe)
-    .then(
-      compose(succeed, RespondPut),
-      compose(fail, FailPut)
-    );
-  }));
-
 // Create getter function for recipe ID.
 const getID = getter('_id');
 
-export const init = recipes =>
+export const reset = recipes =>
   [
     {
       // Index all recipes by ID
@@ -57,6 +33,8 @@ export const init = recipes =>
     },
     Effects.none
   ];
+
+export const init = () => reset([]);
 
 export const update = (model, action) =>
   action.type === 'RequestPut' ?
@@ -66,6 +44,14 @@ export const update = (model, action) =>
         [action.recipe._id]: action.recipe
       })
     }),
-    putRecipe(action.recipe)
+    put(DB, action.recipe)
   ] :
+  // Swallow RespondPut for now. It just indicates our local db write
+  // was successful.
+  action.type === 'RespondPut' ?
+  [model, Effects.none] :
+  action.type === 'RequestRestore' ?
+  [model, restore(DB)] :
+  action.type === 'RespondRestore' ?
+  reset(action.value) :
   Unknown.update(model, action);
