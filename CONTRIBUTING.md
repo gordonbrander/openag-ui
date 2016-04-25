@@ -26,7 +26,7 @@ New to Github issues? Here's a [video guide](https://www.youtube.com/watch?v=WMy
 ## Communication and resources
 
 - OpenAg contributors hang out in [the OpenAg forum](http://forum.openag.media.mit.edu). Anyone can join, and you can ask questions, share ideas and chat with other friendly folks.
-- [ARCHITECTURE.md](https://github.com/OpenAgInitiative/openag-ui/blob/master/ARCHITECTURE.md) covers some of the conceps in the front-end framework we use.
+- [ARCHITECTURE.md](https://github.com/OpenAgInitiative/openag-ui/blob/master/ARCHITECTURE.md) covers some of the concepts in the front-end framework we use.
 
 ## Philosophy
 
