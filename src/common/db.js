@@ -1,3 +1,5 @@
+// Effect/action wrappers for common PouchDb operations
+
 import {Effects, Task} from 'reflex';
 import {compose} from '../lang/functional';
 

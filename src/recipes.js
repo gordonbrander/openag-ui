@@ -1,7 +1,7 @@
 import {html, forward, Effects, Task} from 'reflex';
 import * as Config from '../openag-config.json';
 import PouchDB from 'pouchdb';
-import {put, restore} from './common/db';
+import {put, restore, RequestRestore} from './common/db';
 import {indexWith, getter} from './common/indexed';
 import * as Unknown from './common/unknown';
 import {merge} from './common/prelude';
@@ -25,16 +25,16 @@ window.RecipesDB = DB;
 // Create getter function for recipe ID.
 const getID = getter('_id');
 
-export const reset = recipes =>
-  [
-    {
-      // Index all recipes by ID
-      entries: indexWith(recipes, getID, Recipe.init)
-    },
-    Effects.none
-  ];
+const Model = recipes => ({
+  // Index all recipes by ID
+  entries: indexWith(recipes, getID, Recipe.init)
+});
 
-export const init = () => reset([]);
+export const init = recipes =>
+  [
+    Model(recipes),
+    Effects.receive(RequestRestore)
+  ];
 
 export const update = (model, action) =>
   action.type === 'RequestPut' ?
@@ -53,5 +53,5 @@ export const update = (model, action) =>
   action.type === 'RequestRestore' ?
   [model, restore(DB)] :
   action.type === 'RespondRestore' ?
-  reset(action.value) :
+  [Model(action.value), Effects.none] :
   Unknown.update(model, action);
