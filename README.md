@@ -1,6 +1,8 @@
 Developing
 ----------
 
+Want to contribute? Check out [CONTRIBUTING.md](https://github.com/OpenAgInitiative/openag-ui/blob/master/CONTRIBUTING.md).
+
 We use a handful of front-end tools, written in Node, to bundle scripts, do
 cross-browser compilation and more. To do development work on the front-end,
 you'll need to set up these tools. (Note: these instructions are only for
