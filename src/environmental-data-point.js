@@ -46,6 +46,7 @@ export const update = (model, action) =>
   action.type === 'RequestRestore' ?
   [model, restore(DB)] :
   action.type === 'RespondRestore' ?
+  // @TODO should validate input before merging
   [merge(model, {entries: action.value}), Effects.none] :
   action.type === 'AirTemperature' ?
   updateAirTemperature(model, action.source) :
