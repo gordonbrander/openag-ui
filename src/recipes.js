@@ -17,10 +17,10 @@ window.RecipesDB = DB;
 // effects system instead?
 // @TODO we need to send incoming changes through effects system, to update
 // model.
-DB.sync(Config.db_origin_recipes, {
-  live: true,
-  retry: true
-});
+//DB.sync(Config.db_origin_recipes, {
+  //live: true,
+  //retry: true
+//});
 
 // Create getter function for recipe ID.
 const getID = getter('_id');
