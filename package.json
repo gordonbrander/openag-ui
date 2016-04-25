@@ -3,6 +3,14 @@
   "version": "0.0.1",
   "description": "UI for OpenAg Food Computers",
   "main": "src/main.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/OpenAgInitiative/openag-ui.git",
+    "web": "https://github.com/OpenAgInitiative/openag-ui"
+  },
+  "bugs": {
+    "url": "https://github.com/OpenAgInitiative/openag-ui/issues"
+  },
   "dependencies": {
     "pouchdb": "^5.3.1",
     "reflex": "^0.2.0",
