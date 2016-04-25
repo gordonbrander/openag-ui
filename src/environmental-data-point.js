@@ -10,6 +10,16 @@ const DB = new PouchDB(Config.db_local_environmental_data_point);
 // Export for debugging
 window.EnvironmentalDataPointDB = DB;
 
+// Automatically sync between local db and origin (single-board computer) DB.
+// @TODO this works, but should we pipe sync operations through the
+// effects system instead?
+// @TODO we need to send incoming changes through effects system, to update
+// model.
+DB.sync(Config.db_origin_environmental_data_point, {
+  live: true,
+  retry: true
+});
+
 // Actions
 
 // Request a restore from database.

@@ -11,6 +11,16 @@ const DB = new PouchDB(Config.db_local_recipes);
 // Export for debugging
 window.RecipesDB = DB;
 
+// Automatically sync between local db and origin (single-board computer) DB.
+// @TODO this works, but should we pipe sync operations through the
+// effects system instead?
+// @TODO we need to send incoming changes through effects system, to update
+// model.
+DB.sync(Config.db_origin_recipes, {
+  live: true,
+  retry: true
+});
+
 export const RequestPut = recipe => ({
   type: 'RequestPut',
   recipe
