@@ -1,7 +1,7 @@
 import {html, forward, Effects, Task} from 'reflex';
 import * as Config from '../openag-config.json';
 import PouchDB from 'pouchdb';
-import {indexWith, getter} from './common/indexing';
+import {indexWith, getter} from './common/indexed';
 import * as Unknown from './common/unknown';
 import {merge} from './common/prelude';
 import {compose} from './lang/functional';
