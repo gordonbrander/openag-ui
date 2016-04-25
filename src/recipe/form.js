@@ -17,10 +17,20 @@ export const init = () => [
 ];
 
 // Submitting the form
-export const Create = operations => ({
-  type: 'Create',
-  operations
+export const Submit = recipe => ({
+  type: 'Submit',
+  recipe
 });
+
+export const RequestCreate = recipe => ({
+  type: 'RequestCreate',
+  recipe
+});
+
+// Sent in the case that parsing the JSON for the recipe fails.
+export const FailRecipeParse = {
+  type: 'FailRecipeParse'
+};
 
 export const Open = {
   type: 'Open'
@@ -34,14 +44,26 @@ export const Cancel = {
   type: 'Cancel'
 };
 
+// Update functions
+
+export const submit = (model, recipeJSON) => {
+  try {
+    const recipe = JSON.parse(recipeJSON);
+    return [model, Effects.receive(RequestCreate(recipe))];
+  } catch (e) {
+    return [model, Effects.receive(FailRecipeParse)];
+  }
+}
+
+
 export const update = (model, action) =>
-  //action.type === 'Create' ?
-  //[model, PutToDatabase(action.operations)]
+  action.type === 'Submit' ?
+  submit(model, action.recipe) :
   action.type === 'Open' ?
   [merge(model, {isOpen: true}), Effects.none] :
   action.type === 'Close' ?
   [merge(model, {isOpen: false}), Effects.none] :
-  Unknown.update(model, action)
+  Unknown.update(model, action);
 
 export const view = (model, address) =>
   html.dialog({
@@ -74,7 +96,7 @@ export const view = (model, address) =>
             // https://gist.github.com/Gozala/2b6a301846b151aafe807104304dbd06#file-focus-js
             event.preventDefault();
             const el = document.querySelector('#rform-textarea');
-            address(Create(el.value));
+            address(Submit(el.value));
           }
         }, [
           'Create'
