@@ -1,6 +1,7 @@
 import {html, forward, Effects, Task} from 'reflex';
 import * as Config from '../openag-config.json';
 import PouchDB from 'pouchdb';
+import {indexWith, getter} from './common/indexing';
 import * as Unknown from './common/unknown';
 import {merge} from './common/prelude';
 import {compose} from './lang/functional';
@@ -35,18 +36,14 @@ export const putRecipe = recipe =>
     );
   }));
 
-const indexWith = (array, key, map) => {
-  const index = {};
-  for (let object of array) {
-    index[object[key]] = map(object);
-  }
-  return index;
-}
+// Create getter function for recipe ID.
+const getID = getter('_id');
 
 export const init = recipes =>
   [
     {
-      entries: indexWith(recipes, '_id', Recipe.init)
+      // Index all recipes by ID
+      entries: indexWith(recipes, getID, Recipe.init)
     },
     Effects.none
   ];
@@ -55,7 +52,9 @@ export const update = (model, action) =>
   action.type === 'RequestPut' ?
   [
     merge(model, {
-      [action.recipe._id]: action.recipe
+      entries: merge(model.entries, {
+        [action.recipe._id]: action.recipe
+      })
     }),
     putRecipe(action.recipe)
   ] :
