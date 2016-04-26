@@ -13,16 +13,6 @@ window.EnvironmentalDataPointDB = DB;
 
 const ORIGIN = Config.db_origin_environmental_data_point;
 
-// Automatically sync between local db and origin (single-board computer) DB.
-// @TODO this works, but should we pipe sync operations through the
-// effects system instead?
-// @TODO we need to send incoming changes through effects system, to update
-// model.
-//DB.sync(Config.db_origin_environmental_data_point, {
-  //live: true,
-  //retry: true
-//});
-
 // Action mapping functions
 
 //const AirTemperatureAction = tag('AirTemperature');

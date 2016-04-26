@@ -14,16 +14,6 @@ window.RecipesDB = DB;
 
 const ORIGIN = Config.db_origin_recipes;
 
-// Automatically sync between local db and origin (single-board computer) DB.
-// @TODO this works, but should we pipe sync operations through the
-// effects system instead?
-// @TODO we need to send incoming changes through effects system, to update
-// model.
-//DB.sync(Config.db_origin_recipes, {
-  //live: true,
-  //retry: true
-//});
-
 // Actions
 
 // An action representing "no further action".
