@@ -1,6 +1,6 @@
 #Simple Instructions for Git Collaboration
 
-##SetUp
+##Setup
 
 1. Set up a Github account: https://github.com/
 2. Download Github Desktop (Mac or Windows): https://desktop.github.com/
