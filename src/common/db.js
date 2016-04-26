@@ -62,3 +62,31 @@ export const restore = db =>
       );
   }));
 
+// Sync actions and effects
+// See https://pouchdb.com/api.html#sync
+// https://pouchdb.com/api.html#replication
+
+// Request bi-directional sync
+export const RequestSync = {
+  type: 'RequestSync'
+};
+
+export const CompleteSync = value => ({
+  type: 'CompleteSync',
+  value
+});
+
+export const FailSync = error => ({
+  type: 'FailSync',
+  error
+});
+
+export const sync = (db, replica) =>
+  Effects.task(new Task((succeed, fail) => {
+    db
+      .sync(replica)
+      .then(
+        compose(succeed, CompleteSync),
+        compose(fail, FailSync)
+      );
+  }));

@@ -2,7 +2,7 @@ import {html, forward, Effects, Task, thunk} from 'reflex';
 import * as Config from '../openag-config.json';
 import PouchDB from 'pouchdb';
 import {put, restore, RequestRestore} from './common/db';
-import {indexWith, getter, tagID} from './common/indexed';
+import {orderByID, indexByID, add} from './common/indexed';
 import * as Unknown from './common/unknown';
 import {merge} from './common/prelude';
 import {compose, constant} from './lang/functional';
@@ -40,31 +40,19 @@ const RecipeAction = (id, action) =>
 const ByID = (type, id) => action =>
   RecipeAction(id, action);
 
-// Create getter function for recipe ID.
-const getID = getter('_id');
-
-const Model = recipes => ({
+// Create new recipes model
+const create = recipes => ({
   // Build an array of ordered recipe IDs
-  order: recipes.map(getID),
+  order: orderByID(recipes),
   // Index all recipes by ID
-  entries: indexWith(recipes, getID, Recipe.init)
+  entries: indexByID(recipes)
 });
 
 export const init = () =>
   [
-    Model([]),
+    create([]),
     Effects.receive(RequestRestore)
   ];
-
-// Add new recipe to model
-const add = (model, recipe) =>
-  merge(model, {
-    // Prepend new recipe id
-    order: [recipe._id, ...model.order],
-    entries: merge(model.entries, {
-      [recipe._id]: recipe
-    })
-  });
 
 // @TODO generalize this for all list models.
 const updateByID = (model, id, action) => {
@@ -100,7 +88,7 @@ export const update = (model, action) =>
   action.type === 'RequestRestore' ?
   [model, restore(DB)] :
   action.type === 'RespondRestore' ?
-  [Model(action.value), Effects.none] :
+  [create(action.value), Effects.none] :
   action.type === 'Recipe' ?
   updateByID(model, action.id, action.source) :
   Unknown.update(model, action);

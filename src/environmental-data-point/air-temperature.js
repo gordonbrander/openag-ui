@@ -5,16 +5,23 @@ import {merge} from '../common/prelude';
 import * as Unknown from '../common/unknown';
 import {readName} from './util';
 
-// Type here means "sensor type".
-//export const init = ({type, title, value}) => [
-  //{
-    //type,
-    //title,
-    //value
-  //},
-  //Effects.none
-//];
+const create = ({type, title, value}) => ({
+  type,
+  title,
+  value
+});
 
+// Type here means "sensor type".
+export const init = ({type, title, value}) => [
+  create({
+    type,
+    title,
+    value
+  }),
+  Effects.none
+];
+
+// @TODO
 // Create a sensor reading value change action
 //export const DataPoint = value => ({
   //type: 'DataPoint',
