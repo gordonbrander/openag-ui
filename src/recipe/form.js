@@ -4,6 +4,7 @@
 import {html, forward, Effects} from 'reflex';
 import * as Unknown from '../common/unknown';
 import {merge} from '../common/prelude';
+import * as ClassName from '../common/classname';
 import * as Recipes from '../recipes';
 
 // Will not create a property field.
@@ -67,13 +68,10 @@ export const update = (model, action) =>
 
 export const view = (model, address) =>
   html.dialog({
-    className: (
-      model.isOpen ?
-      // @workaround 2016-04 I get bugs in Safari and Firefox when trying to
-      // add open attribute. Adding classname to target for now.
-      'rform-main rform-main-open' :
-      'rform-main rform-main-close'
-    ),
+    className: ClassName.create({
+      'rform-main': true,
+      'rform-main-close': !model.isOpen
+    }),
     open: (model.isOpen ? 'open' : nil)
   }, [
     html.form({

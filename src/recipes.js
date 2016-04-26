@@ -5,6 +5,7 @@ import {put, restore, sync, RequestRestore} from './common/db';
 import {orderByID, indexByID, add} from './common/indexed';
 import * as Unknown from './common/unknown';
 import {merge} from './common/prelude';
+import * as ClassName from './common/classname';
 import {compose, constant} from './lang/functional';
 import * as Recipe from './recipe';
 
@@ -21,6 +22,16 @@ const NoOp = constant({
   type: 'NoOp'
 });
 
+export const Open = {
+  type: 'Open'
+};
+
+export const Close = {
+  type: 'Close'
+};
+
+// Action tagging functions
+
 const RecipeAction = (id, action) =>
   ({
     type: 'Recipe',
@@ -32,8 +43,11 @@ const RecipeAction = (id, action) =>
 const ByID = (type, id) => action =>
   RecipeAction(id, action);
 
+// Model, update and init
+
 // Create new recipes model
 const create = recipes => ({
+  isOpen: false,
   // Build an array of ordered recipe IDs
   order: orderByID(recipes),
   // Index all recipes by ID
@@ -93,7 +107,10 @@ export const update = (model, action) =>
 
 export const view = (model, address) =>
   html.div({
-    className: 'recipes-main'
+    className: ClassName.create({
+      'recipes-main': true,
+      'recipes-main-close': !model.isOpen
+    })
   }, model.order.map(id => thunk(
     id,
     Recipe.view,

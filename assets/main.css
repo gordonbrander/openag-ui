@@ -133,9 +133,6 @@ dialog {
   transition:
     opacity 200ms ease-out,
     transform 200ms ease-out;
-}
-
-.rform-main-open {
   display: block;
   opacity: 1;
   pointer-events: all;
