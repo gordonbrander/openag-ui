@@ -1,7 +1,7 @@
 import {html, forward, Effects, Task, thunk} from 'reflex';
 import * as Config from '../openag-config.json';
 import PouchDB from 'pouchdb';
-import {put, restore, RequestRestore} from './common/db';
+import {put, restore, sync, RequestRestore} from './common/db';
 import {orderByID, indexByID, add} from './common/indexed';
 import * as Unknown from './common/unknown';
 import {merge} from './common/prelude';
@@ -11,6 +11,8 @@ import * as Recipe from './recipe';
 const DB = new PouchDB(Config.db_local_recipes);
 // Export for debugging
 window.RecipesDB = DB;
+
+const ORIGIN = Config.db_origin_recipes;
 
 // Automatically sync between local db and origin (single-board computer) DB.
 // @TODO this works, but should we pipe sync operations through the
@@ -51,7 +53,10 @@ const create = recipes => ({
 export const init = () =>
   [
     create([]),
-    Effects.receive(RequestRestore)
+    Effects.batch([
+      Effects.receive(RequestRestore),
+      sync(DB, ORIGIN)
+    ])
   ];
 
 // @TODO generalize this for all list models.
@@ -89,6 +94,9 @@ export const update = (model, action) =>
   [model, restore(DB)] :
   action.type === 'RespondRestore' ?
   [create(action.value), Effects.none] :
+  // When sync completes, request in-memory restore from local db
+  action.type === 'CompleteSync' ?
+  [model, Effects.receive(RequestRestore)] :
   action.type === 'Recipe' ?
   updateByID(model, action.id, action.source) :
   Unknown.update(model, action);
