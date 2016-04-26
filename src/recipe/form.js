@@ -67,9 +67,10 @@ export const update = (model, action) =>
 
 export const view = (model, address) =>
   html.dialog({
-    className: 'rform-main',
     className: (
       model.isOpen ?
+      // @workaround 2016-04 I get bugs in Safari and Firefox when trying to
+      // add open attribute. Adding classname to target for now.
       'rform-main rform-main-open' :
       'rform-main rform-main-close'
     ),

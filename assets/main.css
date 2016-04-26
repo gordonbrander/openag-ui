@@ -25,10 +25,6 @@ dialog {
   padding: 0;
 }
 
-/* Patch UAs that don't have a built-in stylesheet for dialogs. */
-dialog:not([open]) {
-  display: none;
-}
 
 /* Buttons
 ----------------------------------------------------------------------------- */
@@ -137,10 +133,15 @@ dialog:not([open]) {
   transition:
     opacity 200ms ease-out,
     transform 200ms ease-out;
-  opacity: 1;
 }
 
-.rform-main:not([open]) {
+.rform-main-open {
+  display: block;
+  opacity: 1;
+  pointer-events: all;
+}
+
+.rform-main-close {
   display: block;
   opacity: 0;
   transform: scale(0.95);
