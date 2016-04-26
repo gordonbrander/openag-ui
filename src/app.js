@@ -51,7 +51,7 @@ export const init = () => {
   const [environmentalDataPoint, environmentalDataPointFx] =
     EnvironmentalDataPoint.init();
   const [recipeForm, recipeFormFx] = RecipeForm.init();
-  const [recipes, recipesFx] = Recipes.init([]);
+  const [recipes, recipesFx] = Recipes.init();
   const [overlay, overlayFx] = Overlay.init();
 
   return [
@@ -163,6 +163,7 @@ export const view = (model, address) => html.div({
     model.environmentalDataPoint,
     forward(address, EnvironmentalDataPointAction)
   ),
+  Recipes.view(model.recipes, forward(address, RecipesAction)),
   Overlay.view(model.overlay, forward(address, OverlayAction)),
   RecipeForm.view(model.recipeForm, forward(address, RecipeFormAction))
 ]);

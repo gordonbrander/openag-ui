@@ -1,61 +1,102 @@
-import {html, forward, Effects, Task} from 'reflex';
+import {html, forward, Effects, Task, thunk} from 'reflex';
 import * as Config from '../openag-config.json';
 import PouchDB from 'pouchdb';
-import {indexWith, getter} from './common/indexing';
+import {put, restore, sync, RequestRestore} from './common/db';
+import {orderByID, indexByID, add} from './common/indexed';
 import * as Unknown from './common/unknown';
 import {merge} from './common/prelude';
-import {compose} from './lang/functional';
+import {compose, constant} from './lang/functional';
 import * as Recipe from './recipe';
 
 const DB = new PouchDB(Config.db_local_recipes);
 // Export for debugging
 window.RecipesDB = DB;
 
-export const RequestPut = recipe => ({
-  type: 'RequestPut',
-  recipe
+const ORIGIN = Config.db_origin_recipes;
+
+// Actions
+
+// An action representing "no further action".
+const NoOp = constant({
+  type: 'NoOp'
 });
 
-export const RespondPut = response => ({
-  type: 'RespondPut',
-  response
+const RecipeAction = (id, action) =>
+  ({
+    type: 'Recipe',
+    id,
+    source: action
+  });
+
+// @TODO figure out how to generalize this.
+const ByID = (type, id) => action =>
+  RecipeAction(id, action);
+
+// Create new recipes model
+const create = recipes => ({
+  // Build an array of ordered recipe IDs
+  order: orderByID(recipes),
+  // Index all recipes by ID
+  entries: indexByID(recipes)
 });
 
-export const FailPut = error => ({
-  type: 'FailPut',
-  error
-});
-
-// Get data from DB as an effect.
-export const putRecipe = recipe =>
-  Effects.task(new Task((succeed, fail) => {
-    DB.put(recipe)
-    .then(
-      compose(succeed, RespondPut),
-      compose(fail, FailPut)
-    );
-  }));
-
-// Create getter function for recipe ID.
-const getID = getter('_id');
-
-export const init = recipes =>
+export const init = () =>
   [
-    {
-      // Index all recipes by ID
-      entries: indexWith(recipes, getID, Recipe.init)
-    },
-    Effects.none
+    create([]),
+    Effects.batch([
+      Effects.receive(RequestRestore),
+      sync(DB, ORIGIN)
+    ])
   ];
 
+// @TODO generalize this for all list models.
+const updateByID = (model, id, action) => {
+  if ( model.order.indexOf(id) < 0) {
+    return [
+      model,
+      Effects
+        .task(Unknown.error(`model with id: ${id} is not found`))
+        .map(NoOp)
+    ];
+  }
+  else {
+    const [entry, fx] = Recipe.update(model.entries[id], action);
+    return [
+      merge(model, {entries: merge(model.entries, {[id]: entry})}),
+      fx.map(ByID(id))
+    ];
+  }
+}
+
 export const update = (model, action) =>
+  action.type === 'NoOp' ?
+  [model, Effects.none] :
   action.type === 'RequestPut' ?
   [
-    merge(model, {
-      entries: merge(model.entries, {
-        [action.recipe._id]: action.recipe
-      })
-    }),
-    putRecipe(action.recipe)
+    add(model, action.value),
+    put(DB, action.value)
   ] :
+  // Swallow RespondPut for now. It just indicates our local db write
+  // was successful.
+  action.type === 'RespondPut' ?
+  [model, Effects.none] :
+  action.type === 'RequestRestore' ?
+  [model, restore(DB)] :
+  action.type === 'RespondRestore' ?
+  [create(action.value), Effects.none] :
+  // When sync completes, request in-memory restore from local db
+  action.type === 'CompleteSync' ?
+  [model, Effects.receive(RequestRestore)] :
+  action.type === 'Recipe' ?
+  updateByID(model, action.id, action.source) :
   Unknown.update(model, action);
+
+export const view = (model, address) =>
+  html.div({
+    className: 'recipes-main'
+  }, model.order.map(id => thunk(
+    id,
+    Recipe.view,
+    model.entries[id],
+    forward(address, ByID(id))
+  )));

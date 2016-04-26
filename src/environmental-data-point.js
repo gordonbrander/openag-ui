@@ -2,7 +2,8 @@ import * as Config from '../openag-config.json';
 import PouchDB from 'pouchdb';
 import {html, forward, Effects, Task} from 'reflex';
 import {merge, tagged, tag} from './common/prelude';
-import {compose} from './lang/functional';
+import {RequestRestore, restore, sync} from './common/db';
+import {indexByID, orderByID, add} from './common/indexed';
 import * as Unknown from './common/unknown';
 import * as AirTemperature from './environmental-data-point/air-temperature';
 
@@ -10,40 +11,7 @@ const DB = new PouchDB(Config.db_local_environmental_data_point);
 // Export for debugging
 window.EnvironmentalDataPointDB = DB;
 
-// Actions
-
-// Request a restore from database.
-export const RequestRestore = {
-  type: 'RequestRestore'
-};
-
-// Restore environmental data points from data
-export const Restore = data => ({
-  type: 'Restore',
-  data
-});
-
-// Fail a restore
-export const FailRestore = () => {
-  type: 'FailRestore'
-};
-
-// Effects
-
-// Mapping functions to just get the docs from an allDocs response.
-const readDocFromRow = row => row.doc;
-const readResponse = database => database.rows.map(readDocFromRow);
-
-// Get data from DB as an effect.
-export const getAll = () =>
-  Effects.task(new Task((succeed, fail) => {
-    DB
-      .allDocs({include_docs: true})
-      .then(
-        compose(succeed, Restore, readResponse),
-        compose(fail, FailRestore)
-      );
-  }));
+const ORIGIN = Config.db_origin_environmental_data_point;
 
 // Action mapping functions
 
@@ -58,20 +26,32 @@ export const getAll = () =>
 
 // Init and update
 
+// Create new Environmental Data Point model.
+export const create = environmentalDataPoints => ({
+  // Build an array of ordered recipe IDs
+  order: orderByID(environmentalDataPoints),
+  // Index all recipes by ID
+  entries: indexByID(environmentalDataPoints)
+});
+
 export const init = () => [
-  {
-    // @TODO make this field a hash-by-id and introduce order field.
-    entries: []
-  },
-  Effects.receive(RequestRestore)
+  create([]),
+  Effects.batch([
+    Effects.receive(RequestRestore),
+    sync(DB, ORIGIN)
+  ])
 ];
 
 // Is the problem that I'm not mapping the returned effect?
 export const update = (model, action) =>
   action.type === 'RequestRestore' ?
-  [model, getAll()] :
-  action.type === 'Restore' ?
-  [merge(model, {entries: action.data}), Effects.none] :
+  [model, restore(DB)] :
+  action.type === 'RespondRestore' ?
+  // @TODO should validate input before merging
+  [create(action.value), Effects.none] :
+  // When sync completes, request in-memory restore from local db
+  action.type === 'CompleteSync' ?
+  [model, Effects.receive(RequestRestore)] :
   action.type === 'AirTemperature' ?
   updateAirTemperature(model, action.source) :
   Unknown.update(model, action);
@@ -79,8 +59,8 @@ export const update = (model, action) =>
 // @FIXME get most recent reading of each type.
 // If we're missing a type, we should return a null reading or something.
 const selectRecent = model =>
-  model.entries.length > 0 ?
-  [model.entries[0]] :
+  model.order.length > 0 ?
+  [model.entries[model.order[0]]] :
   [];
 
 export const view = (model, address) =>
