@@ -1,23 +1,23 @@
-Simple Instructions for Git Collaboration
+#Simple Instructions for Git Collaboration
 
-SetUp
+##SetUp
 
 1. Set up a Github account: https://github.com/
 2. Download Github Desktop (Mac or Windows): https://desktop.github.com/
 3. Authenticate to Github:  https://help.github.com/desktop/guides/getting-started/authenticating-to-github
 
-Usage
+##Usage
 
 Here is a general guide on Git workflow for maximum usability and minimum headaches. While somewhat complicated, adhering to Git best practices can result in good version control.
 
-Quick Summary: 
+###Quick Summary: 
 
 0. Don't commit or push to master unless you know nothing will break as a result.
 1. Fork new branch from master.
 2. Commit work to new branch.
 3. Merge back into master when done.
 
-Details
+###Details
 
 1. Fork a new Branch: Firstly, make sure your master branch is up to date. In the GUI, this is done by syncing. To fork, in the GUI, click the forking icon next to the branch name in the top right, name your new branch and determine which branch you're forking from. Almost all the time, you'll be forking from master.
 
@@ -25,6 +25,6 @@ Details
 
 3. When you're done with the feature in question and want to merge it to the master branch: 
 
-ïPush your local changes by clicking ìsyncî on the GUI.
-ïOpen a pull request to merge your feature branch into master. Pull requests let all collaborators in a project know you're basically done with something.
-ïIf there are merge conflicts (Github will tell you), resolve them locally (Github will tell you how) and push to the remote feature branch. This updates the pull request.
+* Push your local changes by clicking ‚Äúsync‚Äù on the GUI.
+*Open a pull request to merge your feature branch into master. Pull requests let all collaborators in a project know you're basically done with something.
+*If there are merge conflicts (Github will tell you), resolve them locally (Github will tell you how) and push to the remote feature branch. This updates the pull request.
