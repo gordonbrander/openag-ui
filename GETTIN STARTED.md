@@ -25,6 +25,6 @@ Here is a general guide on Git workflow for maximum usability and minimum headac
 
 3. When you're done with the feature in question and want to merge it to the master branch: 
 
-* Push your local changes by clicking “sync” on the GUI.
-*Open a pull request to merge your feature branch into master. Pull requests let all collaborators in a project know you're basically done with something.
-*If there are merge conflicts (Github will tell you), resolve them locally (Github will tell you how) and push to the remote feature branch. This updates the pull request.
+ 1. Push your local changes by clicking “sync” on the GUI.
+ 2. Open a pull request to merge your feature branch into master. Pull requests let all collaborators in a project know you're basically done with something.
+ 3. If there are merge conflicts (Github will tell you), resolve them locally (Github will tell you how) and push to the remote feature branch. This updates the pull request.
