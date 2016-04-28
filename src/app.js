@@ -1,5 +1,5 @@
 import {html, forward, Effects} from 'reflex';
-import {merge, tagged, tag} from './common/prelude';
+import {merge, tagged, tag, batch} from './common/prelude';
 import * as Unknown from './common/unknown';
 import {cursor} from './common/cursor';
 import * as AppNav from './app/nav';
@@ -8,26 +8,6 @@ import * as Recipes from './recipes';
 import * as RecipeForm from './recipe/form';
 import * as Overlay from './overlay';
 
-// Actions
-
-const CreateRecipe = recipe => ({
-  type: 'CreateRecipe',
-  recipe
-});
-
-const RequestOpenRecipeForm = {
-  type: 'RequestOpenRecipeForm'
-};
-
-const RequestCloseRecipeForm = {
-  type: 'RequestCloseRecipeForm'
-};
-
-const RequestMode = value => ({
-  type: 'RequestMode',
-  value
-});
-
 // Action tagging functions
 
 const RecipesAction = tag('Recipes');
@@ -35,22 +15,49 @@ const EnvironmentalDataPointAction = tag('EnvironmentalDataPoint');
 
 const OverlayAction = action =>
   action.type === 'Click' ?
-  RequestCloseRecipeForm :
+  ExitRecipeForm :
   tagged('Overlay', action);
 
 const AppNavAction = action =>
   action.type === 'RequestNewRecipe' ?
-  RequestOpenRecipeForm :
+  EnterRecipeForm :
   action.type === 'Selected' ?
   RequestMode(action.value) :
   tagged('AppNav', action);
 
 const RecipeFormAction = action =>
-  action.type === 'RequestCreate' ?
+  action.type === 'Submitted' ?
   CreateRecipe(action.recipe) :
   action.type === 'Cancel' ?
-  RequestCloseRecipeForm :
+  ExitRecipeForm :
   tagged('RecipeForm', action);
+
+// Actions
+
+const RequestRecipePut = recipe => RecipesAction(Recipes.RequestPut(recipe));
+const OpenRecipeForm = RecipeFormAction(RecipeForm.Open);
+const ClearRecipeForm = RecipeFormAction(RecipeForm.Clear);
+const CloseRecipeForm = RecipeFormAction(RecipeForm.Close);
+const OpenOverlay = OverlayAction(Overlay.Open);
+const CloseOverlay = OverlayAction(Overlay.Close);
+
+const CreateRecipe = recipe => ({
+  type: 'CreateRecipe',
+  recipe
+});
+
+const EnterRecipeForm = {
+  type: 'EnterRecipeForm'
+};
+
+const ExitRecipeForm = {
+  type: 'ExitRecipeForm'
+};
+
+const RequestMode = value => ({
+  type: 'RequestMode',
+  value
+});
 
 // Init and update
 
@@ -116,35 +123,18 @@ const updateOverlay = cursor({
   tag: OverlayAction
 });
 
-const openRecipeForm = model => {
-  const [recipeForm, recipeFormFx] = RecipeForm.update(model.recipeForm, RecipeForm.Open);
-  const [overlay, overlayFx] = Overlay.update(model.overlay, Overlay.Open);
-  return [
-    merge(model, {
-      overlay,
-      recipeForm
-    }),
-    Effects.batch([
-      recipeFormFx,
-      overlayFx
-    ])
-  ];
-}
 
-const closeRecipeForm = model => {
-  const [recipeForm, recipeFormFx] = RecipeForm.update(model.recipeForm, RecipeForm.Close);
-  const [overlay, overlayFx] = Overlay.update(model.overlay, Overlay.Close);
-  return [
-    merge(model, {
-      overlay,
-      recipeForm
-    }),
-    Effects.batch([
-      recipeFormFx.map(RecipeFormAction),
-      overlayFx.map(OverlayAction)
-    ])
-  ];
-}
+const enterRecipeForm = model =>
+  batch(update, model, [
+    OpenRecipeForm,
+    OpenOverlay
+  ]);
+
+const exitRecipeForm = model =>
+  batch(update, model, [
+    CloseRecipeForm,
+    CloseOverlay
+  ]);
 
 const requestMode = (model, mode) => {
   const [environmentalDataPoint, environmentalDataPointFx] =
@@ -177,7 +167,9 @@ const requestMode = (model, mode) => {
 }
 
 const createRecipe = (model, recipe) =>
-  updateRecipes(model, Recipes.RequestPut(recipe));
+  batch(update, model, [
+    RequestRecipePut(recipe)
+  ]);
 
 export const update = (model, action) =>
   // Cursor-based update functions
@@ -192,10 +184,10 @@ export const update = (model, action) =>
   action.type === 'Overlay' ?
   updateOverlay(model, action.source) :
   // Specialized update functions
-  action.type === 'RequestOpenRecipeForm' ?
-  openRecipeForm(model) :
-  action.type === 'RequestCloseRecipeForm' ?
-  closeRecipeForm(model) :
+  action.type === 'EnterRecipeForm' ?
+  enterRecipeForm(model) :
+  action.type === 'ExitRecipeForm' ?
+  exitRecipeForm(model) :
   action.type === 'CreateRecipe' ?
   createRecipe(model, action.recipe) :
   action.type === 'RequestMode' ?

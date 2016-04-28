@@ -24,8 +24,8 @@ export const Submit = recipe => ({
   recipe
 });
 
-export const RequestCreate = recipe => ({
-  type: 'RequestCreate',
+export const Submitted = recipe => ({
+  type: 'Submitted',
   recipe
 });
 
@@ -41,12 +41,21 @@ export const Cancel = {
   type: 'Cancel'
 };
 
+export const Clear = {
+  type: 'Clear'
+};
+
 // Update functions
 
 export const submit = (model, recipeJSON) => {
   try {
     const recipe = JSON.parse(recipeJSON);
-    return [model, Effects.receive(RequestCreate(recipe))];
+    return [
+      model,
+      Effects.batch([
+        Effects.receive(Submitted(recipe)),
+      ])
+    ];
   } catch (e) {
     return [model, Effects.receive(FailRecipeParse)];
   }
