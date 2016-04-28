@@ -1,7 +1,7 @@
 import {html, forward, Effects, Task, thunk} from 'reflex';
 import * as Config from '../openag-config.json';
 import PouchDB from 'pouchdb';
-import {put, restore, sync, RequestRestore} from './common/db';
+import * as Database from './common/db';
 import {orderByID, indexByID, add} from './common/indexed';
 import * as Unknown from './common/unknown';
 import {merge} from './common/prelude';
@@ -23,6 +23,9 @@ const NoOp = constant({
   type: 'NoOp'
 });
 
+export const RequestRestore = Database.RequestRestore;
+export const RequestPut = Database.RequestPut;
+
 export const Open = Modal.Open;
 export const Close = Modal.Close;
 
@@ -36,7 +39,7 @@ const RecipeAction = (id, action) =>
   });
 
 // @TODO figure out how to generalize this.
-const ByID = (type, id) => action =>
+const ByID = id => action =>
   RecipeAction(id, action);
 
 // Model, update and init
@@ -55,13 +58,12 @@ export const init = () =>
     create([]),
     Effects.batch([
       Effects.receive(RequestRestore),
-      sync(DB, ORIGIN)
+      Database.sync(DB, ORIGIN)
     ])
   ];
 
-// @TODO generalize this for all list models.
 const updateByID = (model, id, action) => {
-  if ( model.order.indexOf(id) < 0) {
+  if (model.order.indexOf(id) < 0) {
     return [
       model,
       Effects
@@ -84,14 +86,14 @@ export const update = (model, action) =>
   action.type === 'RequestPut' ?
   [
     add(model, action.value),
-    put(DB, action.value)
+    Database.put(DB, action.value)
   ] :
   // Swallow RespondPut for now. It just indicates our local db write
   // was successful.
   action.type === 'RespondPut' ?
   [model, Effects.none] :
   action.type === 'RequestRestore' ?
-  [model, restore(DB)] :
+  [model, Database.restore(DB)] :
   action.type === 'RespondRestore' ?
   [create(action.value), Effects.none] :
   // When sync completes, request in-memory restore from local db
