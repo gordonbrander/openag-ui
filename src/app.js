@@ -23,6 +23,11 @@ const RequestCloseRecipeForm = {
   type: 'RequestCloseRecipeForm'
 };
 
+const ModeSelected = value => ({
+  type: 'ModeSelected',
+  value
+});
+
 // Action tagging functions
 
 const RecipesAction = tag('Recipes');
@@ -36,6 +41,8 @@ const OverlayAction = action =>
 const AppNavAction = action =>
   action.type === 'RequestNewRecipe' ?
   RequestOpenRecipeForm :
+  action.type === 'Selected' ?
+  ModeSelected(action.value) :
   tagged('AppNav', action);
 
 const RecipeFormAction = action =>
@@ -143,22 +150,25 @@ const createRecipe = (model, recipe) =>
   updateRecipes(model, Recipes.RequestPut(recipe));
 
 export const update = (model, action) =>
+  // Cursor-based update functions
   action.type === 'EnvironmentalDataPoint' ?
   updateEnvironmentalDataPoint(model, action.source) :
   action.type === 'Recipes' ?
   updateRecipes(model, action.source) :
   action.type === 'RecipeForm' ?
   updateRecipeForm(model, action.source) :
+  action.type === 'AppNav' ?
+  updateAppNav(model, action.source) :
   action.type === 'Overlay' ?
   updateOverlay(model, action.source) :
+  // Specialized update functions
   action.type === 'RequestOpenRecipeForm' ?
   openRecipeForm(model) :
   action.type === 'RequestCloseRecipeForm' ?
   closeRecipeForm(model) :
   action.type === 'CreateRecipe' ?
   createRecipe(model, action.recipe) :
-  action.type === 'AppNav' ?
-  updateAppNav(model, action.source) :
+
   Unknown.update(model, action);
 
 export const view = (model, address) => html.div({

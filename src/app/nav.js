@@ -48,8 +48,8 @@ export const update = (model, action) =>
 const viewTab = ({id, title}, address, isSelected) =>
   html.a({
     className: ClassName.create({
-      'gnav-tab': true,
-      'gnav-tab-selected': isSelected
+      'nav-tab': true,
+      'nav-tab-selected': isSelected
     }),
     onClick: () => address(Select(id))
   }, [
@@ -57,18 +57,18 @@ const viewTab = ({id, title}, address, isSelected) =>
   ]);
 
 export const view = (model, address) =>
-  html.header({
-    className: 'app-header'
+  html.div({
+    className: 'nav-main'
   }, [
     html.nav({
-      className: 'gnav-main'
+      className: 'nav-toolbar'
     }, [
       // @TODO rather than passing a 3rd argument, we should pass an action
       // to a sub-module. Do this when we have generalized byID model code.
       thunk('recipe', viewTab, model.recipe, address, model.selected === 'recipe'),
       thunk('library', viewTab, model.library, address, model.selected === 'library'),
       html.a({
-        className: 'gnav-new-recipe',
+        className: 'nav-new-recipe',
         onClick: () => address(RequestNewRecipe)
       })
     ])
