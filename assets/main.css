@@ -193,6 +193,17 @@ dialog {
   background-color: #F4F4F4;
 }
 
+.dash-main-close {
+  display: none;
+}
+
+/* Recipes library
+----------------------------------------------------------------------------- */
+
+.recipes-main-close {
+  display: none;
+}
+
 /* Sensors
 ----------------------------------------------------------------------------- */
 

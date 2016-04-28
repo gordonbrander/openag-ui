@@ -5,6 +5,7 @@ import {put, restore, sync, RequestRestore} from './common/db';
 import {orderByID, indexByID, add} from './common/indexed';
 import * as Unknown from './common/unknown';
 import {merge} from './common/prelude';
+import * as Modal from './common/modal';
 import * as ClassName from './common/classname';
 import {compose, constant} from './lang/functional';
 import * as Recipe from './recipe';
@@ -22,13 +23,8 @@ const NoOp = constant({
   type: 'NoOp'
 });
 
-export const Open = {
-  type: 'Open'
-};
-
-export const Close = {
-  type: 'Close'
-};
+export const Open = Modal.Open;
+export const Close = Modal.Close;
 
 // Action tagging functions
 
@@ -101,6 +97,10 @@ export const update = (model, action) =>
   // When sync completes, request in-memory restore from local db
   action.type === 'CompleteSync' ?
   [model, Effects.receive(RequestRestore)] :
+  action.type === 'Open' ?
+  Modal.open(model) :
+  action.type === 'Close' ?
+  Modal.close(model) :
   action.type === 'Recipe' ?
   updateByID(model, action.id, action.source) :
   Unknown.update(model, action);

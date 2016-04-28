@@ -23,8 +23,8 @@ const RequestCloseRecipeForm = {
   type: 'RequestCloseRecipeForm'
 };
 
-const ModeSelected = value => ({
-  type: 'ModeSelected',
+const RequestMode = value => ({
+  type: 'RequestMode',
   value
 });
 
@@ -42,7 +42,7 @@ const AppNavAction = action =>
   action.type === 'RequestNewRecipe' ?
   RequestOpenRecipeForm :
   action.type === 'Selected' ?
-  ModeSelected(action.value) :
+  RequestMode(action.value) :
   tagged('AppNav', action);
 
 const RecipeFormAction = action =>
@@ -140,8 +140,38 @@ const closeRecipeForm = model => {
       recipeForm
     }),
     Effects.batch([
-      recipeFormFx,
-      overlayFx
+      recipeFormFx.map(RecipeFormAction),
+      overlayFx.map(OverlayAction)
+    ])
+  ];
+}
+
+const requestMode = (model, mode) => {
+  const [environmentalDataPoint, environmentalDataPointFx] =
+    EnvironmentalDataPoint.update(
+      model.environmentalDataPoint,
+      (
+        mode === 'recipe' ?
+        EnvironmentalDataPoint.Open :
+        EnvironmentalDataPoint.Close
+      )
+    );
+  const [recipes, recipesFx] = Recipes.update(
+    model.recipes,
+    (
+      mode === 'library' ?
+      Recipes.Open :
+      Recipes.Close
+    )
+  );
+  return [
+    merge(model, {
+      environmentalDataPoint,
+      recipes
+    }),
+    Effects.batch([
+      environmentalDataPointFx.map(EnvironmentalDataPointAction),
+      recipesFx.map(RecipesAction)
     ])
   ];
 }
@@ -168,7 +198,8 @@ export const update = (model, action) =>
   closeRecipeForm(model) :
   action.type === 'CreateRecipe' ?
   createRecipe(model, action.recipe) :
-
+  action.type === 'RequestMode' ?
+  requestMode(model, action.value) :
   Unknown.update(model, action);
 
 export const view = (model, address) => html.div({
