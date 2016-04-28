@@ -72,17 +72,18 @@ dialog {
   background: #BFBFBF;
 }
 
-/* App header
+/* App nav
 ----------------------------------------------------------------------------- */
 
-.app-header {
+.nav-main {
   background: #2DC500;
+  border-bottom: 6px solid #5ADA00;
   color: #fff;
-  height: 84px;
+  height: calc(84px - 6px);
   position: relative;
 }
 
-.gnav-new-recipe {
+.nav-new-recipe {
   background: url(./sprite.png) 0 0px no-repeat;
   background-size: 100px auto;
   cursor: pointer;
@@ -93,8 +94,23 @@ dialog {
   right: 0;
 }
 
-.gnav-new-recipe:active {
+.nav-new-recipe:active {
   background-position: 0 -100px;
+}
+
+.nav-tab {
+  background-color: #259E00;
+  font-size: 18px;
+  float: left;
+  height: 60px;
+  line-height: 60px;
+  margin-top: 18px;
+  padding: 0 24px;
+  min-width: calc(256px - (24px * 2));
+}
+
+.nav-tab-selected {
+  background-color: #5ADA00;
 }
 
 /* Overlay
@@ -133,9 +149,6 @@ dialog {
   transition:
     opacity 200ms ease-out,
     transform 200ms ease-out;
-}
-
-.rform-main-open {
   display: block;
   opacity: 1;
   pointer-events: all;
@@ -180,6 +193,17 @@ dialog {
   background-color: #F4F4F4;
 }
 
+.dash-main-close {
+  display: none;
+}
+
+/* Recipes library
+----------------------------------------------------------------------------- */
+
+.recipes-main-close {
+  display: none;
+}
+
 /* Sensors
 ----------------------------------------------------------------------------- */
 
@@ -211,3 +235,17 @@ dialog {
   line-height: 24px;
   vertical-align: top;
 }
+
+
+/* Recipe
+----------------------------------------------------------------------------- */
+
+.recipe {
+  margin: 0;
+  padding: 24px;
+}
+
+.recipe:nth-child(even) {
+  background-color: #EDEDED;
+}
+

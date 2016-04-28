@@ -2,7 +2,7 @@ import {html, forward, Effects} from 'reflex';
 import {merge, tagged, tag} from './common/prelude';
 import * as Unknown from './common/unknown';
 import {cursor} from './common/cursor';
-import * as AppHeader from './app/header';
+import * as AppNav from './app/nav';
 import * as EnvironmentalDataPoint from './environmental-data-point';
 import * as Recipes from './recipes';
 import * as RecipeForm from './recipe/form';
@@ -23,6 +23,11 @@ const RequestCloseRecipeForm = {
   type: 'RequestCloseRecipeForm'
 };
 
+const RequestMode = value => ({
+  type: 'RequestMode',
+  value
+});
+
 // Action tagging functions
 
 const RecipesAction = tag('Recipes');
@@ -33,10 +38,12 @@ const OverlayAction = action =>
   RequestCloseRecipeForm :
   tagged('Overlay', action);
 
-const AppHeaderAction = action =>
+const AppNavAction = action =>
   action.type === 'RequestNewRecipe' ?
   RequestOpenRecipeForm :
-  tagged('RecipeForm', action);
+  action.type === 'Selected' ?
+  RequestMode(action.value) :
+  tagged('AppNav', action);
 
 const RecipeFormAction = action =>
   action.type === 'RequestCreate' ?
@@ -48,10 +55,12 @@ const RecipeFormAction = action =>
 // Init and update
 
 export const init = () => {
+    EnvironmentalDataPoint.init();
   const [environmentalDataPoint, environmentalDataPointFx] =
     EnvironmentalDataPoint.init();
   const [recipeForm, recipeFormFx] = RecipeForm.init();
   const [recipes, recipesFx] = Recipes.init();
+  const [appNav, appNavFx] = AppNav.init();
   const [overlay, overlayFx] = Overlay.init();
 
   return [
@@ -59,22 +68,24 @@ export const init = () => {
       environmentalDataPoint,
       recipeForm,
       recipes,
+      appNav,
       overlay
     },
     Effects.batch([
       environmentalDataPointFx.map(EnvironmentalDataPointAction),
       recipeFormFx.map(RecipeFormAction),
       recipesFx.map(RecipesAction),
+      appNavFx.map(AppNavAction),
       overlayFx.map(OverlayAction)
     ])
   ];
 }
 
-const updateAppHeader = cursor({
-  get: model => model.header,
-  set: (model, header) => merge(model, {header}),
-  update: AppHeader.update,
-  tag: AppHeaderAction
+const updateAppNav = cursor({
+  get: model => model.appNav,
+  set: (model, appNav) => merge(model, {appNav}),
+  update: AppNav.update,
+  tag: AppNavAction
 });
 
 const updateRecipes = cursor({
@@ -129,8 +140,38 @@ const closeRecipeForm = model => {
       recipeForm
     }),
     Effects.batch([
-      recipeFormFx,
-      overlayFx
+      recipeFormFx.map(RecipeFormAction),
+      overlayFx.map(OverlayAction)
+    ])
+  ];
+}
+
+const requestMode = (model, mode) => {
+  const [environmentalDataPoint, environmentalDataPointFx] =
+    EnvironmentalDataPoint.update(
+      model.environmentalDataPoint,
+      (
+        mode === 'recipe' ?
+        EnvironmentalDataPoint.Open :
+        EnvironmentalDataPoint.Close
+      )
+    );
+  const [recipes, recipesFx] = Recipes.update(
+    model.recipes,
+    (
+      mode === 'library' ?
+      Recipes.Open :
+      Recipes.Close
+    )
+  );
+  return [
+    merge(model, {
+      environmentalDataPoint,
+      recipes
+    }),
+    Effects.batch([
+      environmentalDataPointFx.map(EnvironmentalDataPointAction),
+      recipesFx.map(RecipesAction)
     ])
   ];
 }
@@ -139,26 +180,32 @@ const createRecipe = (model, recipe) =>
   updateRecipes(model, Recipes.RequestPut(recipe));
 
 export const update = (model, action) =>
+  // Cursor-based update functions
   action.type === 'EnvironmentalDataPoint' ?
   updateEnvironmentalDataPoint(model, action.source) :
   action.type === 'Recipes' ?
   updateRecipes(model, action.source) :
   action.type === 'RecipeForm' ?
   updateRecipeForm(model, action.source) :
+  action.type === 'AppNav' ?
+  updateAppNav(model, action.source) :
   action.type === 'Overlay' ?
   updateOverlay(model, action.source) :
+  // Specialized update functions
   action.type === 'RequestOpenRecipeForm' ?
   openRecipeForm(model) :
   action.type === 'RequestCloseRecipeForm' ?
   closeRecipeForm(model) :
   action.type === 'CreateRecipe' ?
   createRecipe(model, action.recipe) :
+  action.type === 'RequestMode' ?
+  requestMode(model, action.value) :
   Unknown.update(model, action);
 
 export const view = (model, address) => html.div({
   className: 'app-main'
 }, [
-  AppHeader.view(model, forward(address, AppHeaderAction)),
+  AppNav.view(model.appNav, forward(address, AppNavAction)),
   EnvironmentalDataPoint.view(
     model.environmentalDataPoint,
     forward(address, EnvironmentalDataPointAction)
