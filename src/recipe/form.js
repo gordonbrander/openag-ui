@@ -5,6 +5,7 @@ import {html, forward, Effects} from 'reflex';
 import * as Unknown from '../common/unknown';
 import {merge} from '../common/prelude';
 import * as ClassName from '../common/classname';
+import * as Modal from '../common/modal';
 import * as Recipes from '../recipes';
 
 // Will not create a property field.
@@ -33,13 +34,8 @@ export const FailRecipeParse = {
   type: 'FailRecipeParse'
 };
 
-export const Open = {
-  type: 'Open'
-};
-
-export const Close = {
-  type: 'Close'
-};
+export const Open = Modal.Open;
+export const Close = Modal.Close;
 
 export const Cancel = {
   type: 'Cancel'
@@ -61,9 +57,9 @@ export const update = (model, action) =>
   action.type === 'Submit' ?
   submit(model, action.recipe) :
   action.type === 'Open' ?
-  [merge(model, {isOpen: true}), Effects.none] :
+  Modal.open(model) :
   action.type === 'Close' ?
-  [merge(model, {isOpen: false}), Effects.none] :
+  Modal.close(model) :
   Unknown.update(model, action);
 
 export const view = (model, address) =>
