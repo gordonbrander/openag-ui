@@ -3,6 +3,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 import {identity} from '../lang/functional';
+import {merge} from '../common/prelude';
 
 // Build an index object from an array.
 // Returns a new index object.
