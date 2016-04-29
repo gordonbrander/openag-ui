@@ -36,7 +36,6 @@ const RecipeFormAction = action =>
 
 const RequestRecipePut = recipe => RecipesAction(Recipes.RequestPut(recipe));
 const OpenRecipeForm = RecipeFormAction(RecipeForm.Open);
-const ClearRecipeForm = RecipeFormAction(RecipeForm.Clear);
 const CloseRecipeForm = RecipeFormAction(RecipeForm.Close);
 const OpenOverlay = OverlayAction(Overlay.Open);
 const CloseOverlay = OverlayAction(Overlay.Close);
