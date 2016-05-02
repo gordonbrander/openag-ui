@@ -3,7 +3,7 @@ import PouchDB from 'pouchdb';
 import {html, forward, Effects, Task} from 'reflex';
 import {merge, tagged, tag} from './common/prelude';
 import * as ClassName from './common/classname';
-import {RequestRestore, restore, sync} from './common/db';
+import {RequestRestore, restore, sync} from './common/database';
 import {indexByID, orderByID, add} from './common/indexed';
 import * as Modal from './common/modal';
 import * as Unknown from './common/unknown';
