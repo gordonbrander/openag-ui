@@ -3,7 +3,7 @@
 
 import {html, forward, Effects, thunk} from 'reflex';
 import * as Unknown from '../common/unknown';
-import {merge, tag} from '../common/prelude';
+import {merge, tag, batch} from '../common/prelude';
 import {cursor} from '../common/cursor';
 import * as ClassName from '../common/classname';
 import * as Modal from '../common/modal';
@@ -13,6 +13,7 @@ import * as Recipes from '../recipes';
 // Action tagging functions
 
 const TextareaAction = tag('Textarea');
+const ModalAction = tag('Modal');
 
 // Actions
 
@@ -32,8 +33,8 @@ export const FailRecipeParse = {
   type: 'FailRecipeParse'
 };
 
-export const Open = Modal.Open;
-export const Close = Modal.Close;
+export const Open = ModalAction(Modal.Open);
+export const Close = ModalAction(Modal.Close);
 
 export const Cancel = {
   type: 'Cancel'
@@ -71,6 +72,17 @@ export const submit = (model, recipeJSON) => {
   }
 }
 
+const cancel = model =>
+  batch(update, model, [
+    Clear,
+    Close
+  ]);
+
+const updateModal = cursor({
+  tag: ModalAction,
+  update: Modal.update
+});
+
 const updateTextarea = cursor({
   get: model => model.textarea,
   set: (model, textarea) => merge(model, {textarea}),
@@ -81,12 +93,12 @@ const updateTextarea = cursor({
 export const update = (model, action) =>
   action.type === 'Textarea' ?
   updateTextarea(model, action.source) :
+  action.type === 'Modal' ?
+  updateModal(model, action.source) :
   action.type === 'Submit' ?
   submit(model, action.recipe) :
-  action.type === 'Open' ?
-  Modal.open(model) :
-  action.type === 'Close' ?
-  Modal.close(model) :
+  action.type === 'Cancel' ?
+  cancel(model) :
   Unknown.update(model, action);
 
 const viewTextArea = Textarea.view('rform-textarea', 'rform-textarea');

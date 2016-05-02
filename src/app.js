@@ -15,12 +15,12 @@ const EnvironmentalDataPointAction = tag('EnvironmentalDataPoint');
 
 const OverlayAction = action =>
   action.type === 'Click' ?
-  ExitRecipeForm :
+  ExitAddRecipe :
   tagged('Overlay', action);
 
 const AppNavAction = action =>
   action.type === 'RequestNewRecipe' ?
-  EnterRecipeForm :
+  EnterAddRecipe :
   action.type === 'Selected' ?
   RequestMode(action.value) :
   tagged('AppNav', action);
@@ -28,8 +28,10 @@ const AppNavAction = action =>
 const RecipeFormAction = action =>
   action.type === 'Submitted' ?
   CreateRecipe(action.recipe) :
+  // We intercept cancel actions and send a "cancel whole form modal" action
+  // instead.
   action.type === 'Cancel' ?
-  ExitRecipeForm :
+  CancelAddRecipe :
   tagged('RecipeForm', action);
 
 // Actions
@@ -45,12 +47,22 @@ const CreateRecipe = recipe => ({
   recipe
 });
 
-const EnterRecipeForm = {
-  type: 'EnterRecipeForm'
+const EnterAddRecipe = {
+  type: 'EnterAddRecipe'
 };
 
-const ExitRecipeForm = {
-  type: 'ExitRecipeForm'
+const ExitAddRecipe = {
+  type: 'ExitAddRecipe'
+};
+
+// Cancels the modal
+const CancelAddRecipe = {
+  type: 'CancelAddRecipe'
+};
+
+// Cancels the RecipeForm
+const CancelRecipeForm = {
+  type: 'CancelRecipeForm'
 };
 
 const RequestMode = value => ({
@@ -123,15 +135,21 @@ const updateOverlay = cursor({
 });
 
 
-const enterRecipeForm = model =>
+const enterAddRecipe = model =>
   batch(update, model, [
     OpenRecipeForm,
     OpenOverlay
   ]);
 
-const exitRecipeForm = model =>
+const exitAddRecipe = model =>
   batch(update, model, [
     CloseRecipeForm,
+    CloseOverlay
+  ]);
+
+const cancelAddRecipe = model =>
+  batch(update, model, [
+    CancelRecipeForm,
     CloseOverlay
   ]);
 
@@ -183,10 +201,14 @@ export const update = (model, action) =>
   action.type === 'Overlay' ?
   updateOverlay(model, action.source) :
   // Specialized update functions
-  action.type === 'EnterRecipeForm' ?
-  enterRecipeForm(model) :
-  action.type === 'ExitRecipeForm' ?
-  exitRecipeForm(model) :
+  action.type === 'EnterAddRecipe' ?
+  enterAddRecipe(model) :
+  action.type === 'ExitAddRecipe' ?
+  exitAddRecipe(model) :
+  action.type === 'CancelAddRecipe' ?
+  cancelAddRecipe(model) :
+  action.type === 'CancelRecipeForm' ?
+  updateRecipeForm(model, RecipeForm.Cancel) :
   action.type === 'CreateRecipe' ?
   createRecipe(model, action.recipe) :
   action.type === 'RequestMode' ?
