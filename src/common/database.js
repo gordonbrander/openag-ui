@@ -1,6 +1,7 @@
 // Effect/action wrappers for common PouchDb operations
 
 import {Effects, Task} from 'reflex';
+import * as Result from '../common/result';
 import {compose} from '../lang/functional';
 
 export const RequestPut = value => ({
@@ -95,32 +96,27 @@ export const push = (db, replica) =>
   }));
 
 // Request down-directional sync
-export const RequestPull = {
-  type: 'RequestPull'
+export const Pull = {
+  type: 'Pull'
 };
 
-export const CompletePull = value => ({
-  type: 'CompletePull',
-  value
+export const Pulled = result => ({
+  type: 'Pulled',
+  result
 });
 
-export const FailPull = error => ({
-  type: 'FailPull',
-  error
-});
-
-export const pull = (db, replica) =>
+const DoPull = (db, replica) =>
   Effects.task(new Task((succeed, fail) => {
     db
       .replicate.from(replica)
       .then(
-        compose(succeed, CompletePull),
-        compose(fail, FailPull)
+        compose(succeed, Pulled, Result.ok),
+        compose(succeed, Pulled, Result.error)
       );
   }));
 
-export const requestPull = (model, db, replica) =>
-  [model, pull(db, replica)];
+export const pull = (model, db, replica) =>
+  [model, DoPull(db, replica)];
 
 // Request bi-directional sync
 export const RequestSync = {

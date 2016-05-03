@@ -21,14 +21,14 @@ const ORIGIN = Config.db_origin_environmental_data_point;
 
 const PollAction = action =>
   action.type === 'Ping' ?
-  RequestPull :
+  Pull :
   tagged('Poll', action);
 
 const PongPoll = PollAction(Poll.Pong);
-const Miss = PollAction(Poll.Miss);
+const MissPoll = PollAction(Poll.Miss);
 
 const RequestRestore = Database.RequestRestore;
-const RequestPull = Database.RequestPull;
+const Pull = Database.Pull;
 
 // Re-export modal actions.
 // @TODO these should be tagged Modal and delegated to Modal.update
@@ -72,9 +72,9 @@ export const init = () => {
     Effects.batch([
       fx,
       // @TODO we should batch this into a Restore action that batches
-      // Database.RequestRestore and Database.RequestPull.
+      // Database.RequestRestore and Database.Pull.
       Effects.receive(RequestRestore),
-      Effects.receive(RequestPull)
+      Effects.receive(Pull)
     ])
   ];
 };
@@ -86,25 +86,27 @@ const updatePoll = cursor({
   tag: PollAction
 });
 
-const completePull = model =>
+const pulledOk = (model, action) =>
   batch(update, model, [
     PongPoll,
     RequestRestore
   ]);
 
-const failPull = model =>
+const pulledError = model =>
   update(model, MissPoll);
 
 // Is the problem that I'm not mapping the returned effect?
 export const update = (model, action) =>
   action.type === 'Poll' ?
   updatePoll(model, action.source) :
-  action.type === 'RequestPull' ?
-  Database.requestPull(model, DB, ORIGIN) :
-  action.type === 'CompletePull' ?
-  completePull(model) :
-  action.type === 'FailPull' ?
-  failPull(model) :
+  action.type === 'Pull' ?
+  Database.pull(model, DB, ORIGIN) :
+  action.type === 'Pulled' ?
+  (
+    action.result.isOk ?
+    pulledOk(model) :
+    pulledError(model)
+  ) :
   action.type === 'RequestRestore' ?
   Database.requestRestore(model, DB) :
   action.type === 'RespondRestore' ?
