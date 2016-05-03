@@ -6,8 +6,8 @@ import * as Unknown from '../common/unknown';
 // Useful constants
 const seconds = 1000;
 const minutes = seconds * 60;
-export const DELAY = 5 * seconds;
-export const MAX_DELAY = 10 * minutes;
+const DELAY = 10 * seconds;
+const MAX_DELAY = 10 * minutes;
 
 // Actions and effects
 
