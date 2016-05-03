@@ -62,9 +62,65 @@ export const restore = db =>
       );
   }));
 
+export const requestRestore = (model, db) =>
+  [model, restore(db)];
+
 // Sync actions and effects
 // See https://pouchdb.com/api.html#sync
 // https://pouchdb.com/api.html#replication
+
+// Request up-directional sync
+export const RequestPush = {
+  type: 'RequestPush'
+};
+
+export const CompletePush = value => ({
+  type: 'CompletePush',
+  value
+});
+
+export const FailPush = error => ({
+  type: 'FailPush',
+  error
+});
+
+export const push = (db, replica) =>
+  Effects.task(new Task((succeed, fail) => {
+    db
+      .replicate.to(replica)
+      .then(
+        compose(succeed, CompletePush),
+        compose(fail, FailPush)
+      );
+  }));
+
+// Request down-directional sync
+export const RequestPull = {
+  type: 'RequestPull'
+};
+
+export const CompletePull = value => ({
+  type: 'CompletePull',
+  value
+});
+
+export const FailPull = error => ({
+  type: 'FailPull',
+  error
+});
+
+export const pull = (db, replica) =>
+  Effects.task(new Task((succeed, fail) => {
+    db
+      .replicate.from(replica)
+      .then(
+        compose(succeed, CompletePull),
+        compose(fail, FailPull)
+      );
+  }));
+
+export const requestPull = (model, db, replica) =>
+  [model, pull(db, replica)];
 
 // Request bi-directional sync
 export const RequestSync = {
