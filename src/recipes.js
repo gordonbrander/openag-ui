@@ -16,20 +16,7 @@ window.RecipesDB = DB;
 
 const ORIGIN = Config.db_origin_recipes;
 
-// Actions
-
-// An action representing "no further action".
-const NoOp = constant({
-  type: 'NoOp'
-});
-
-export const RequestRestore = Database.RequestRestore;
-export const RequestPut = Database.RequestPut;
-
-export const Open = Modal.Open;
-export const Close = Modal.Close;
-
-// Action tagging functions
+// Actions and tagging functions
 
 const RecipeAction = (id, action) =>
   ({
@@ -41,6 +28,17 @@ const RecipeAction = (id, action) =>
 // @TODO figure out how to generalize this.
 const ByID = id => action =>
   RecipeAction(id, action);
+
+// An action representing "no further action".
+const NoOp = constant({
+  type: 'NoOp'
+});
+
+export const RequestRestore = Database.RequestRestore;
+export const RequestPut = Database.RequestPut;
+
+export const Open = Modal.Open;
+export const Close = Modal.Close;
 
 // Model, update and init
 

@@ -62,6 +62,9 @@ export const restore = db =>
       );
   }));
 
+export const requestRestore = (model, db) =>
+  [model, restore(db)];
+
 // Sync actions and effects
 // See https://pouchdb.com/api.html#sync
 // https://pouchdb.com/api.html#replication
@@ -115,6 +118,9 @@ export const pull = (db, replica) =>
         compose(fail, FailPull)
       );
   }));
+
+export const requestPull = (model, db, replica) =>
+  [model, pull(db, replica)];
 
 // Request bi-directional sync
 export const RequestSync = {
