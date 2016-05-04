@@ -43,10 +43,10 @@ export const RespondRestore = value => ({
 });
 
 // Fail a restore
-export const FailRestore = error => {
+export const FailRestore = error => ({
   type: 'FailRestore',
   error
-};
+});
 
 // Mapping functions to just get the docs from an allDocs response.
 const readDocFromRow = row => row.doc;
@@ -71,29 +71,27 @@ export const requestRestore = (model, db) =>
 // https://pouchdb.com/api.html#replication
 
 // Request up-directional sync
-export const RequestPush = {
-  type: 'RequestPush'
+export const Push = {
+  type: 'Push'
 };
 
-export const CompletePush = value => ({
-  type: 'CompletePush',
-  value
+export const Pushed = result => ({
+  type: 'Pushed',
+  result
 });
 
-export const FailPush = error => ({
-  type: 'FailPush',
-  error
-});
-
-export const push = (db, replica) =>
+const DoPush = (db, replica) =>
   Effects.task(new Task((succeed, fail) => {
     db
       .replicate.to(replica)
       .then(
-        compose(succeed, CompletePush),
-        compose(fail, FailPush)
+        compose(succeed, Pushed, Result.ok),
+        compose(succeed, Pushed, Result.error)
       );
   }));
+
+export const push = (model, db, replica) =>
+  [model, DoPush(db, replica)];
 
 // Request down-directional sync
 export const Pull = {
@@ -119,26 +117,24 @@ export const pull = (model, db, replica) =>
   [model, DoPull(db, replica)];
 
 // Request bi-directional sync
-export const RequestSync = {
-  type: 'RequestSync'
+export const Sync = {
+  type: 'Sync'
 };
 
-export const CompleteSync = value => ({
-  type: 'CompleteSync',
-  value
+export const Synced = result => ({
+  type: 'Synced',
+  result
 });
 
-export const FailSync = error => ({
-  type: 'FailSync',
-  error
-});
-
-export const sync = (db, replica) =>
+export const DoSync = (db, replica) =>
   Effects.task(new Task((succeed, fail) => {
     db
       .sync(replica)
       .then(
-        compose(succeed, CompleteSync),
-        compose(fail, FailSync)
+        compose(succeed, Synced, Result.ok),
+        compose(succeed, Synced, Result.error)
       );
   }));
+
+export const sync = (model, db, replica) =>
+  [model, DoSync(db, replica)];
