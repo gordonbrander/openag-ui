@@ -30,9 +30,11 @@ const ByID = id => action =>
   RecipeAction(id, action);
 
 // An action representing "no further action".
-const NoOp = constant({
+const NoOp = {
   type: 'NoOp'
-});
+};
+
+const AlwaysNoOp = constant(NoOp);
 
 export const RequestRestore = Database.RequestRestore;
 export const RequestPut = Database.RequestPut;
@@ -56,7 +58,7 @@ export const init = () =>
     create([]),
     Effects.batch([
       Effects.receive(RequestRestore),
-      Database.sync(DB, ORIGIN)
+      Database.DoSync(DB, ORIGIN)
     ])
   ];
 
@@ -66,7 +68,7 @@ const updateByID = (model, id, action) => {
       model,
       Effects
         .task(Unknown.error(`model with id: ${id} is not found`))
-        .map(NoOp)
+        .map(AlwaysNoOp)
     ];
   }
   else {
@@ -77,6 +79,13 @@ const updateByID = (model, id, action) => {
     ];
   }
 }
+
+const syncedOk = model =>
+  update(model, RequestRestore);
+
+// @TODO do something with sync errors.
+const syncedError = model =>
+  update(model, NoOp);
 
 export const update = (model, action) =>
   action.type === 'NoOp' ?
@@ -94,9 +103,12 @@ export const update = (model, action) =>
   [model, Database.restore(DB)] :
   action.type === 'RespondRestore' ?
   [create(action.value), Effects.none] :
-  // When sync completes, request in-memory restore from local db
-  action.type === 'CompleteSync' ?
-  [model, Effects.receive(RequestRestore)] :
+  action.type === 'Synced' ?
+  (
+    action.result.isOk ?
+    syncedOk(model) :
+    syncedError(model)
+  ) :
   action.type === 'Open' ?
   Modal.open(model) :
   action.type === 'Close' ?

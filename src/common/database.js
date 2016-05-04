@@ -1,6 +1,7 @@
 // Effect/action wrappers for common PouchDb operations
 
 import {Effects, Task} from 'reflex';
+import * as Result from '../common/result';
 import {compose} from '../lang/functional';
 
 export const RequestPut = value => ({
@@ -42,10 +43,10 @@ export const RespondRestore = value => ({
 });
 
 // Fail a restore
-export const FailRestore = error => {
+export const FailRestore = error => ({
   type: 'FailRestore',
   error
-};
+});
 
 // Mapping functions to just get the docs from an allDocs response.
 const readDocFromRow = row => row.doc;
@@ -70,79 +71,87 @@ export const requestRestore = (model, db) =>
 // https://pouchdb.com/api.html#replication
 
 // Request up-directional sync
-export const RequestPush = {
-  type: 'RequestPush'
+export const Push = {
+  type: 'Push'
 };
 
-export const CompletePush = value => ({
-  type: 'CompletePush',
-  value
+export const Pushed = result => ({
+  type: 'Pushed',
+  result
 });
 
-export const FailPush = error => ({
-  type: 'FailPush',
-  error
-});
-
-export const push = (db, replica) =>
+const DoPush = (db, replica) =>
   Effects.task(new Task((succeed, fail) => {
-    db
-      .replicate.to(replica)
-      .then(
-        compose(succeed, CompletePush),
-        compose(fail, FailPush)
-      );
+    // Pouch will throw an error from xhr if there is no internet connection.
+    // @TODO find out why Pouch isn't catching these 404s within the promise.
+    try {
+      db
+        .replicate.to(replica)
+        .then(
+          compose(succeed, Pushed, Result.ok),
+          compose(succeed, Pushed, Result.error)
+        );
+    }
+    catch (error) {
+      succeed(Pushed(Result.error(error)));
+    }
   }));
+
+export const push = (model, db, replica) =>
+  [model, DoPush(db, replica)];
 
 // Request down-directional sync
-export const RequestPull = {
-  type: 'RequestPull'
+export const Pull = {
+  type: 'Pull'
 };
 
-export const CompletePull = value => ({
-  type: 'CompletePull',
-  value
+export const Pulled = result => ({
+  type: 'Pulled',
+  result
 });
 
-export const FailPull = error => ({
-  type: 'FailPull',
-  error
-});
-
-export const pull = (db, replica) =>
+const DoPull = (db, replica) =>
   Effects.task(new Task((succeed, fail) => {
-    db
-      .replicate.from(replica)
-      .then(
-        compose(succeed, CompletePull),
-        compose(fail, FailPull)
-      );
+    try {
+      db
+        .replicate.from(replica)
+        .then(
+          compose(succeed, Pulled, Result.ok),
+          compose(succeed, Pulled, Result.error)
+        );
+    }
+    catch (error) {
+      succeed(Pulled(Result.error(error)));
+    }
   }));
 
-export const requestPull = (model, db, replica) =>
-  [model, pull(db, replica)];
+export const pull = (model, db, replica) =>
+  [model, DoPull(db, replica)];
 
 // Request bi-directional sync
-export const RequestSync = {
-  type: 'RequestSync'
+export const Sync = {
+  type: 'Sync'
 };
 
-export const CompleteSync = value => ({
-  type: 'CompleteSync',
-  value
+export const Synced = result => ({
+  type: 'Synced',
+  result
 });
 
-export const FailSync = error => ({
-  type: 'FailSync',
-  error
-});
-
-export const sync = (db, replica) =>
+export const DoSync = (db, replica) =>
   Effects.task(new Task((succeed, fail) => {
-    db
-      .sync(replica)
-      .then(
-        compose(succeed, CompleteSync),
-        compose(fail, FailSync)
-      );
+    try {
+      db
+        .sync(replica)
+        .then(
+          compose(succeed, Synced, Result.ok),
+          compose(succeed, Synced, Result.error)
+        );
+    }
+    catch (error) {
+      succeed(Synced(Result.error(error)));
+    }
   }));
+
+export const sync = (model, db, replica) =>
+  [model, DoSync(db, replica)];
