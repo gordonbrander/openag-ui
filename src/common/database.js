@@ -82,12 +82,19 @@ export const Pushed = result => ({
 
 const DoPush = (db, replica) =>
   Effects.task(new Task((succeed, fail) => {
-    db
-      .replicate.to(replica)
-      .then(
-        compose(succeed, Pushed, Result.ok),
-        compose(succeed, Pushed, Result.error)
-      );
+    // Pouch will throw an error from xhr if there is no internet connection.
+    // @TODO find out why Pouch isn't catching these 404s within the promise.
+    try {
+      db
+        .replicate.to(replica)
+        .then(
+          compose(succeed, Pushed, Result.ok),
+          compose(succeed, Pushed, Result.error)
+        );
+    }
+    catch (error) {
+      succeed(Pushed(Result.error(error)));
+    }
   }));
 
 export const push = (model, db, replica) =>
@@ -105,12 +112,17 @@ export const Pulled = result => ({
 
 const DoPull = (db, replica) =>
   Effects.task(new Task((succeed, fail) => {
-    db
-      .replicate.from(replica)
-      .then(
-        compose(succeed, Pulled, Result.ok),
-        compose(succeed, Pulled, Result.error)
-      );
+    try {
+      db
+        .replicate.from(replica)
+        .then(
+          compose(succeed, Pulled, Result.ok),
+          compose(succeed, Pulled, Result.error)
+        );
+    }
+    catch (error) {
+      succeed(Pulled(Result.error(error)));
+    }
   }));
 
 export const pull = (model, db, replica) =>
@@ -128,12 +140,17 @@ export const Synced = result => ({
 
 export const DoSync = (db, replica) =>
   Effects.task(new Task((succeed, fail) => {
-    db
-      .sync(replica)
-      .then(
-        compose(succeed, Synced, Result.ok),
-        compose(succeed, Synced, Result.error)
-      );
+    try {
+      db
+        .sync(replica)
+        .then(
+          compose(succeed, Synced, Result.ok),
+          compose(succeed, Synced, Result.error)
+        );
+    }
+    catch (error) {
+      succeed(Synced(Result.error(error)));
+    }
   }));
 
 export const sync = (model, db, replica) =>
