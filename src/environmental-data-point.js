@@ -86,7 +86,7 @@ const updatePoll = cursor({
   tag: PollAction
 });
 
-const pulledOk = (model, action) =>
+const pulledOk = model =>
   batch(update, model, [
     PongPoll,
     RequestRestore
