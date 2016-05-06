@@ -4,8 +4,9 @@ import PouchDB from 'pouchdb';
 import * as Database from './common/db';
 import {orderByID, indexByID, add} from './common/indexed';
 import * as Unknown from './common/unknown';
-import {merge} from './common/prelude';
+import {merge, tag} from './common/prelude';
 import * as Modal from './common/modal';
+import {cursor} from './common/cursor';
 import * as ClassName from './common/classname';
 import {compose, constant} from './lang/functional';
 import * as Recipe from './recipe';
@@ -18,6 +19,8 @@ const ORIGIN = Config.db_origin_recipes;
 
 // Actions
 
+const ModalAction = tag('Modal');
+
 // An action representing "no further action".
 const NoOp = constant({
   type: 'NoOp'
@@ -26,8 +29,8 @@ const NoOp = constant({
 export const RequestRestore = Database.RequestRestore;
 export const RequestPut = Database.RequestPut;
 
-export const Open = Modal.Open;
-export const Close = Modal.Close;
+export const Open = ModalAction(Modal.Open);
+export const Close = ModalAction(Modal.Close);
 
 // Action tagging functions
 
@@ -62,6 +65,11 @@ export const init = () =>
     ])
   ];
 
+const updateModal = cursor({
+  update: Modal.update,
+  tag: ModalAction
+});
+
 const updateByID = (model, id, action) => {
   if (model.order.indexOf(id) < 0) {
     return [
@@ -81,6 +89,8 @@ const updateByID = (model, id, action) => {
 }
 
 export const update = (model, action) =>
+  action.type === 'Modal' ?
+  updateModal(model, action.source) :
   action.type === 'NoOp' ?
   [model, Effects.none] :
   action.type === 'RequestPut' ?
@@ -110,12 +120,26 @@ export const update = (model, action) =>
 export const view = (model, address) =>
   html.div({
     className: ClassName.create({
-      'recipes-main': true,
-      'recipes-main-close': !model.isOpen
+      'modal-main': true,
+      'modal-main-close': !model.isOpen
     })
-  }, model.order.map(id => thunk(
-    id,
-    Recipe.view,
-    model.entries[id],
-    forward(address, ByID(id))
-  )));
+  }, [
+    html.header({
+      className: 'modal-header'
+    }),
+    html.div({
+      className: 'modal-content'
+    }, [
+      html.div({
+        className: ClassName.create({
+          'recipes-main': true,
+          'recipes-main-close': !model.isOpen
+        })
+      }, model.order.map(id => thunk(
+        id,
+        Recipe.view,
+        model.entries[id],
+        forward(address, ByID(id))
+      )))
+    ])
+  ]);
