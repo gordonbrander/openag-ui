@@ -59,25 +59,20 @@ dialog {
   background: #0094D4;
 }
 
-.btn-secondary {
-  background: #D8D8D8;
-  border-radius: 18px;
+.btn-panel {
+  background: transparent;
   border: 0;
-  color: #777;
-  height: 36px;
-  line-height: 36px;
-  padding: 0 18px;
+  color: #fff;
+  font-size: 16px;
+  height: 56px;
+  line-height: 56px;
+  padding: 0 16px;
   -webkit-appearance: none;
   -moz-appearance: none;
 }
 
-.btn-secondary:focus {
+.btn-panel:focus {
   outline: 0;
-}
-
-.btn-secondary:active {
-  /* Active backgrounds are 10 points less bright in hsb. */
-  background: #BFBFBF;
 }
 
 .txt-textarea {

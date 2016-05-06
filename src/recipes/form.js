@@ -106,6 +106,27 @@ export const view = (model, address, isActive) =>
           className: 'recipes-create-icon',
           onClick: () => address(Back)
         })
+      ]),
+      html.div({
+        className: 'panel-nav-right'
+      }, [
+        html.button({
+          className: 'btn-panel',
+          type: 'submit',
+          onClick: (event) => {
+            // @TODO create a proper input module instead of kludging this in a
+            // brittle way. We want to be able to send an Effect that will
+            // focus, unfocus. We also want to read value changes from `onInput`.
+            // See https://github.com/browserhtml/browserhtml/blob/master/src/common/ref.js
+            // https://gist.github.com/Gozala/2b6a301846b151aafe807104304dbd06#file-focus-js
+            event.preventDefault();
+            const el = document.querySelector('#rform-textarea');
+            address(Submit(el.value));
+          }
+        }, [
+          // @TODO localize this
+          'Save'
+        ])
       ])
     ]),
     html.div({
@@ -123,36 +144,6 @@ export const view = (model, address, isActive) =>
             model.textarea,
             forward(address, TextareaAction)
           ),
-          html.footer({
-            className: 'rform-footer',
-          }, [
-            html.button({
-              className: 'btn-primary',
-              type: 'submit',
-              onClick: (event) => {
-                // @TODO create a proper input module instead of kludging this in a
-                // brittle way. We want to be able to send an Effect that will
-                // focus, unfocus. We also want to read value changes from `onInput`.
-                // See https://github.com/browserhtml/browserhtml/blob/master/src/common/ref.js
-                // https://gist.github.com/Gozala/2b6a301846b151aafe807104304dbd06#file-focus-js
-                event.preventDefault();
-                const el = document.querySelector('#rform-textarea');
-                address(Submit(el.value));
-              }
-            }, [
-              'Create'
-            ]),
-            html.button({
-              className: 'btn-secondary',
-              type: 'cancel',
-              onClick: (event) => {
-                event.preventDefault();
-                address(Clear);
-              }
-            }, [
-              'Cancel'
-            ])
-          ])
         ])
       ])
     ])
