@@ -34,6 +34,11 @@ export const RequestPut = Database.RequestPut;
 export const Open = ModalAction(Modal.Open);
 export const Close = ModalAction(Modal.Close);
 
+const Activate = id => ({
+  type: 'Activate',
+  id
+});
+
 // Action tagging functions
 
 const RecipeAction = (id, action) =>
@@ -62,6 +67,7 @@ export const init = () => {
   const [recipesForm, recipesFormFx] = RecipesForm.init();
   return [
     {
+      active: null,
       recipesForm,
       isOpen: false,
       // Build an array of ordered recipe IDs
@@ -121,10 +127,8 @@ export const update = (model, action) =>
   // When sync completes, request in-memory restore from local db
   action.type === 'CompleteSync' ?
   [model, Effects.receive(RequestRestore)] :
-  action.type === 'Open' ?
-  Modal.open(model) :
-  action.type === 'Close' ?
-  Modal.close(model) :
+  action.type === 'Activate' ?
+  [merge(model, {active: action.id}), Effects.none] :
   action.type === 'Recipe' ?
   updateByID(model, action.id, action.source) :
   Unknown.update(model, action);
@@ -137,28 +141,71 @@ export const view = (model, address) =>
     }),
     open: (model.isOpen ? 'open' : void(0))
   }, [
-    html.header({
-      className: 'modal-header'
-    }),
     html.div({
-      className: 'modal-content'
+      className: 'panels-main'
     }, [
       html.div({
         className: ClassName.create({
-          'recipes-main': true,
-          'recipes-main-close': !model.isOpen
+          'panel-main': true,
+          'panel-main-close': model.active !== null
         })
-      }, model.order.map(id => thunk(
-        id,
-        Recipe.view,
-        model.entries[id],
-        forward(address, ByID(id))
-      )))
-    ]),
-    thunk(
-      'recipes-form',
-      RecipesForm.view,
-      model.recipesForm,
-      forward(address, RecipesFormAction)
-    )
+      }, [
+        html.header({
+          className: 'panel-header'
+        }, [
+          html.div({
+            className: 'panel-nav-right'
+          }, [
+            html.a({
+              className: 'recipes-create-icon',
+              onClick: () => address(Activate('form'))
+            })
+          ])
+        ]),
+        html.div({
+          className: 'panel-content'
+        }, [
+          html.div({
+            className: ClassName.create({
+              'recipes-main': true,
+              'recipes-main-close': !model.isOpen
+            })
+          }, model.order.map(id => thunk(
+            id,
+            Recipe.view,
+            model.entries[id],
+            forward(address, ByID(id))
+          )))
+        ])
+      ]),
+      html.div({
+        className: ClassName.create({
+          'panel-main': true,
+          'panel-main-close': model.active !== 'form'
+        })
+      }, [
+        html.header({
+          className: 'panel-header'
+        }, [
+          html.div({
+            className: 'panel-nav-left'
+          }, [
+            html.a({
+              className: 'recipes-create-icon',
+              onClick: () => address(Activate(null))
+            })
+          ])
+        ]),
+        html.div({
+          className: 'panel-content'
+        }, [
+          thunk(
+            'recipes-form',
+            RecipesForm.view,
+            model.recipesForm,
+            forward(address, RecipesFormAction)
+          )
+        ])
+      ])
+    ])
   ]);

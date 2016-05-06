@@ -177,14 +177,53 @@ dialog {
   pointer-events: none;
 }
 
-.modal-header {
+/* Panel
+----------------------------------------------------------------------------- */
+
+.panels-main {
+  left: 0;
+  top: 0;
+  position: absolute;
+  width: 100%;
+  height: 100%;
+}
+
+.panel-main {
+  background: #fff;
+  border-radius: 6px;
+  overflow: hidden;
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  left: 0;
+  top: 0;
+}
+
+.panel-main-close {
+  display: none;
+}
+
+.panel-header {
   background: #0052B3;
   color: #fff;
   height: 56px;
+  position: relative;
 }
 
-.modal-content {
-  max-height: calc(100% - 56px);
+.panel-nav-left {
+  position: absolute;
+  left: 0;
+  top: 0;
+}
+
+.panel-nav-right {
+  position: absolute;
+  right: 0;
+  top: 0;
+}
+
+.panel-content {
+  height: calc(100% - 56px);
   overflow: auto;
 }
 
@@ -220,6 +259,13 @@ dialog {
 
 /* Recipes library
 ----------------------------------------------------------------------------- */
+
+.recipes-create-icon {
+  background: #fff;
+  display: block;
+  height: 72px;
+  width: 72px;
+}
 
 .recipes-main-close {
   display: none;

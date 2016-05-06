@@ -2,6 +2,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
+import {forward, thunk} from 'reflex';
 import {identity} from '../lang/functional';
 import {merge} from '../common/prelude';
 
@@ -25,6 +26,14 @@ export const getID = getter('_id');
 export const indexByID = array => indexWith(array, getID, identity);
 export const orderByID = array => array.map(getID);
 
+export const model = (models, active) => ({
+  active,
+  // Build an array of ordered recipe IDs
+  order: orderByID(models),
+  // Index all recipes by ID
+  entries: indexByID(models)
+});
+
 // Add a new indexed entry to model
 export const add = (model, entry) =>
   merge(model, {
@@ -34,3 +43,13 @@ export const add = (model, entry) =>
       [getID(entry)]: entry
     })
   });
+
+// Given a view function and an action tagging factory function, will return
+// a view that will list out all sub-views.
+export const children = (view, tagByID) => (model, address) =>
+  model.order.map(id => thunk(
+    id,
+    view,
+    model.entries[id],
+    forward(address, tagBy(id), model.id === model.active)
+  ));
