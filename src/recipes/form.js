@@ -71,12 +71,6 @@ export const submit = (model, recipeJSON) => {
   }
 }
 
-const cancel = model =>
-  batch(update, model, [
-    Clear,
-    Close
-  ]);
-
 const updateTextarea = cursor({
   get: model => model.textarea,
   set: (model, textarea) => merge(model, {textarea}),
@@ -89,8 +83,6 @@ export const update = (model, action) =>
   updateTextarea(model, action.source) :
   action.type === 'Submit' ?
   submit(model, action.recipe) :
-  action.type === 'Cancel' ?
-  cancel(model) :
   Unknown.update(model, action);
 
 const viewTextArea = Textarea.view('rform-textarea', 'txt-textarea');
@@ -155,7 +147,7 @@ export const view = (model, address, isActive) =>
               type: 'cancel',
               onClick: (event) => {
                 event.preventDefault();
-                address(Cancel);
+                address(Clear);
               }
             }, [
               'Cancel'

@@ -92,6 +92,13 @@ const updateModal = cursor({
   tag: ModalAction
 });
 
+const updateRecipesForm = cursor({
+  get: model => model.recipesForm,
+  set: (model, recipesForm) => merge(model, {recipesForm}),
+  update: RecipesForm.update,
+  tag: RecipesFormAction
+});
+
 const updateByID = (model, id, action) => {
   if (model.order.indexOf(id) < 0) {
     return [
@@ -111,6 +118,8 @@ const updateByID = (model, id, action) => {
 }
 
 export const update = (model, action) =>
+  action.type === 'RecipesForm' ?
+  updateRecipesForm(model, action.source) :
   action.type === 'Modal' ?
   updateModal(model, action.source) :
   action.type === 'NoOp' ?
