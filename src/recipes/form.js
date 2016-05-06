@@ -15,6 +15,10 @@ const TextareaAction = tag('Textarea');
 
 // Actions
 
+export const Back = {
+  type: 'Back'
+};
+
 // Submitting the form
 export const Submit = recipe => ({
   type: 'Submit',
@@ -93,47 +97,70 @@ const viewTextArea = Textarea.view('rform-textarea', 'txt-textarea');
 
 const nil = void(0);
 
-export const view = (model, address) =>
+export const view = (model, address, isActive) =>
   html.div({
-    className: 'rform-main'
+    className: ClassName.create({
+      'panel-main': true,
+      'panel-main-close': !isActive
+    })
   }, [
-    html.form({
-      className: 'rform-form'
+    html.header({
+      className: 'panel-header'
     }, [
-      thunk(
-        'textarea',
-        viewTextArea,
-        model.textarea,
-        forward(address, TextareaAction)
-      ),
-      html.footer({
-        className: 'rform-footer',
+      html.div({
+        className: 'panel-nav-left'
       }, [
-        html.button({
-          className: 'btn-primary',
-          type: 'submit',
-          onClick: (event) => {
-            // @TODO create a proper input module instead of kludging this in a
-            // brittle way. We want to be able to send an Effect that will
-            // focus, unfocus. We also want to read value changes from `onInput`.
-            // See https://github.com/browserhtml/browserhtml/blob/master/src/common/ref.js
-            // https://gist.github.com/Gozala/2b6a301846b151aafe807104304dbd06#file-focus-js
-            event.preventDefault();
-            const el = document.querySelector('#rform-textarea');
-            address(Submit(el.value));
-          }
+        html.a({
+          className: 'recipes-create-icon',
+          onClick: () => address(Back)
+        })
+      ])
+    ]),
+    html.div({
+      className: 'panel-content'
+    }, [
+      html.div({
+        className: 'rform-main'
+      }, [
+        html.form({
+          className: 'rform-form'
         }, [
-          'Create'
-        ]),
-        html.button({
-          className: 'btn-secondary',
-          type: 'cancel',
-          onClick: (event) => {
-            event.preventDefault();
-            address(Cancel);
-          }
-        }, [
-          'Cancel'
+          thunk(
+            'textarea',
+            viewTextArea,
+            model.textarea,
+            forward(address, TextareaAction)
+          ),
+          html.footer({
+            className: 'rform-footer',
+          }, [
+            html.button({
+              className: 'btn-primary',
+              type: 'submit',
+              onClick: (event) => {
+                // @TODO create a proper input module instead of kludging this in a
+                // brittle way. We want to be able to send an Effect that will
+                // focus, unfocus. We also want to read value changes from `onInput`.
+                // See https://github.com/browserhtml/browserhtml/blob/master/src/common/ref.js
+                // https://gist.github.com/Gozala/2b6a301846b151aafe807104304dbd06#file-focus-js
+                event.preventDefault();
+                const el = document.querySelector('#rform-textarea');
+                address(Submit(el.value));
+              }
+            }, [
+              'Create'
+            ]),
+            html.button({
+              className: 'btn-secondary',
+              type: 'cancel',
+              onClick: (event) => {
+                event.preventDefault();
+                address(Cancel);
+              }
+            }, [
+              'Cancel'
+            ])
+          ])
         ])
       ])
     ])

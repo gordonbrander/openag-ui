@@ -4,7 +4,7 @@ import PouchDB from 'pouchdb';
 import * as Database from './common/db';
 import {orderByID, indexByID, add} from './common/indexed';
 import * as Unknown from './common/unknown';
-import {merge, tag} from './common/prelude';
+import {merge, tag, tagged} from './common/prelude';
 import * as Modal from './common/modal';
 import {cursor} from './common/cursor';
 import * as ClassName from './common/classname';
@@ -21,7 +21,11 @@ const ORIGIN = Config.db_origin_recipes;
 // Actions
 
 const ModalAction = tag('Modal');
-const RecipesFormAction = tag('RecipesForm');
+
+const RecipesFormAction = action =>
+  action.type === 'Back' ?
+  Activate(null) :
+  tagged('RecipesForm', action);
 
 // An action representing "no further action".
 const NoOp = constant({
@@ -178,34 +182,12 @@ export const view = (model, address) =>
           )))
         ])
       ]),
-      html.div({
-        className: ClassName.create({
-          'panel-main': true,
-          'panel-main-close': model.active !== 'form'
-        })
-      }, [
-        html.header({
-          className: 'panel-header'
-        }, [
-          html.div({
-            className: 'panel-nav-left'
-          }, [
-            html.a({
-              className: 'recipes-create-icon',
-              onClick: () => address(Activate(null))
-            })
-          ])
-        ]),
-        html.div({
-          className: 'panel-content'
-        }, [
-          thunk(
-            'recipes-form',
-            RecipesForm.view,
-            model.recipesForm,
-            forward(address, RecipesFormAction)
-          )
-        ])
-      ])
+      thunk(
+        'recipes-form',
+        RecipesForm.view,
+        model.recipesForm,
+        forward(address, RecipesFormAction),
+        model.active === 'form'
+      )
     ])
   ]);
