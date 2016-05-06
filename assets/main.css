@@ -205,6 +205,13 @@ dialog {
   position: relative;
 }
 
+.panel-title {
+  font-size: 16px;
+  line-height: 56px;
+  text-align: center;
+  margin: 0;
+}
+
 .panel-nav-left {
   position: absolute;
   left: 0;

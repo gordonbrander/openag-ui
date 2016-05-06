@@ -99,6 +99,12 @@ export const view = (model, address, isActive) =>
     html.header({
       className: 'panel-header'
     }, [
+      html.h1({
+        className: 'panel-title'
+      }, [
+        // @TODO localize this
+        'Import Recipe'
+      ]),
       html.div({
         className: 'panel-nav-left'
       }, [
