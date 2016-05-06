@@ -13,16 +13,27 @@ import * as Overlay from './overlay';
 const RecipesAction = tag('Recipes');
 const EnvironmentalDataPointAction = tag('EnvironmentalDataPoint');
 
+const OpenRecipes = RecipesAction(Recipes.Open);
+const CloseRecipes = RecipesAction(Recipes.Close);
+
+const EnterRecipesMode = {
+  type: 'EnterRecipesMode'
+};
+
+const ExitRecipesMode = {
+  type: 'ExitRecipesMode'
+};
+
 const OverlayAction = action =>
   action.type === 'Click' ?
-  ExitAddRecipe :
+  ExitRecipesMode :
   tagged('Overlay', action);
 
 const AppNavAction = action =>
+  action.type === 'RequestRecipes' ?
+  EnterRecipesMode :
   action.type === 'RequestNewRecipe' ?
   EnterAddRecipe :
-  action.type === 'Selected' ?
-  RequestMode(action.value) :
   tagged('AppNav', action);
 
 const RecipeFormAction = action =>
@@ -134,6 +145,17 @@ const updateOverlay = cursor({
   tag: OverlayAction
 });
 
+const enterRecipesMode = model =>
+  batch(update, model, [
+    OpenRecipes,
+    OpenOverlay
+  ]);
+
+const exitRecipesMode = model =>
+  batch(update, model, [
+    CloseRecipes,
+    CloseOverlay
+  ]);
 
 const enterAddRecipe = model =>
   batch(update, model, [
@@ -153,36 +175,6 @@ const cancelAddRecipe = model =>
     CloseOverlay
   ]);
 
-const requestMode = (model, mode) => {
-  const [environmentalDataPoint, environmentalDataPointFx] =
-    EnvironmentalDataPoint.update(
-      model.environmentalDataPoint,
-      (
-        mode === 'recipe' ?
-        EnvironmentalDataPoint.Open :
-        EnvironmentalDataPoint.Close
-      )
-    );
-  const [recipes, recipesFx] = Recipes.update(
-    model.recipes,
-    (
-      mode === 'library' ?
-      Recipes.Open :
-      Recipes.Close
-    )
-  );
-  return [
-    merge(model, {
-      environmentalDataPoint,
-      recipes
-    }),
-    Effects.batch([
-      environmentalDataPointFx.map(EnvironmentalDataPointAction),
-      recipesFx.map(RecipesAction)
-    ])
-  ];
-}
-
 const createRecipe = (model, recipe) =>
   batch(update, model, [
     RequestRecipePut(recipe)
@@ -201,6 +193,10 @@ export const update = (model, action) =>
   action.type === 'Overlay' ?
   updateOverlay(model, action.source) :
   // Specialized update functions
+  action.type === 'EnterRecipesMode' ?
+  enterRecipesMode(model) :
+  action.type === 'ExitRecipesMode' ?
+  exitRecipesMode(model) :
   action.type === 'EnterAddRecipe' ?
   enterAddRecipe(model) :
   action.type === 'ExitAddRecipe' ?
@@ -211,8 +207,6 @@ export const update = (model, action) =>
   updateRecipeForm(model, RecipeForm.Cancel) :
   action.type === 'CreateRecipe' ?
   createRecipe(model, action.recipe) :
-  action.type === 'RequestMode' ?
-  requestMode(model, action.value) :
   Unknown.update(model, action);
 
 export const view = (model, address) => html.div({
@@ -223,7 +217,7 @@ export const view = (model, address) => html.div({
     model.environmentalDataPoint,
     forward(address, EnvironmentalDataPointAction)
   ),
-  Recipes.view(model.recipes, forward(address, RecipesAction)),
   Overlay.view(model.overlay, forward(address, OverlayAction)),
+  Recipes.view(model.recipes, forward(address, RecipesAction)),
   RecipeForm.view(model.recipeForm, forward(address, RecipeFormAction))
 ]);

@@ -85,10 +85,17 @@ dialog {
 
 .nav-main {
   background: #2DC500;
-  border-bottom: 6px solid #5ADA00;
   color: #fff;
-  height: calc(84px - 6px);
+  height: 72px;
   position: relative;
+}
+
+.nav-current-recipe {
+  background: #5ADA00;
+  left: 0;
+  position: absolute;
+  width: 256px;
+  height: 72px;
 }
 
 .nav-new-recipe {
@@ -104,21 +111,6 @@ dialog {
 
 .nav-new-recipe:active {
   background-position: 0 -100px;
-}
-
-.nav-tab {
-  background-color: #259E00;
-  font-size: 18px;
-  float: left;
-  height: 60px;
-  line-height: 60px;
-  margin-top: 18px;
-  padding: 0 24px;
-  min-width: calc(256px - (24px * 2));
-}
-
-.nav-tab-selected {
-  background-color: #5ADA00;
 }
 
 /* Overlay
