@@ -5,7 +5,6 @@ import {cursor} from './common/cursor';
 import * as AppNav from './app/nav';
 import * as EnvironmentalDataPoint from './environmental-data-point';
 import * as Recipes from './recipes';
-import * as RecipeForm from './recipe/form';
 import * as Overlay from './overlay';
 
 // Action tagging functions
@@ -32,24 +31,10 @@ const OverlayAction = action =>
 const AppNavAction = action =>
   action.type === 'RequestRecipes' ?
   EnterRecipesMode :
-  action.type === 'RequestNewRecipe' ?
-  EnterAddRecipe :
   tagged('AppNav', action);
-
-const RecipeFormAction = action =>
-  action.type === 'Submitted' ?
-  CreateRecipe(action.recipe) :
-  // We intercept cancel actions and send a "cancel whole form modal" action
-  // instead.
-  action.type === 'Cancel' ?
-  CancelAddRecipe :
-  tagged('RecipeForm', action);
 
 // Actions
 
-const RequestRecipePut = recipe => RecipesAction(Recipes.RequestPut(recipe));
-const OpenRecipeForm = RecipeFormAction(RecipeForm.Open);
-const CloseRecipeForm = RecipeFormAction(RecipeForm.Close);
 const OpenOverlay = OverlayAction(Overlay.Open);
 const CloseOverlay = OverlayAction(Overlay.Close);
 
@@ -71,11 +56,6 @@ const CancelAddRecipe = {
   type: 'CancelAddRecipe'
 };
 
-// Cancels the RecipeForm
-const CancelRecipeForm = {
-  type: 'CancelRecipeForm'
-};
-
 const RequestMode = value => ({
   type: 'RequestMode',
   value
@@ -87,7 +67,6 @@ export const init = () => {
     EnvironmentalDataPoint.init();
   const [environmentalDataPoint, environmentalDataPointFx] =
     EnvironmentalDataPoint.init();
-  const [recipeForm, recipeFormFx] = RecipeForm.init();
   const [recipes, recipesFx] = Recipes.init();
   const [appNav, appNavFx] = AppNav.init();
   const [overlay, overlayFx] = Overlay.init();
@@ -95,14 +74,12 @@ export const init = () => {
   return [
     {
       environmentalDataPoint,
-      recipeForm,
       recipes,
       appNav,
       overlay
     },
     Effects.batch([
       environmentalDataPointFx.map(EnvironmentalDataPointAction),
-      recipeFormFx.map(RecipeFormAction),
       recipesFx.map(RecipesAction),
       appNavFx.map(AppNavAction),
       overlayFx.map(OverlayAction)
@@ -122,13 +99,6 @@ const updateRecipes = cursor({
   set: (model, recipes) => merge(model, {recipes}),
   update: Recipes.update,
   tag: RecipesAction
-});
-
-const updateRecipeForm = cursor({
-  get: model => model.recipeForm,
-  set: (model, recipeForm) => merge(model, {recipeForm}),
-  update: RecipeForm.update,
-  tag: RecipeFormAction
 });
 
 const updateEnvironmentalDataPoint = cursor({
@@ -157,37 +127,12 @@ const exitRecipesMode = model =>
     CloseOverlay
   ]);
 
-const enterAddRecipe = model =>
-  batch(update, model, [
-    OpenRecipeForm,
-    OpenOverlay
-  ]);
-
-const exitAddRecipe = model =>
-  batch(update, model, [
-    CloseRecipeForm,
-    CloseOverlay
-  ]);
-
-const cancelAddRecipe = model =>
-  batch(update, model, [
-    CancelRecipeForm,
-    CloseOverlay
-  ]);
-
-const createRecipe = (model, recipe) =>
-  batch(update, model, [
-    RequestRecipePut(recipe)
-  ]);
-
 export const update = (model, action) =>
   // Cursor-based update functions
   action.type === 'EnvironmentalDataPoint' ?
   updateEnvironmentalDataPoint(model, action.source) :
   action.type === 'Recipes' ?
   updateRecipes(model, action.source) :
-  action.type === 'RecipeForm' ?
-  updateRecipeForm(model, action.source) :
   action.type === 'AppNav' ?
   updateAppNav(model, action.source) :
   action.type === 'Overlay' ?
@@ -197,16 +142,6 @@ export const update = (model, action) =>
   enterRecipesMode(model) :
   action.type === 'ExitRecipesMode' ?
   exitRecipesMode(model) :
-  action.type === 'EnterAddRecipe' ?
-  enterAddRecipe(model) :
-  action.type === 'ExitAddRecipe' ?
-  exitAddRecipe(model) :
-  action.type === 'CancelAddRecipe' ?
-  cancelAddRecipe(model) :
-  action.type === 'CancelRecipeForm' ?
-  updateRecipeForm(model, RecipeForm.Cancel) :
-  action.type === 'CreateRecipe' ?
-  createRecipe(model, action.recipe) :
   Unknown.update(model, action);
 
 export const view = (model, address) => html.div({
@@ -218,6 +153,5 @@ export const view = (model, address) => html.div({
     forward(address, EnvironmentalDataPointAction)
   ),
   Overlay.view(model.overlay, forward(address, OverlayAction)),
-  Recipes.view(model.recipes, forward(address, RecipesAction)),
-  RecipeForm.view(model.recipeForm, forward(address, RecipeFormAction))
+  Recipes.view(model.recipes, forward(address, RecipesAction))
 ]);

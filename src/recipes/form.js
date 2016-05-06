@@ -6,14 +6,12 @@ import * as Unknown from '../common/unknown';
 import {merge, tag, batch} from '../common/prelude';
 import {cursor} from '../common/cursor';
 import * as ClassName from '../common/classname';
-import * as Modal from '../common/modal';
 import * as Textarea from '../common/textarea';
 import * as Recipes from '../recipes';
 
 // Action tagging functions
 
 const TextareaAction = tag('Textarea');
-const ModalAction = tag('Modal');
 
 // Actions
 
@@ -32,9 +30,6 @@ export const Submitted = recipe => ({
 export const FailRecipeParse = {
   type: 'FailRecipeParse'
 };
-
-export const Open = ModalAction(Modal.Open);
-export const Close = ModalAction(Modal.Close);
 
 export const Cancel = {
   type: 'Cancel'
@@ -78,11 +73,6 @@ const cancel = model =>
     Close
   ]);
 
-const updateModal = cursor({
-  tag: ModalAction,
-  update: Modal.update
-});
-
 const updateTextarea = cursor({
   get: model => model.textarea,
   set: (model, textarea) => merge(model, {textarea}),
@@ -93,25 +83,19 @@ const updateTextarea = cursor({
 export const update = (model, action) =>
   action.type === 'Textarea' ?
   updateTextarea(model, action.source) :
-  action.type === 'Modal' ?
-  updateModal(model, action.source) :
   action.type === 'Submit' ?
   submit(model, action.recipe) :
   action.type === 'Cancel' ?
   cancel(model) :
   Unknown.update(model, action);
 
-const viewTextArea = Textarea.view('rform-textarea', 'rform-textarea');
+const viewTextArea = Textarea.view('rform-textarea', 'txt-textarea');
 
 const nil = void(0);
 
 export const view = (model, address) =>
-  html.dialog({
-    className: ClassName.create({
-      'rform-main': true,
-      'rform-main-close': !model.isOpen
-    }),
-    open: (model.isOpen ? 'open' : nil)
+  html.div({
+    className: 'rform-main'
   }, [
     html.form({
       className: 'rform-form'

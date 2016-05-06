@@ -9,6 +9,7 @@ import * as Modal from './common/modal';
 import {cursor} from './common/cursor';
 import * as ClassName from './common/classname';
 import {compose, constant} from './lang/functional';
+import * as RecipesForm from './recipes/form';
 import * as Recipe from './recipe';
 
 const DB = new PouchDB(Config.db_local_recipes);
@@ -20,6 +21,7 @@ const ORIGIN = Config.db_origin_recipes;
 // Actions
 
 const ModalAction = tag('Modal');
+const RecipesFormAction = tag('RecipesForm');
 
 // An action representing "no further action".
 const NoOp = constant({
@@ -47,23 +49,33 @@ const ByID = id => action =>
 
 // Model, update and init
 
-// Create new recipes model
-const create = recipes => ({
-  isOpen: false,
-  // Build an array of ordered recipe IDs
-  order: orderByID(recipes),
-  // Index all recipes by ID
-  entries: indexByID(recipes)
-});
+// Restore recipes in model from recipes array
+const restore = (model, recipes) =>
+  merge(model, {
+    // Build an array of ordered recipe IDs
+    order: orderByID(recipes),
+    // Index all recipes by ID
+    entries: indexByID(recipes)
+  });
 
-export const init = () =>
-  [
-    create([]),
+export const init = () => {
+  const [recipesForm, recipesFormFx] = RecipesForm.init();
+  return [
+    {
+      recipesForm,
+      isOpen: false,
+      // Build an array of ordered recipe IDs
+      order: [],
+      // Index all recipes by ID
+      entries: {}
+    },
     Effects.batch([
+      recipesFormFx,
       Effects.receive(RequestRestore),
       Database.sync(DB, ORIGIN)
     ])
   ];
+};
 
 const updateModal = cursor({
   update: Modal.update,
@@ -105,7 +117,7 @@ export const update = (model, action) =>
   action.type === 'RequestRestore' ?
   [model, Database.restore(DB)] :
   action.type === 'RespondRestore' ?
-  [create(action.value), Effects.none] :
+  [restore(model, action.value), Effects.none] :
   // When sync completes, request in-memory restore from local db
   action.type === 'CompleteSync' ?
   [model, Effects.receive(RequestRestore)] :
@@ -118,11 +130,12 @@ export const update = (model, action) =>
   Unknown.update(model, action);
 
 export const view = (model, address) =>
-  html.div({
+  html.dialog({
     className: ClassName.create({
       'modal-main': true,
       'modal-main-close': !model.isOpen
-    })
+    }),
+    open: (model.isOpen ? 'open' : void(0))
   }, [
     html.header({
       className: 'modal-header'
@@ -141,5 +154,11 @@ export const view = (model, address) =>
         model.entries[id],
         forward(address, ByID(id))
       )))
-    ])
+    ]),
+    thunk(
+      'recipes-form',
+      RecipesForm.view,
+      model.recipesForm,
+      forward(address, RecipesFormAction)
+    )
   ]);
