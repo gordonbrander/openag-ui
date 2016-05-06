@@ -267,8 +267,10 @@ dialog {
   width: 72px;
 }
 
-.recipes-main-close {
-  display: none;
+.recipes-main {
+  /* Contain floats */
+  padding: 16px;
+  overflow: hidden;
 }
 
 /* Sensors
@@ -308,11 +310,12 @@ dialog {
 ----------------------------------------------------------------------------- */
 
 .recipe {
-  margin: 0;
-  padding: 24px;
-}
-
-.recipe:nth-child(even) {
-  background-color: #EDEDED;
+  background: #FFFFFF;
+  border-radius: 2px;
+  float: left;
+  margin: 16px;
+  width: 336px;
+  height: 224px;
+  box-shadow: 0px 0px 2px 0px rgba(0,0,0,0.12), 0px 1px 2px 0px rgba(0,0,0,0.24);
 }
 
