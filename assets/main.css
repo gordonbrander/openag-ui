@@ -11,6 +11,14 @@ Don't:
 
 - Leak styles
 - Style tags directly (except to reset styles)
+
+Grid:
+
+Everything happens on a 4px grid. If possible, favor increments of:
+
+    8px
+    24px
+    48px
 */
 
 html {
@@ -140,15 +148,15 @@ dialog {
   background: #fff;
   border-radius: 10px;
   box-shadow: 0 5px 50px rgba(0,0,0,0.25);
-  left: 10vw;
+  left: calc(50% - (768px/2));
   position: absolute;
   top: 10vh;
   height: 80vh;
-  width: 80vw;
+  width: 768px;
   overflow: hidden;
   transition:
     opacity 200ms ease-out,
-    transform 200ms ease-out;
+    transform 500ms cubic-bezier(0.165, 0.840, 0.440, 1.000);
   display: block;
   opacity: 1;
   pointer-events: all;
@@ -157,7 +165,7 @@ dialog {
 .rform-main-close {
   display: block;
   opacity: 0;
-  transform: scale(0.95);
+  transform: translateY(10vh);
   pointer-events: none;
 }
 
