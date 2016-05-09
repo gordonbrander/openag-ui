@@ -6,16 +6,18 @@ import * as Unknown from '../common/unknown';
 import {merge, tag, batch} from '../common/prelude';
 import {cursor} from '../common/cursor';
 import * as ClassName from '../common/classname';
-import * as Modal from '../common/modal';
 import * as Textarea from '../common/textarea';
 import * as Recipes from '../recipes';
 
 // Action tagging functions
 
 const TextareaAction = tag('Textarea');
-const ModalAction = tag('Modal');
 
 // Actions
+
+export const Back = {
+  type: 'Back'
+};
 
 // Submitting the form
 export const Submit = recipe => ({
@@ -32,9 +34,6 @@ export const Submitted = recipe => ({
 export const FailRecipeParse = {
   type: 'FailRecipeParse'
 };
-
-export const Open = ModalAction(Modal.Open);
-export const Close = ModalAction(Modal.Close);
 
 export const Cancel = {
   type: 'Cancel'
@@ -72,17 +71,6 @@ export const submit = (model, recipeJSON) => {
   }
 }
 
-const cancel = model =>
-  batch(update, model, [
-    Clear,
-    Close
-  ]);
-
-const updateModal = cursor({
-  tag: ModalAction,
-  update: Modal.update
-});
-
 const updateTextarea = cursor({
   get: model => model.textarea,
   set: (model, textarea) => merge(model, {textarea}),
@@ -93,40 +81,43 @@ const updateTextarea = cursor({
 export const update = (model, action) =>
   action.type === 'Textarea' ?
   updateTextarea(model, action.source) :
-  action.type === 'Modal' ?
-  updateModal(model, action.source) :
   action.type === 'Submit' ?
   submit(model, action.recipe) :
-  action.type === 'Cancel' ?
-  cancel(model) :
   Unknown.update(model, action);
 
-const viewTextArea = Textarea.view('rform-textarea', 'rform-textarea');
+const viewTextArea = Textarea.view('rform-textarea', 'txt-textarea');
 
 const nil = void(0);
 
-export const view = (model, address) =>
-  html.dialog({
+export const view = (model, address, isActive) =>
+  html.div({
     className: ClassName.create({
-      'rform-main': true,
-      'rform-main-close': !model.isOpen
-    }),
-    open: (model.isOpen ? 'open' : nil)
+      'panel-main': true,
+      'panel-main-close': !isActive
+    })
   }, [
-    html.form({
-      className: 'rform-form'
+    html.header({
+      className: 'panel-header'
     }, [
-      thunk(
-        'textarea',
-        viewTextArea,
-        model.textarea,
-        forward(address, TextareaAction)
-      ),
-      html.footer({
-        className: 'rform-footer',
+      html.h1({
+        className: 'panel-title'
+      }, [
+        // @TODO localize this
+        'Import Recipe'
+      ]),
+      html.div({
+        className: 'panel-nav-left'
+      }, [
+        html.a({
+          className: 'recipes-back-icon',
+          onClick: () => address(Back)
+        })
+      ]),
+      html.div({
+        className: 'panel-nav-right'
       }, [
         html.button({
-          className: 'btn-primary',
+          className: 'btn-panel',
           type: 'submit',
           onClick: (event) => {
             // @TODO create a proper input module instead of kludging this in a
@@ -139,17 +130,26 @@ export const view = (model, address) =>
             address(Submit(el.value));
           }
         }, [
-          'Create'
-        ]),
-        html.button({
-          className: 'btn-secondary',
-          type: 'cancel',
-          onClick: (event) => {
-            event.preventDefault();
-            address(Cancel);
-          }
+          // @TODO localize this
+          'Save'
+        ])
+      ])
+    ]),
+    html.div({
+      className: 'panel-content'
+    }, [
+      html.div({
+        className: 'rform-main'
+      }, [
+        html.form({
+          className: 'rform-form'
         }, [
-          'Cancel'
+          thunk(
+            'textarea',
+            viewTextArea,
+            model.textarea,
+            forward(address, TextareaAction)
+          ),
         ])
       ])
     ])

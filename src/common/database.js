@@ -2,35 +2,32 @@
 
 import {Effects, Task} from 'reflex';
 import * as Result from '../common/result';
-import {compose} from '../lang/functional';
+import {compose, constant} from '../lang/functional';
 
-export const RequestPut = value => ({
-  type: 'RequestPut',
+export const Put = value => ({
+  type: 'Put',
   value
 })
 
-export const RespondPut = value => ({
-  type: 'RespondPut',
-  value
+// Apologies for the silly name
+export const Putted = result => ({
+  type: 'Putted',
+  result
 });
 
-export const FailPut = error => ({
-  type: 'FailPut',
-  error
-});
-
-// Create an effect to put data to a PouchDB
-// @TODO probably want readFail to keep a pointer to recipe so we can
-// request a re-put via effect.
-export const put = (db, doc) =>
+export const DoPut = (db, doc) =>
   Effects.task(new Task((succeed, fail) => {
+    const alwaysDoc = constant(doc);
     db
       .put(doc)
       .then(
-        compose(succeed, RespondPut),
-        compose(fail, FailPut)
+          compose(succeed, Putted, Result.ok, alwaysDoc),
+          compose(succeed, Putted, Result.error)
       );
   }));
+
+export const put = (model, db, doc) =>
+  [model, DoPut(db, doc)];
 
 // Request a restore from database.
 export const RequestRestore = {

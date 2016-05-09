@@ -5,7 +5,6 @@ import {cursor} from './common/cursor';
 import * as AppNav from './app/nav';
 import * as EnvironmentalDataPoint from './environmental-data-point';
 import * as Recipes from './recipes';
-import * as RecipeForm from './recipe/form';
 import * as Overlay from './overlay';
 
 // Action tagging functions
@@ -13,32 +12,29 @@ import * as Overlay from './overlay';
 const RecipesAction = tag('Recipes');
 const EnvironmentalDataPointAction = tag('EnvironmentalDataPoint');
 
+const OpenRecipes = RecipesAction(Recipes.Open);
+const CloseRecipes = RecipesAction(Recipes.Close);
+
+const EnterRecipesMode = {
+  type: 'EnterRecipesMode'
+};
+
+const ExitRecipesMode = {
+  type: 'ExitRecipesMode'
+};
+
 const OverlayAction = action =>
   action.type === 'Click' ?
-  ExitAddRecipe :
+  ExitRecipesMode :
   tagged('Overlay', action);
 
 const AppNavAction = action =>
-  action.type === 'RequestNewRecipe' ?
-  EnterAddRecipe :
-  action.type === 'Selected' ?
-  RequestMode(action.value) :
+  action.type === 'RequestRecipes' ?
+  EnterRecipesMode :
   tagged('AppNav', action);
-
-const RecipeFormAction = action =>
-  action.type === 'Submitted' ?
-  CreateRecipe(action.recipe) :
-  // We intercept cancel actions and send a "cancel whole form modal" action
-  // instead.
-  action.type === 'Cancel' ?
-  CancelAddRecipe :
-  tagged('RecipeForm', action);
 
 // Actions
 
-const RequestRecipePut = recipe => RecipesAction(Recipes.RequestPut(recipe));
-const OpenRecipeForm = RecipeFormAction(RecipeForm.Open);
-const CloseRecipeForm = RecipeFormAction(RecipeForm.Close);
 const OpenOverlay = OverlayAction(Overlay.Open);
 const CloseOverlay = OverlayAction(Overlay.Close);
 
@@ -60,11 +56,6 @@ const CancelAddRecipe = {
   type: 'CancelAddRecipe'
 };
 
-// Cancels the RecipeForm
-const CancelRecipeForm = {
-  type: 'CancelRecipeForm'
-};
-
 const RequestMode = value => ({
   type: 'RequestMode',
   value
@@ -75,7 +66,6 @@ const RequestMode = value => ({
 export const init = () => {
   const [environmentalDataPoint, environmentalDataPointFx] =
     EnvironmentalDataPoint.init();
-  const [recipeForm, recipeFormFx] = RecipeForm.init();
   const [recipes, recipesFx] = Recipes.init();
   const [appNav, appNavFx] = AppNav.init();
   const [overlay, overlayFx] = Overlay.init();
@@ -83,14 +73,12 @@ export const init = () => {
   return [
     {
       environmentalDataPoint,
-      recipeForm,
       recipes,
       appNav,
       overlay
     },
     Effects.batch([
       environmentalDataPointFx.map(EnvironmentalDataPointAction),
-      recipeFormFx.map(RecipeFormAction),
       recipesFx.map(RecipesAction),
       appNavFx.map(AppNavAction),
       overlayFx.map(OverlayAction)
@@ -112,13 +100,6 @@ const updateRecipes = cursor({
   tag: RecipesAction
 });
 
-const updateRecipeForm = cursor({
-  get: model => model.recipeForm,
-  set: (model, recipeForm) => merge(model, {recipeForm}),
-  update: RecipeForm.update,
-  tag: RecipeFormAction
-});
-
 const updateEnvironmentalDataPoint = cursor({
   get: model => model.environmentalDataPoint,
   set: (model, environmentalDataPoint) => merge(model, {environmentalDataPoint}),
@@ -133,58 +114,16 @@ const updateOverlay = cursor({
   tag: OverlayAction
 });
 
-
-const enterAddRecipe = model =>
+const enterRecipesMode = model =>
   batch(update, model, [
-    OpenRecipeForm,
+    OpenRecipes,
     OpenOverlay
   ]);
 
-const exitAddRecipe = model =>
+const exitRecipesMode = model =>
   batch(update, model, [
-    CloseRecipeForm,
+    CloseRecipes,
     CloseOverlay
-  ]);
-
-const cancelAddRecipe = model =>
-  batch(update, model, [
-    CancelRecipeForm,
-    CloseOverlay
-  ]);
-
-const requestMode = (model, mode) => {
-  const [environmentalDataPoint, environmentalDataPointFx] =
-    EnvironmentalDataPoint.update(
-      model.environmentalDataPoint,
-      (
-        mode === 'recipe' ?
-        EnvironmentalDataPoint.Open :
-        EnvironmentalDataPoint.Close
-      )
-    );
-  const [recipes, recipesFx] = Recipes.update(
-    model.recipes,
-    (
-      mode === 'library' ?
-      Recipes.Open :
-      Recipes.Close
-    )
-  );
-  return [
-    merge(model, {
-      environmentalDataPoint,
-      recipes
-    }),
-    Effects.batch([
-      environmentalDataPointFx.map(EnvironmentalDataPointAction),
-      recipesFx.map(RecipesAction)
-    ])
-  ];
-}
-
-const createRecipe = (model, recipe) =>
-  batch(update, model, [
-    RequestRecipePut(recipe)
   ]);
 
 export const update = (model, action) =>
@@ -193,25 +132,15 @@ export const update = (model, action) =>
   updateEnvironmentalDataPoint(model, action.source) :
   action.type === 'Recipes' ?
   updateRecipes(model, action.source) :
-  action.type === 'RecipeForm' ?
-  updateRecipeForm(model, action.source) :
   action.type === 'AppNav' ?
   updateAppNav(model, action.source) :
   action.type === 'Overlay' ?
   updateOverlay(model, action.source) :
   // Specialized update functions
-  action.type === 'EnterAddRecipe' ?
-  enterAddRecipe(model) :
-  action.type === 'ExitAddRecipe' ?
-  exitAddRecipe(model) :
-  action.type === 'CancelAddRecipe' ?
-  cancelAddRecipe(model) :
-  action.type === 'CancelRecipeForm' ?
-  updateRecipeForm(model, RecipeForm.Cancel) :
-  action.type === 'CreateRecipe' ?
-  createRecipe(model, action.recipe) :
-  action.type === 'RequestMode' ?
-  requestMode(model, action.value) :
+  action.type === 'EnterRecipesMode' ?
+  enterRecipesMode(model) :
+  action.type === 'ExitRecipesMode' ?
+  exitRecipesMode(model) :
   Unknown.update(model, action);
 
 export const view = (model, address) => html.div({
@@ -222,7 +151,6 @@ export const view = (model, address) => html.div({
     model.environmentalDataPoint,
     forward(address, EnvironmentalDataPointAction)
   ),
-  Recipes.view(model.recipes, forward(address, RecipesAction)),
   Overlay.view(model.overlay, forward(address, OverlayAction)),
-  RecipeForm.view(model.recipeForm, forward(address, RecipeFormAction))
+  Recipes.view(model.recipes, forward(address, RecipesAction))
 ]);

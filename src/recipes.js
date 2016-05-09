@@ -4,10 +4,12 @@ import PouchDB from 'pouchdb';
 import * as Database from './common/database';
 import {orderByID, indexByID, add} from './common/indexed';
 import * as Unknown from './common/unknown';
-import {merge} from './common/prelude';
+import {merge, tag, tagged} from './common/prelude';
 import * as Modal from './common/modal';
+import {cursor} from './common/cursor';
 import * as ClassName from './common/classname';
 import {compose, constant} from './lang/functional';
+import * as RecipesForm from './recipes/form';
 import * as Recipe from './recipe';
 
 const DB = new PouchDB(Config.db_local_recipes);
@@ -17,6 +19,15 @@ window.RecipesDB = DB;
 const ORIGIN = Config.db_origin_recipes;
 
 // Actions and tagging functions
+
+const ModalAction = tag('Modal');
+
+const RecipesFormAction = action =>
+  action.type === 'Back' ?
+  Activate(null) :
+  action.type === 'Submitted' ?
+  Put(action.recipe) :
+  tagged('RecipesForm', action);
 
 const RecipeAction = (id, action) =>
   ({
@@ -29,6 +40,17 @@ const RecipeAction = (id, action) =>
 const ByID = id => action =>
   RecipeAction(id, action);
 
+export const RequestRestore = Database.RequestRestore;
+export const Put = Database.Put;
+
+export const Open = ModalAction(Modal.Open);
+export const Close = ModalAction(Modal.Close);
+
+const Activate = id => ({
+  type: 'Activate',
+  id
+});
+
 // An action representing "no further action".
 const NoOp = {
   type: 'NoOp'
@@ -36,31 +58,48 @@ const NoOp = {
 
 const AlwaysNoOp = constant(NoOp);
 
-export const RequestRestore = Database.RequestRestore;
-export const RequestPut = Database.RequestPut;
-
-export const Open = Modal.Open;
-export const Close = Modal.Close;
-
 // Model, update and init
 
-// Create new recipes model
-const create = recipes => ({
-  isOpen: false,
-  // Build an array of ordered recipe IDs
-  order: orderByID(recipes),
-  // Index all recipes by ID
-  entries: indexByID(recipes)
-});
+// Restore recipes in model from recipes array
+const restore = (model, recipes) =>
+  merge(model, {
+    // Build an array of ordered recipe IDs
+    order: orderByID(recipes),
+    // Index all recipes by ID
+    entries: indexByID(recipes)
+  });
 
-export const init = () =>
-  [
-    create([]),
+export const init = () => {
+  const [recipesForm, recipesFormFx] = RecipesForm.init();
+  return [
+    {
+      active: null,
+      recipesForm,
+      isOpen: false,
+      // Build an array of ordered recipe IDs
+      order: [],
+      // Index all recipes by ID
+      entries: {}
+    },
     Effects.batch([
+      recipesFormFx,
       Effects.receive(RequestRestore),
       Database.DoSync(DB, ORIGIN)
     ])
   ];
+};
+
+const updateModal = cursor({
+  update: Modal.update,
+  tag: ModalAction
+});
+
+const updateRecipesForm = cursor({
+  get: model => model.recipesForm,
+  set: (model, recipesForm) => merge(model, {recipesForm}),
+  update: RecipesForm.update,
+  tag: RecipesFormAction
+});
 
 const updateByID = (model, id, action) => {
   if (model.order.indexOf(id) < 0) {
@@ -88,44 +127,94 @@ const syncedError = model =>
   update(model, NoOp);
 
 export const update = (model, action) =>
+  action.type === 'RecipesForm' ?
+  updateRecipesForm(model, action.source) :
+  action.type === 'Modal' ?
+  updateModal(model, action.source) :
   action.type === 'NoOp' ?
   [model, Effects.none] :
-  action.type === 'RequestPut' ?
-  [
-    add(model, action.value),
-    Database.put(DB, action.value)
-  ] :
-  // Swallow RespondPut for now. It just indicates our local db write
-  // was successful.
-  action.type === 'RespondPut' ?
-  [model, Effects.none] :
+  action.type === 'Put' ?
+  Database.put(model, DB, action.value) :
+  action.type === 'Putted' ?
+  (
+    action.result.isOk ?
+    [add(model, action.result.value), Effects.none] :
+    // @TODO retry
+    [model, Effects.none]
+  ) :
   action.type === 'RequestRestore' ?
   [model, Database.restore(DB)] :
   action.type === 'RespondRestore' ?
-  [create(action.value), Effects.none] :
+  [restore(model, action.value), Effects.none] :
+  action.type === 'Activate' ?
+  [merge(model, {active: action.id}), Effects.none] :
   action.type === 'Synced' ?
   (
     action.result.isOk ?
     syncedOk(model) :
     syncedError(model)
   ) :
-  action.type === 'Open' ?
-  Modal.open(model) :
-  action.type === 'Close' ?
-  Modal.close(model) :
   action.type === 'Recipe' ?
   updateByID(model, action.id, action.source) :
   Unknown.update(model, action);
 
 export const view = (model, address) =>
-  html.div({
+  html.dialog({
     className: ClassName.create({
-      'recipes-main': true,
-      'recipes-main-close': !model.isOpen
-    })
-  }, model.order.map(id => thunk(
-    id,
-    Recipe.view,
-    model.entries[id],
-    forward(address, ByID(id))
-  )));
+      'modal-main': true,
+      'modal-main-close': !model.isOpen
+    }),
+    open: (model.isOpen ? 'open' : void(0))
+  }, [
+    html.div({
+      className: 'panels-main'
+    }, [
+      html.div({
+        className: ClassName.create({
+          'panel-main': true,
+          'panel-main-close': model.active !== null
+        })
+      }, [
+        html.header({
+          className: 'panel-header'
+        }, [
+          html.h1({
+            className: 'panel-title'
+          }, [
+            // @TODO internationalize this
+            'Recipes'
+          ]),
+          html.div({
+            className: 'panel-nav-right'
+          }, [
+            html.a({
+              className: 'recipes-create-icon',
+              onClick: () => address(Activate('form'))
+            })
+          ])
+        ]),
+        html.div({
+          className: 'panel-content'
+        }, [
+          html.div({
+            className: ClassName.create({
+              'recipes-main': true,
+              'recipes-main-close': !model.isOpen
+            })
+          }, model.order.map(id => thunk(
+            id,
+            Recipe.view,
+            model.entries[id],
+            forward(address, ByID(id))
+          )))
+        ])
+      ]),
+      thunk(
+        'recipes-form',
+        RecipesForm.view,
+        model.recipesForm,
+        forward(address, RecipesFormAction),
+        model.active === 'form'
+      )
+    ])
+  ]);
