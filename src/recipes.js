@@ -26,7 +26,7 @@ const RecipesFormAction = action =>
   action.type === 'Back' ?
   Activate(null) :
   action.type === 'Submitted' ?
-  RequestPut(action.recipe) :
+  Put(action.recipe) :
   tagged('RecipesForm', action);
 
 const RecipeAction = (id, action) =>
@@ -41,7 +41,7 @@ const ByID = id => action =>
   RecipeAction(id, action);
 
 export const RequestRestore = Database.RequestRestore;
-export const RequestPut = Database.RequestPut;
+export const Put = Database.Put;
 
 export const Open = ModalAction(Modal.Open);
 export const Close = ModalAction(Modal.Close);
@@ -133,15 +133,15 @@ export const update = (model, action) =>
   updateModal(model, action.source) :
   action.type === 'NoOp' ?
   [model, Effects.none] :
-  action.type === 'RequestPut' ?
-  [
-    add(model, action.value),
-    Database.put(DB, action.value)
-  ] :
-  // Swallow RespondPut for now. It just indicates our local db write
-  // was successful.
-  action.type === 'RespondPut' ?
-  [model, Effects.none] :
+  action.type === 'Put' ?
+  Database.put(model, DB, action.value) :
+  action.type === 'Putted' ?
+  (
+    action.result.isOk ?
+    [add(model, action.result.value), Effects.none] :
+    // @TODO retry
+    [model, Effects.none]
+  ) :
   action.type === 'RequestRestore' ?
   [model, Database.restore(DB)] :
   action.type === 'RespondRestore' ?
