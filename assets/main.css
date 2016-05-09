@@ -104,23 +104,39 @@ dialog {
   background: #5ADA00;
   left: 0;
   position: absolute;
-  width: 256px;
-  height: 72px;
+  width: calc(256px - (24px * 2));
+  height: 32px;
+  padding: calc((72px - 32px) / 2) 24px;
 }
 
-.nav-new-recipe {
-  background: url(./sprite.png) 0 0px no-repeat;
+.nav-current-recipe-label {
+  display: block;
+  font-size: 10px;
+  font-weight: bold;
+  line-height: 16px;
+  text-transform: uppercase;
+}
+
+.nav-current-recipe-title {
+  display: block;
+  font-size: 14px;
+  font-weight: bold;
+  line-height: 16px;
+}
+
+.nav-dashboard-icon {
+  background: url(./sprite.png) 0 -300px no-repeat;
   background-size: 100px auto;
   cursor: pointer;
   display: block;
-  height: 84px;
-  width: 84px;
+  height: 72px;
+  width: 72px;
+  left: 288px;
   position: absolute;
-  right: 0;
 }
 
-.nav-new-recipe:active {
-  background-position: 0 -100px;
+.nav-dashboard-icon-active {
+  background-position: 0 -400px;
 }
 
 /* Overlay

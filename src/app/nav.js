@@ -7,21 +7,11 @@ const RequestRecipes = {
   type: 'RequestRecipes'
 };
 
-const RequestNewRecipe = {
-  type: 'RequestNewRecipe'
-};
-
 export const init = () => [
   {
-    selected: 'recipe',
     recipe: {
-      id: 'recipe',
-      title: 'Recipe'
+      title: 'Salinas Valley in Fall'
     },
-    library: {
-      id: 'library',
-      title: 'Library'
-    }
   },
   Effects.none
 ];
@@ -39,10 +29,23 @@ export const view = (model, address) =>
       html.a({
         className: 'nav-current-recipe',
         onClick: () => address(RequestRecipes)
-      }),
+      }, [
+        html.span({
+          className: 'nav-current-recipe-label'
+        }, [
+          'Current Recipe'
+        ]),
+        html.span({
+          className: 'nav-current-recipe-title'
+        }, [
+          model.recipe.title
+        ])
+      ]),
       html.a({
-        className: 'nav-new-recipe',
-        onClick: () => address(RequestNewRecipe)
+        className: ClassName.create({
+          'nav-dashboard-icon': true,
+          'nav-dashboard-icon-active': true
+        })
       })
     ])
   ]);
