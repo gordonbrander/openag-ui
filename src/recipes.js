@@ -26,7 +26,7 @@ const RecipesFormAction = action =>
   action.type === 'Back' ?
   Activate(null) :
   action.type === 'Submitted' ?
-  RequestPut(action.value) :
+  RequestPut(action.recipe) :
   tagged('RecipesForm', action);
 
 // An action representing "no further action".
