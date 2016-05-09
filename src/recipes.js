@@ -166,6 +166,12 @@ export const view = (model, address) =>
         html.header({
           className: 'panel-header'
         }, [
+          html.h1({
+            className: 'panel-title'
+          }, [
+            // @TODO internationalize this
+            'Recipes'
+          ]),
           html.div({
             className: 'panel-nav-right'
           }, [

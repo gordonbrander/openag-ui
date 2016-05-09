@@ -263,10 +263,19 @@ dialog {
 ----------------------------------------------------------------------------- */
 
 .recipes-create-icon {
-  background: #fff;
+  background: url(sprite.png) no-repeat 0 -700px;
+  background-size: 100px auto;
   display: block;
-  height: 72px;
-  width: 72px;
+  height: 56px;
+  width: 56px;
+}
+
+.recipes-back-icon {
+  background: url(sprite.png) no-repeat 0 -200px;
+  background-size: 100px auto;
+  display: block;
+  height: 56px;
+  width: 56px;
 }
 
 .recipes-main {

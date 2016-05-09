@@ -109,7 +109,7 @@ export const view = (model, address, isActive) =>
         className: 'panel-nav-left'
       }, [
         html.a({
-          className: 'recipes-create-icon',
+          className: 'recipes-back-icon',
           onClick: () => address(Back)
         })
       ]),
