@@ -25,6 +25,8 @@ const ModalAction = tag('Modal');
 const RecipesFormAction = action =>
   action.type === 'Back' ?
   Activate(null) :
+  action.type === 'Submitted' ?
+  RequestPut(action.value) :
   tagged('RecipesForm', action);
 
 // An action representing "no further action".
