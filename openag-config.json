@@ -1,9 +1,9 @@
 {
   "debug": true,
   "db_local_environmental_data_point": "environmental_data_point",
-  "db_origin_environmental_data_point": "http://18.133.5.166:5984/environmental_data_point",
+  "db_origin_environmental_data_point": "http://18.85.54.200:5984/environmental_data_point",
   "db_upstream_environmental_data_point": "http://example.com:5984/environmental_data_point",
   "db_local_recipes": "recipes",
-  "db_origin_recipes": "http://18.133.5.166:5984/recipes",
+  "db_origin_recipes": "http://18.85.54.200:5984/recipes",
   "db_upstream_recipes": "http://example.com:5984/recipes"
 }

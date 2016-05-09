@@ -64,7 +64,6 @@ const RequestMode = value => ({
 // Init and update
 
 export const init = () => {
-    EnvironmentalDataPoint.init();
   const [environmentalDataPoint, environmentalDataPointFx] =
     EnvironmentalDataPoint.init();
   const [recipes, recipesFx] = Recipes.init();

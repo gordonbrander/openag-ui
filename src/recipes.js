@@ -1,7 +1,7 @@
 import {html, forward, Effects, Task, thunk} from 'reflex';
 import * as Config from '../openag-config.json';
 import PouchDB from 'pouchdb';
-import * as Database from './common/db';
+import * as Database from './common/database';
 import {orderByID, indexByID, add} from './common/indexed';
 import * as Unknown from './common/unknown';
 import {merge, tag, tagged} from './common/prelude';
@@ -18,7 +18,7 @@ window.RecipesDB = DB;
 
 const ORIGIN = Config.db_origin_recipes;
 
-// Actions
+// Actions and tagging functions
 
 const ModalAction = tag('Modal');
 
@@ -29,10 +29,16 @@ const RecipesFormAction = action =>
   RequestPut(action.recipe) :
   tagged('RecipesForm', action);
 
-// An action representing "no further action".
-const NoOp = constant({
-  type: 'NoOp'
-});
+const RecipeAction = (id, action) =>
+  ({
+    type: 'Recipe',
+    id,
+    source: action
+  });
+
+// @TODO figure out how to generalize this.
+const ByID = id => action =>
+  RecipeAction(id, action);
 
 export const RequestRestore = Database.RequestRestore;
 export const RequestPut = Database.RequestPut;
@@ -45,18 +51,12 @@ const Activate = id => ({
   id
 });
 
-// Action tagging functions
+// An action representing "no further action".
+const NoOp = {
+  type: 'NoOp'
+};
 
-const RecipeAction = (id, action) =>
-  ({
-    type: 'Recipe',
-    id,
-    source: action
-  });
-
-// @TODO figure out how to generalize this.
-const ByID = id => action =>
-  RecipeAction(id, action);
+const AlwaysNoOp = constant(NoOp);
 
 // Model, update and init
 
@@ -84,7 +84,7 @@ export const init = () => {
     Effects.batch([
       recipesFormFx,
       Effects.receive(RequestRestore),
-      Database.sync(DB, ORIGIN)
+      Database.DoSync(DB, ORIGIN)
     ])
   ];
 };
@@ -107,7 +107,7 @@ const updateByID = (model, id, action) => {
       model,
       Effects
         .task(Unknown.error(`model with id: ${id} is not found`))
-        .map(NoOp)
+        .map(AlwaysNoOp)
     ];
   }
   else {
@@ -118,6 +118,13 @@ const updateByID = (model, id, action) => {
     ];
   }
 }
+
+const syncedOk = model =>
+  update(model, RequestRestore);
+
+// @TODO do something with sync errors.
+const syncedError = model =>
+  update(model, NoOp);
 
 export const update = (model, action) =>
   action.type === 'RecipesForm' ?
@@ -139,11 +146,14 @@ export const update = (model, action) =>
   [model, Database.restore(DB)] :
   action.type === 'RespondRestore' ?
   [restore(model, action.value), Effects.none] :
-  // When sync completes, request in-memory restore from local db
-  action.type === 'CompleteSync' ?
-  [model, Effects.receive(RequestRestore)] :
   action.type === 'Activate' ?
   [merge(model, {active: action.id}), Effects.none] :
+  action.type === 'Synced' ?
+  (
+    action.result.isOk ?
+    syncedOk(model) :
+    syncedError(model)
+  ) :
   action.type === 'Recipe' ?
   updateByID(model, action.id, action.source) :
   Unknown.update(model, action);
