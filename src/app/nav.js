@@ -7,6 +7,10 @@ const RequestRecipes = {
   type: 'RequestRecipes'
 };
 
+export const ChangeRecipe = recipe => ({
+  type: 'ChangeRecipe'
+});
+
 export const init = () => [
   {
     recipe: {
@@ -17,6 +21,8 @@ export const init = () => [
 ];
 
 export const update = (model, action) =>
+  action.type === 'ChangeRecipe' ?
+  [merge(model, {recipe: action.recipe}), Effects.none] :
   Unknown.update(model, action);
 
 export const view = (model, address) =>
