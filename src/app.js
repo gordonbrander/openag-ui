@@ -3,14 +3,14 @@ import {merge, tagged, tag, batch} from './common/prelude';
 import * as Unknown from './common/unknown';
 import {cursor} from './common/cursor';
 import * as AppNav from './app/nav';
-import * as EnvironmentalDataPoint from './environmental-data-point';
+import * as EnvironmentalDataPoints from './environmental-data-points';
 import * as Recipes from './recipes';
 import * as Overlay from './overlay';
 
 // Action tagging functions
 
 const RecipesAction = tag('Recipes');
-const EnvironmentalDataPointAction = tag('EnvironmentalDataPoint');
+const EnvironmentalDataPointsAction = tag('EnvironmentalDataPoints');
 
 const OpenRecipes = RecipesAction(Recipes.Open);
 const CloseRecipes = RecipesAction(Recipes.Close);
@@ -65,7 +65,7 @@ const RequestMode = value => ({
 
 export const init = () => {
   const [environmentalDataPoint, environmentalDataPointFx] =
-    EnvironmentalDataPoint.init();
+    EnvironmentalDataPoints.init();
   const [recipes, recipesFx] = Recipes.init();
   const [appNav, appNavFx] = AppNav.init();
   const [overlay, overlayFx] = Overlay.init();
@@ -78,7 +78,7 @@ export const init = () => {
       overlay
     },
     Effects.batch([
-      environmentalDataPointFx.map(EnvironmentalDataPointAction),
+      environmentalDataPointFx.map(EnvironmentalDataPointsAction),
       recipesFx.map(RecipesAction),
       appNavFx.map(AppNavAction),
       overlayFx.map(OverlayAction)
@@ -100,11 +100,11 @@ const updateRecipes = cursor({
   tag: RecipesAction
 });
 
-const updateEnvironmentalDataPoint = cursor({
+const updateEnvironmentalDataPoints = cursor({
   get: model => model.environmentalDataPoint,
   set: (model, environmentalDataPoint) => merge(model, {environmentalDataPoint}),
-  update: EnvironmentalDataPoint.update,
-  tag: EnvironmentalDataPointAction
+  update: EnvironmentalDataPoints.update,
+  tag: EnvironmentalDataPointsAction
 });
 
 const updateOverlay = cursor({
@@ -128,8 +128,8 @@ const exitRecipesMode = model =>
 
 export const update = (model, action) =>
   // Cursor-based update functions
-  action.type === 'EnvironmentalDataPoint' ?
-  updateEnvironmentalDataPoint(model, action.source) :
+  action.type === 'EnvironmentalDataPoints' ?
+  updateEnvironmentalDataPoints(model, action.source) :
   action.type === 'Recipes' ?
   updateRecipes(model, action.source) :
   action.type === 'AppNav' ?
@@ -147,9 +147,9 @@ export const view = (model, address) => html.div({
   className: 'app-main'
 }, [
   AppNav.view(model.appNav, forward(address, AppNavAction)),
-  EnvironmentalDataPoint.view(
+  EnvironmentalDataPoints.view(
     model.environmentalDataPoint,
-    forward(address, EnvironmentalDataPointAction)
+    forward(address, EnvironmentalDataPointsAction)
   ),
   Overlay.view(model.overlay, forward(address, OverlayAction)),
   Recipes.view(model.recipes, forward(address, RecipesAction))
