@@ -139,7 +139,11 @@ const exitRecipesMode = model =>
   ]);
 
 const recipeActivated = (model, recipe) =>
-  update(model, ChangeAppNavRecipe(recipe))
+  batch(update, model, [
+    ChangeAppNavRecipe(recipe),
+    CloseRecipes,
+    CloseOverlay
+  ]);
 
 export const update = (model, action) =>
   // Cursor-based update functions
