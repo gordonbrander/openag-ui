@@ -6,10 +6,15 @@ import * as AppNav from './app/nav';
 import * as EnvironmentalDataPoints from './environmental-data-points';
 import * as Recipes from './recipes';
 import * as Overlay from './overlay';
+import {compose} from './lang/functional';
 
 // Action tagging functions
 
-const RecipesAction = tag('Recipes');
+const RecipesAction = action =>
+  action.type === 'Activated' ?
+  RecipeActivated(action.value) :
+  tagged('Recipes', action);
+
 const EnvironmentalDataPointsAction = tag('EnvironmentalDataPoints');
 
 const OpenRecipes = RecipesAction(Recipes.Open);
@@ -34,6 +39,11 @@ const AppNavAction = action =>
   tagged('AppNav', action);
 
 // Actions
+
+const RecipeActivated = value => ({
+  type: 'RecipeActivated',
+  value
+});
 
 const OpenOverlay = OverlayAction(Overlay.Open);
 const CloseOverlay = OverlayAction(Overlay.Close);
@@ -60,6 +70,8 @@ const RequestMode = value => ({
   type: 'RequestMode',
   value
 });
+
+const ChangeAppNavRecipe = compose(AppNavAction, AppNav.ChangeRecipe);
 
 // Init and update
 
@@ -126,6 +138,9 @@ const exitRecipesMode = model =>
     CloseOverlay
   ]);
 
+const recipeActivated = (model, recipe) =>
+  update(model, ChangeAppNavRecipe(recipe))
+
 export const update = (model, action) =>
   // Cursor-based update functions
   action.type === 'EnvironmentalDataPoints' ?
@@ -137,6 +152,8 @@ export const update = (model, action) =>
   action.type === 'Overlay' ?
   updateOverlay(model, action.source) :
   // Specialized update functions
+  action.type === 'RecipeActivated' ?
+  recipeActivated(model, action.value) :
   action.type === 'EnterRecipesMode' ?
   enterRecipesMode(model) :
   action.type === 'ExitRecipesMode' ?

@@ -48,9 +48,14 @@ export const Put = Database.Put;
 export const Open = ModalAction(Modal.Open);
 export const Close = ModalAction(Modal.Close);
 
-const ActivateByID = id => ({
+export const ActivateByID = id => ({
   type: 'ActivateByID',
   id
+});
+
+export const Activated = value => ({
+  type: 'Activated',
+  value
 });
 
 const ActivatePanel = id => ({
@@ -135,8 +140,10 @@ const syncedError = model =>
   update(model, NoOp);
 
 // Activate recipe by id
-const activateByID = (model, id) =>
-  [merge(model, {active: id}), Effects.none];
+const activateByID = (model, id) => [
+  merge(model, {active: id}),
+  Effects.receive(Activated(merge({}, model.entries[id])))
+];
 
 const activatePanel = (model, id) =>
   [merge(model, {activePanel: id}), Effects.none];
