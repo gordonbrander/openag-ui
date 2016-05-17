@@ -7,8 +7,9 @@ const RequestRecipes = {
   type: 'RequestRecipes'
 };
 
-export const ChangeRecipe = recipe => ({
-  type: 'ChangeRecipe'
+export const ChangeRecipe = value => ({
+  type: 'ChangeRecipe',
+  value
 });
 
 export const init = () => [
@@ -22,8 +23,14 @@ export const init = () => [
 
 export const update = (model, action) =>
   action.type === 'ChangeRecipe' ?
-  [merge(model, {recipe: action.recipe}), Effects.none] :
+  [merge(model, {recipe: action.value}), Effects.none] :
   Unknown.update(model, action);
+
+const readTitle = model =>
+  typeof model.recipe.title === 'string' ?
+  model.recipe.title :
+  // @TODO localize this
+  'Untitled';
 
 export const view = (model, address) =>
   html.div({
@@ -44,7 +51,7 @@ export const view = (model, address) =>
         html.span({
           className: 'nav-current-recipe-title'
         }, [
-          model.recipe.title
+          readTitle(model)
         ])
       ]),
       html.a({

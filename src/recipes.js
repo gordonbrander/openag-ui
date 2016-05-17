@@ -24,12 +24,14 @@ const ModalAction = tag('Modal');
 
 const RecipesFormAction = action =>
   action.type === 'Back' ?
-  Activate(null) :
+  ActivatePanel(null) :
   action.type === 'Submitted' ?
   Put(action.recipe) :
   tagged('RecipesForm', action);
 
 const RecipeAction = (id, action) =>
+  action.type === 'Activate' ?
+  ActivateByID(id) :
   ({
     type: 'Recipe',
     id,
@@ -46,8 +48,18 @@ export const Put = Database.Put;
 export const Open = ModalAction(Modal.Open);
 export const Close = ModalAction(Modal.Close);
 
-const Activate = id => ({
-  type: 'Activate',
+export const ActivateByID = id => ({
+  type: 'ActivateByID',
+  id
+});
+
+export const Activated = value => ({
+  type: 'Activated',
+  value
+});
+
+const ActivatePanel = id => ({
+  type: 'ActivatePanel',
   id
 });
 
@@ -74,6 +86,7 @@ export const init = () => {
   return [
     {
       active: null,
+      activePanel: null,
       recipesForm,
       isOpen: false,
       // Build an array of ordered recipe IDs
@@ -126,6 +139,15 @@ const syncedOk = model =>
 const syncedError = model =>
   update(model, NoOp);
 
+// Activate recipe by id
+const activateByID = (model, id) => [
+  merge(model, {active: id}),
+  Effects.receive(Activated(merge({}, model.entries[id])))
+];
+
+const activatePanel = (model, id) =>
+  [merge(model, {activePanel: id}), Effects.none];
+
 export const update = (model, action) =>
   action.type === 'RecipesForm' ?
   updateRecipesForm(model, action.source) :
@@ -146,8 +168,10 @@ export const update = (model, action) =>
   [model, Database.restore(DB)] :
   action.type === 'RespondRestore' ?
   [restore(model, action.value), Effects.none] :
-  action.type === 'Activate' ?
-  [merge(model, {active: action.id}), Effects.none] :
+  action.type === 'ActivateByID' ?
+  activateByID(model, action.id) :
+  action.type === 'ActivatePanel' ?
+  activatePanel(model, action.id) :
   action.type === 'Synced' ?
   (
     action.result.isOk ?
@@ -172,7 +196,7 @@ export const view = (model, address) =>
       html.div({
         className: ClassName.create({
           'panel-main': true,
-          'panel-main-close': model.active !== null
+          'panel-main-close': model.activePanel !== null
         })
       }, [
         html.header({
@@ -189,7 +213,7 @@ export const view = (model, address) =>
           }, [
             html.a({
               className: 'recipes-create-icon',
-              onClick: () => address(Activate('form'))
+              onClick: () => address(ActivatePanel('form'))
             })
           ])
         ]),
@@ -214,7 +238,7 @@ export const view = (model, address) =>
         RecipesForm.view,
         model.recipesForm,
         forward(address, RecipesFormAction),
-        model.active === 'form'
+        model.activePanel === 'form'
       )
     ])
   ]);
