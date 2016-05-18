@@ -2,6 +2,7 @@
   "debug": true,
   "db_local_environmental_data_point": "environmental_data_point",
   "db_origin_environmental_data_point": "http://18.111.2.179:5984/environmental_data_point",
+  "db_origin_environmental_data_point_latest": "http://18.111.2.179:5984/environmental_data_point/_design/openag/_view/latest",
   "db_upstream_environmental_data_point": "http://example.com:5984/environmental_data_point",
   "db_local_recipes": "recipes",
   "db_origin_recipes": "http://18.111.2.179:5984/recipes",

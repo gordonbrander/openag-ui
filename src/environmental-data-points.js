@@ -5,6 +5,7 @@ import {merge, tagged, tag, batch} from './common/prelude';
 import * as ClassName from './common/classname';
 import {cursor} from './common/cursor';
 import * as Database from './common/database';
+import * as Request from './common/request';
 import * as Indexed from './common/indexed';
 import * as Unknown from './common/unknown';
 import * as Poll from './common/poll';
@@ -18,6 +19,7 @@ const DB = new PouchDB(Config.db_local_environmental_data_point);
 window.EnvironmentalDataPointDB = DB;
 
 const ORIGIN = Config.db_origin_environmental_data_point;
+const ORIGIN_LATEST = Config.db_origin_environmental_data_point_latest;
 const AIR_TEMPERATURE = 'air_temperature';
 const WATER_TEMPERATURE = 'water_temperature';
 
@@ -33,11 +35,13 @@ const isWaterTemperature = matcher('variable', WATER_TEMPERATURE);
 
 const PollAction = action =>
   action.type === 'Ping' ?
-  Pull :
+  Get(ORIGIN_LATEST) :
   tagged('Poll', action);
 
 const PongPoll = PollAction(Poll.Pong);
 const MissPoll = PollAction(Poll.Miss);
+
+const Get = Request.Get;
 
 const RequestRestore = Database.RequestRestore;
 const Pull = Database.Pull;
@@ -124,6 +128,22 @@ const restore = (model, environmentalDataPoints) =>
     AddManyWaterTemperatures(environmentalDataPoints.filter(isWaterTemperature))
   ]);
 
+const readDataPointFromRow = row => row.value;
+
+const gotOk = (model, record) =>
+  batch(update, model, [
+    AddManyAirTemperatures(
+      record.rows
+      .map(readDataPointFromRow)
+      .filter(dataPoint => dataPoint.variable === AIR_TEMPERATURE)
+    ),
+    AddManyWaterTemperatures(
+      record.rows
+      .map(readDataPointFromRow)
+      .filter(dataPoint => dataPoint.variable === WATER_TEMPERATURE)
+    )
+  ]);
+
 // Is the problem that I'm not mapping the returned effect?
 export const update = (model, action) =>
   action.type === 'AirTemperature' ?
@@ -132,6 +152,14 @@ export const update = (model, action) =>
   updateWaterTemperature(model, action.source) :
   action.type === 'Poll' ?
   updatePoll(model, action.source) :
+  action.type === 'Get' ?
+  Request.get(model, action.url) :
+  action.type === 'Got' ?
+  (
+    action.result.isOk ?
+    gotOk(model, action.result.value) :
+    [model, Effects.none]
+  ) :
   action.type === 'Pull' ?
   Database.pull(model, DB, ORIGIN) :
   action.type === 'Pulled' ?
