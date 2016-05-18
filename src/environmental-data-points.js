@@ -9,13 +9,25 @@ import * as Indexed from './common/indexed';
 import * as Unknown from './common/unknown';
 import * as Poll from './common/poll';
 import {compose} from './lang/functional';
-import * as AirTemperature from './environmental-data-point/air-temperature';
+import * as EnvironmentalDataPoint from './environmental-data-point';
+// @TODO do proper localization
+import * as LANG from './environmental-data-point/lang';
 
 const DB = new PouchDB(Config.db_local_environmental_data_point);
 // Export for debugging
 window.EnvironmentalDataPointDB = DB;
 
 const ORIGIN = Config.db_origin_environmental_data_point;
+const AIR_TEMPERATURE = 'air_temperature';
+const WATER_TEMPERATURE = 'water_temperature';
+
+// Matching functions
+
+const matcher = (key, value) => (object) =>
+  object[key] === value;
+
+const isAirTemperature = matcher('variable', AIR_TEMPERATURE);
+const isWaterTemperature = matcher('variable', WATER_TEMPERATURE);
 
 // Actions and action tagging functions
 
@@ -31,25 +43,43 @@ const RequestRestore = Database.RequestRestore;
 const Pull = Database.Pull;
 
 const AirTemperatureAction = tag('AirTemperature');
+const WaterTemperatureAction = tag('WaterTemperature');
 
 const AddManyAirTemperatures = compose(
   AirTemperatureAction,
-  AirTemperature.AddMany
+  EnvironmentalDataPoint.AddMany
+);
+
+const AddManyWaterTemperatures = compose(
+  WaterTemperatureAction,
+  EnvironmentalDataPoint.AddMany
 );
 
 // Init and update
 
 export const init = () => {
   const [poll, pollFx] = Poll.init();
-  const [airTemperature, airTemperatureFx] = AirTemperature.init();
+
+  const [airTemperature, airTemperatureFx] = EnvironmentalDataPoint.init(
+    AIR_TEMPERATURE,
+    LANG[AIR_TEMPERATURE]
+  );
+
+  const [waterTemperature, waterTemperatureFx] = EnvironmentalDataPoint.init(
+    WATER_TEMPERATURE,
+    LANG[WATER_TEMPERATURE]
+  );
+
   return [
     {
       poll,
-      airTemperature
+      airTemperature,
+      waterTemperature
     },
     Effects.batch([
       pollFx.map(PollAction),
       airTemperatureFx.map(AirTemperatureAction),
+      waterTemperatureFx.map(WaterTemperatureAction),
       // @TODO we should batch this into a Restore action that batches
       // Database.RequestRestore and Database.Pull.
       Effects.receive(RequestRestore),
@@ -68,8 +98,15 @@ const updatePoll = cursor({
 const updateAirTemperature = cursor({
   get: model => model.airTemperature,
   set: (model, airTemperature) => merge(model, {airTemperature}),
-  update: AirTemperature.update,
+  update: EnvironmentalDataPoint.update,
   tag: AirTemperatureAction
+});
+
+const updateWaterTemperature = cursor({
+  get: model => model.waterTemperature,
+  set: (model, waterTemperature) => merge(model, {waterTemperature}),
+  update: EnvironmentalDataPoint.update,
+  tag: WaterTemperatureAction
 });
 
 const pulledOk = model =>
@@ -81,18 +118,18 @@ const pulledOk = model =>
 const pulledError = model =>
   update(model, MissPoll);
 
-const isAirTemperature = dataPoint =>
-  dataPoint.variable === AirTemperature.variable;
-
 const restore = (model, environmentalDataPoints) =>
   batch(update, model, [
-    AddManyAirTemperatures(environmentalDataPoints.filter(isAirTemperature))
+    AddManyAirTemperatures(environmentalDataPoints.filter(isAirTemperature)),
+    AddManyWaterTemperatures(environmentalDataPoints.filter(isWaterTemperature))
   ]);
 
 // Is the problem that I'm not mapping the returned effect?
 export const update = (model, action) =>
   action.type === 'AirTemperature' ?
   updateAirTemperature(model, action.source) :
+  action.type === 'WaterTemperature' ?
+  updateWaterTemperature(model, action.source) :
   action.type === 'Poll' ?
   updatePoll(model, action.source) :
   action.type === 'Pull' ?
@@ -115,8 +152,14 @@ export const view = (model, address) =>
     className: 'dash-main'
   }, [
     thunk(
+      'water-temperature',
+      EnvironmentalDataPoint.view,
+      model.waterTemperature,
+      forward(address, WaterTemperatureAction)
+    ),
+    thunk(
       'air-temperature',
-      AirTemperature.view,
+      EnvironmentalDataPoint.view,
       model.airTemperature,
       forward(address, AirTemperatureAction)
     )
