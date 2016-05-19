@@ -1,20 +1,13 @@
-// Air temperature sensor
-
+// Generic template for environmental data points
 import {html, forward, Effects} from 'reflex';
-import {merge} from '../common/prelude';
-import * as Unknown from '../common/unknown';
-import {readName} from './util';
+import {merge} from './common/prelude';
+import * as Unknown from './common/unknown';
 
-const AIR_TEMPERATURE = 'water_temperature';
-
-// Export variable name for parent module to reference.
-export const variable = AIR_TEMPERATURE;
-
-// Type here means "sensor type".
-export const init = () => [
+// Provide variable name and title for module
+export const init = (variable, title) => [
   {
-    variable: AIR_TEMPERATURE,
-    title: readName(AIR_TEMPERATURE),
+    variable,
+    title,
     value: null
   },
   Effects.none
@@ -32,13 +25,16 @@ export const Add = value => ({
   value
 });
 
+const last = array =>
+  array.length > 0 ? array[array.length - 1] : array[0];
+
 export const update = (model, action) =>
   // Update current sensor value record from reading action.
   action.type === 'Add' ?
   [merge(model, {value: action.value}), Effects.none] :
   // @TODO merge these or create a rolling history?
   action.type === 'AddMany' ?
-  [merge(model, {value: action.value[action.value.length - 1]}), Effects.none] :
+  [merge(model, {value: last(action.value)}), Effects.none] :
   Unknown.update(model, action);
 
 // @TODO read C or F
@@ -64,7 +60,7 @@ export const view = (model, address) =>
     html.figcaption({
       className: 'sense-title'
     }, [
-      readName(model.variable)
+      model.title
     ]),
     html.div({
       className: 'sense-value'

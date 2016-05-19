@@ -25,7 +25,7 @@ module.exports = function (grunt) {
     },
     watch: {
       scripts: {
-        files: ["./src/**/*.js", 'openag-config.json'],
+        files: ["./src/**/*.js", './src/**/*.json', 'openag-config.json'],
         tasks: ["browserify"]
       }
     }

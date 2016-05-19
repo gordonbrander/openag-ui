@@ -4,56 +4,83 @@ import {html, forward, Effects, thunk} from 'reflex';
 import {merge, tagged, tag, batch} from './common/prelude';
 import * as ClassName from './common/classname';
 import {cursor} from './common/cursor';
-import * as Database from './common/database';
+import * as Request from './common/request';
 import * as Indexed from './common/indexed';
 import * as Unknown from './common/unknown';
 import * as Poll from './common/poll';
 import {compose} from './lang/functional';
-import * as AirTemperature from './environmental-data-point/air-temperature';
+import * as EnvironmentalDataPoint from './environmental-data-point';
+// @TODO do proper localization
+import * as LANG from './environmental-data-point/lang';
 
-const DB = new PouchDB(Config.db_local_environmental_data_point);
-// Export for debugging
-window.EnvironmentalDataPointDB = DB;
+const ORIGIN_LATEST = Config.db_origin_environmental_data_point_latest;
+const AIR_TEMPERATURE = 'air_temperature';
+const WATER_TEMPERATURE = 'water_temperature';
 
-const ORIGIN = Config.db_origin_environmental_data_point;
+// Matching functions
+
+const matcher = (key, value) => (object) =>
+  object[key] === value;
+
+const isAirTemperature = matcher('variable', AIR_TEMPERATURE);
+const isWaterTemperature = matcher('variable', WATER_TEMPERATURE);
 
 // Actions and action tagging functions
 
 const PollAction = action =>
   action.type === 'Ping' ?
-  Pull :
+  GetLatest :
   tagged('Poll', action);
 
 const PongPoll = PollAction(Poll.Pong);
 const MissPoll = PollAction(Poll.Miss);
 
-const RequestRestore = Database.RequestRestore;
-const Pull = Database.Pull;
+const GetLatest = Request.Get(ORIGIN_LATEST);
 
 const AirTemperatureAction = tag('AirTemperature');
+const WaterTemperatureAction = tag('WaterTemperature');
 
 const AddManyAirTemperatures = compose(
   AirTemperatureAction,
-  AirTemperature.AddMany
+  EnvironmentalDataPoint.AddMany
 );
+
+const AddManyWaterTemperatures = compose(
+  WaterTemperatureAction,
+  EnvironmentalDataPoint.AddMany
+);
+
+const Restore = value => ({
+  type: 'Restore',
+  value
+});
 
 // Init and update
 
 export const init = () => {
   const [poll, pollFx] = Poll.init();
-  const [airTemperature, airTemperatureFx] = AirTemperature.init();
+
+  const [airTemperature, airTemperatureFx] = EnvironmentalDataPoint.init(
+    AIR_TEMPERATURE,
+    LANG[AIR_TEMPERATURE]
+  );
+
+  const [waterTemperature, waterTemperatureFx] = EnvironmentalDataPoint.init(
+    WATER_TEMPERATURE,
+    LANG[WATER_TEMPERATURE]
+  );
+
   return [
     {
       poll,
-      airTemperature
+      airTemperature,
+      waterTemperature
     },
     Effects.batch([
       pollFx.map(PollAction),
       airTemperatureFx.map(AirTemperatureAction),
-      // @TODO we should batch this into a Restore action that batches
-      // Database.RequestRestore and Database.Pull.
-      Effects.receive(RequestRestore),
-      Effects.receive(Pull)
+      waterTemperatureFx.map(WaterTemperatureAction),
+      Effects.receive(GetLatest)
     ])
   ];
 };
@@ -68,45 +95,61 @@ const updatePoll = cursor({
 const updateAirTemperature = cursor({
   get: model => model.airTemperature,
   set: (model, airTemperature) => merge(model, {airTemperature}),
-  update: AirTemperature.update,
+  update: EnvironmentalDataPoint.update,
   tag: AirTemperatureAction
 });
 
-const pulledOk = model =>
+const updateWaterTemperature = cursor({
+  get: model => model.waterTemperature,
+  set: (model, waterTemperature) => merge(model, {waterTemperature}),
+  update: EnvironmentalDataPoint.update,
+  tag: WaterTemperatureAction
+});
+
+const readDataPointFromRow = row => row.value;
+const readDataPoints = (record, predicate) =>
+  record.rows
+    .map(readDataPointFromRow)
+    .filter(predicate);
+
+const restore = (model, record) =>
   batch(update, model, [
-    PongPoll,
-    RequestRestore
+    AddManyAirTemperatures(readDataPoints(
+      record,
+      dataPoint => dataPoint.variable === AIR_TEMPERATURE
+    )),
+    AddManyWaterTemperatures(readDataPoints(
+      record,
+      dataPoint => dataPoint.variable === WATER_TEMPERATURE
+    )),
   ]);
 
-const pulledError = model =>
+const gotOk = (model, record) =>
+  batch(update, model, [
+    Restore(record),
+    PongPoll
+  ]);
+
+const gotError = (model, error) =>
   update(model, MissPoll);
-
-const isAirTemperature = dataPoint =>
-  dataPoint.variable === AirTemperature.variable;
-
-const restore = (model, environmentalDataPoints) =>
-  batch(update, model, [
-    AddManyAirTemperatures(environmentalDataPoints.filter(isAirTemperature))
-  ]);
 
 // Is the problem that I'm not mapping the returned effect?
 export const update = (model, action) =>
   action.type === 'AirTemperature' ?
   updateAirTemperature(model, action.source) :
+  action.type === 'WaterTemperature' ?
+  updateWaterTemperature(model, action.source) :
   action.type === 'Poll' ?
   updatePoll(model, action.source) :
-  action.type === 'Pull' ?
-  Database.pull(model, DB, ORIGIN) :
-  action.type === 'Pulled' ?
+  action.type === 'Get' ?
+  Request.get(model, action.url) :
+  action.type === 'Got' ?
   (
     action.result.isOk ?
-    pulledOk(model) :
-    pulledError(model)
+    gotOk(model, action.result.value) :
+    gotError(model, action.result.error)
   ) :
-  action.type === 'RequestRestore' ?
-  Database.requestRestore(model, DB) :
-  action.type === 'RespondRestore' ?
-  // @TODO should validate input before merging
+  action.type === 'Restore' ?
   restore(model, action.value) :
   Unknown.update(model, action);
 
@@ -115,8 +158,14 @@ export const view = (model, address) =>
     className: 'dash-main'
   }, [
     thunk(
+      'water-temperature',
+      EnvironmentalDataPoint.view,
+      model.waterTemperature,
+      forward(address, WaterTemperatureAction)
+    ),
+    thunk(
       'air-temperature',
-      AirTemperature.view,
+      EnvironmentalDataPoint.view,
       model.airTemperature,
       forward(address, AirTemperatureAction)
     )
