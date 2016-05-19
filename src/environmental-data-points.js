@@ -4,7 +4,6 @@ import {html, forward, Effects, thunk} from 'reflex';
 import {merge, tagged, tag, batch} from './common/prelude';
 import * as ClassName from './common/classname';
 import {cursor} from './common/cursor';
-import * as Database from './common/database';
 import * as Request from './common/request';
 import * as Indexed from './common/indexed';
 import * as Unknown from './common/unknown';
@@ -14,11 +13,6 @@ import * as EnvironmentalDataPoint from './environmental-data-point';
 // @TODO do proper localization
 import * as LANG from './environmental-data-point/lang';
 
-const DB = new PouchDB(Config.db_local_environmental_data_point);
-// Export for debugging
-window.EnvironmentalDataPointDB = DB;
-
-const ORIGIN = Config.db_origin_environmental_data_point;
 const ORIGIN_LATEST = Config.db_origin_environmental_data_point_latest;
 const AIR_TEMPERATURE = 'air_temperature';
 const WATER_TEMPERATURE = 'water_temperature';
@@ -35,16 +29,13 @@ const isWaterTemperature = matcher('variable', WATER_TEMPERATURE);
 
 const PollAction = action =>
   action.type === 'Ping' ?
-  Get(ORIGIN_LATEST) :
+  GetLatest :
   tagged('Poll', action);
 
 const PongPoll = PollAction(Poll.Pong);
 const MissPoll = PollAction(Poll.Miss);
 
-const Get = Request.Get;
-
-const RequestRestore = Database.RequestRestore;
-const Pull = Database.Pull;
+const GetLatest = Request.Get(ORIGIN_LATEST);
 
 const AirTemperatureAction = tag('AirTemperature');
 const WaterTemperatureAction = tag('WaterTemperature');
@@ -58,6 +49,11 @@ const AddManyWaterTemperatures = compose(
   WaterTemperatureAction,
   EnvironmentalDataPoint.AddMany
 );
+
+const Restore = value => ({
+  type: 'Restore',
+  value
+});
 
 // Init and update
 
@@ -84,10 +80,7 @@ export const init = () => {
       pollFx.map(PollAction),
       airTemperatureFx.map(AirTemperatureAction),
       waterTemperatureFx.map(WaterTemperatureAction),
-      // @TODO we should batch this into a Restore action that batches
-      // Database.RequestRestore and Database.Pull.
-      Effects.receive(RequestRestore),
-      Effects.receive(Pull)
+      Effects.receive(GetLatest)
     ])
   ];
 };
@@ -113,36 +106,32 @@ const updateWaterTemperature = cursor({
   tag: WaterTemperatureAction
 });
 
-const pulledOk = model =>
-  batch(update, model, [
-    PongPoll,
-    RequestRestore
-  ]);
-
-const pulledError = model =>
-  update(model, MissPoll);
-
-const restore = (model, environmentalDataPoints) =>
-  batch(update, model, [
-    AddManyAirTemperatures(environmentalDataPoints.filter(isAirTemperature)),
-    AddManyWaterTemperatures(environmentalDataPoints.filter(isWaterTemperature))
-  ]);
-
 const readDataPointFromRow = row => row.value;
+const readDataPoints = (record, predicate) =>
+  record.rows
+    .map(readDataPointFromRow)
+    .filter(predicate);
+
+const restore = (model, record) =>
+  batch(update, model, [
+    AddManyAirTemperatures(readDataPoints(
+      record,
+      dataPoint => dataPoint.variable === AIR_TEMPERATURE
+    )),
+    AddManyWaterTemperatures(readDataPoints(
+      record,
+      dataPoint => dataPoint.variable === WATER_TEMPERATURE
+    )),
+  ]);
 
 const gotOk = (model, record) =>
   batch(update, model, [
-    AddManyAirTemperatures(
-      record.rows
-      .map(readDataPointFromRow)
-      .filter(dataPoint => dataPoint.variable === AIR_TEMPERATURE)
-    ),
-    AddManyWaterTemperatures(
-      record.rows
-      .map(readDataPointFromRow)
-      .filter(dataPoint => dataPoint.variable === WATER_TEMPERATURE)
-    )
+    Restore(record),
+    PongPoll
   ]);
+
+const gotError = (model, error) =>
+  update(model, MissPoll);
 
 // Is the problem that I'm not mapping the returned effect?
 export const update = (model, action) =>
@@ -158,20 +147,9 @@ export const update = (model, action) =>
   (
     action.result.isOk ?
     gotOk(model, action.result.value) :
-    [model, Effects.none]
+    gotError(model, action.result.error)
   ) :
-  action.type === 'Pull' ?
-  Database.pull(model, DB, ORIGIN) :
-  action.type === 'Pulled' ?
-  (
-    action.result.isOk ?
-    pulledOk(model) :
-    pulledError(model)
-  ) :
-  action.type === 'RequestRestore' ?
-  Database.requestRestore(model, DB) :
-  action.type === 'RespondRestore' ?
-  // @TODO should validate input before merging
+  action.type === 'Restore' ?
   restore(model, action.value) :
   Unknown.update(model, action);
 
