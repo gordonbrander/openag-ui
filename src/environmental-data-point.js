@@ -49,7 +49,9 @@ const templateDataPoint = dataPoint => (
     }, ['°C'])
   ] :
   [
-    '-'
+    html.span({
+      className: 'sense-number'
+    }, ['-'])
   ]
 );
 

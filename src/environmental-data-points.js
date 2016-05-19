@@ -14,6 +14,8 @@ import * as EnvironmentalDataPoint from './environmental-data-point';
 import * as LANG from './environmental-data-point/lang';
 
 const ORIGIN_LATEST = Config.db_origin_environmental_data_point_latest;
+const RECIPE_START = 'recipe_start';
+const RECIPE_END = 'recipe_end';
 const AIR_TEMPERATURE = 'air_temperature';
 const WATER_TEMPERATURE = 'water_temperature';
 
@@ -22,6 +24,8 @@ const WATER_TEMPERATURE = 'water_temperature';
 const matcher = (key, value) => (object) =>
   object[key] === value;
 
+const isRecipeStart = matcher('variable', RECIPE_START);
+const isRecipeEnd = matcher('variable', RECIPE_END);
 const isAirTemperature = matcher('variable', AIR_TEMPERATURE);
 const isWaterTemperature = matcher('variable', WATER_TEMPERATURE);
 
@@ -49,6 +53,11 @@ const AddManyWaterTemperatures = compose(
   WaterTemperatureAction,
   EnvironmentalDataPoint.AddMany
 );
+
+const ReadRecipeStart = value => ({
+  type: 'ReadRecipeStart',
+  value
+});
 
 const Restore = value => ({
   type: 'Restore',
@@ -112,16 +121,29 @@ const readDataPoints = (record, predicate) =>
     .map(readDataPointFromRow)
     .filter(predicate);
 
+// Read most recent data point from record set.
+// Filter by predicate. Get most recent.
+// Returns most recent data point matching predicate or null.
+const readMostRecentDataPoint = (record, predicate) =>
+  record.rows
+    .map(readDataPointFromRow)
+    .filter(predicate)
+    .shift();
+
 const restore = (model, record) =>
   batch(update, model, [
     AddManyAirTemperatures(readDataPoints(
       record,
-      dataPoint => dataPoint.variable === AIR_TEMPERATURE
+      isAirTemperature
     )),
     AddManyWaterTemperatures(readDataPoints(
       record,
-      dataPoint => dataPoint.variable === WATER_TEMPERATURE
+      isWaterTemperature
     )),
+    ReadRecipeStart(readMostRecentDataPoint(
+      record,
+      isRecipeStart
+    ))
   ]);
 
 const gotOk = (model, record) =>
