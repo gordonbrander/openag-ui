@@ -30,19 +30,13 @@ export const put = (model, db, doc) =>
   [model, DoPut(db, doc)];
 
 // Request a restore from database.
-export const RequestRestore = {
-  type: 'RequestRestore'
+export const Restore = {
+  type: 'Restore'
 };
 
-export const RespondRestore = value => ({
-  type: 'RespondRestore',
-  value
-});
-
-// Fail a restore
-export const FailRestore = error => ({
-  type: 'FailRestore',
-  error
+export const Restored = result => ({
+  type: 'Restored',
+  result
 });
 
 // Mapping functions to just get the docs from an allDocs response.
@@ -50,18 +44,18 @@ const readDocFromRow = row => row.doc;
 const readDocs = database => database.rows.map(readDocFromRow);
 
 // Request in-memory restore from DB
-export const restore = db =>
+const DoRestore = db =>
   Effects.task(new Task((succeed, fail) => {
     db
       .allDocs({include_docs: true})
       .then(
-        compose(succeed, RespondRestore, readDocs),
-        compose(fail, FailRestore)
+        compose(succeed, Restored, Result.ok, readDocs),
+        compose(succeed, Restored, Result.error)
       );
   }));
 
-export const requestRestore = (model, db) =>
-  [model, restore(db)];
+export const restore = (model, db) =>
+  [model, DoRestore(db)];
 
 // Sync actions and effects
 // See https://pouchdb.com/api.html#sync
@@ -109,17 +103,13 @@ export const Pulled = result => ({
 
 const DoPull = (db, replica) =>
   Effects.task(new Task((succeed, fail) => {
-    try {
-      db
-        .replicate.from(replica)
-        .then(
-          compose(succeed, Pulled, Result.ok),
-          compose(succeed, Pulled, Result.error)
-        );
-    }
-    catch (error) {
-      succeed(Pulled(Result.error(error)));
-    }
+    db
+      .replicate.from(replica)
+      .then(
+        compose(succeed, Pulled, Result.ok),
+        compose(succeed, Pulled, Result.error)
+      )
+      .catch(compose(succeed, Pulled, Result.error));
   }));
 
 export const pull = (model, db, replica) =>

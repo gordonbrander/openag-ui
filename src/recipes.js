@@ -42,7 +42,7 @@ const RecipeAction = (id, action) =>
 const ByID = id => action =>
   RecipeAction(id, action);
 
-export const RequestRestore = Database.RequestRestore;
+export const Restore = Database.Restore;
 export const Put = Database.Put;
 
 export const Open = ModalAction(Modal.Open);
@@ -72,15 +72,6 @@ const AlwaysNoOp = constant(NoOp);
 
 // Model, update and init
 
-// Restore recipes in model from recipes array
-const restore = (model, recipes) =>
-  merge(model, {
-    // Build an array of ordered recipe IDs
-    order: orderByID(recipes),
-    // Index all recipes by ID
-    entries: indexByID(recipes)
-  });
-
 export const init = () => {
   const [recipesForm, recipesFormFx] = RecipesForm.init();
   return [
@@ -96,7 +87,7 @@ export const init = () => {
     },
     Effects.batch([
       recipesFormFx,
-      Effects.receive(RequestRestore),
+      Effects.receive(Restore),
       Database.DoSync(DB, ORIGIN)
     ])
   ];
@@ -133,11 +124,25 @@ const updateByID = (model, id, action) => {
 }
 
 const syncedOk = model =>
-  update(model, RequestRestore);
+  update(model, Restore);
 
 // @TODO do something with sync errors.
 const syncedError = model =>
   update(model, NoOp);
+
+// Restore recipes in model from recipes array
+const restoredOk = (model, recipes) => [
+  merge(model, {
+    // Build an array of ordered recipe IDs
+    order: orderByID(recipes),
+    // Index all recipes by ID
+    entries: indexByID(recipes)
+  }),
+  Effects.none
+];
+
+// @TODO handle error case
+const restoredError = (model) => [model, Effects.none];
 
 // Activate recipe by id
 const activateByID = (model, id) => [
@@ -164,10 +169,14 @@ export const update = (model, action) =>
     // @TODO retry
     [model, Effects.none]
   ) :
-  action.type === 'RequestRestore' ?
-  [model, Database.restore(DB)] :
-  action.type === 'RespondRestore' ?
-  [restore(model, action.value), Effects.none] :
+  action.type === 'Restore' ?
+  Database.restore(model, DB) :
+  action.type === 'Restored' ?
+  (
+    action.result.isOk ?
+    restoredOk(model, action.result.value) :
+    restoredError(model, action.result.error)
+  ) :
   action.type === 'ActivateByID' ?
   activateByID(model, action.id) :
   action.type === 'ActivatePanel' ?

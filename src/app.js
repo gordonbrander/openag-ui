@@ -3,6 +3,7 @@ import {merge, tagged, tag, batch} from './common/prelude';
 import * as Unknown from './common/unknown';
 import {cursor} from './common/cursor';
 import * as AppNav from './app/nav';
+import * as Environments from './environments';
 import * as EnvironmentalDataPoints from './environmental-data-points';
 import * as Recipes from './recipes';
 import * as Overlay from './overlay';
@@ -15,6 +16,7 @@ const RecipesAction = action =>
   RecipeActivated(action.value) :
   tagged('Recipes', action);
 
+const EnvironmentsAction = tag('Environments');
 const EnvironmentalDataPointsAction = tag('EnvironmentalDataPoints');
 
 const OpenRecipes = RecipesAction(Recipes.Open);
@@ -76,6 +78,8 @@ const ChangeAppNavRecipe = compose(AppNavAction, AppNav.ChangeRecipe);
 // Init and update
 
 export const init = () => {
+  const [environments, environmentsFx] =
+    Environments.init();
   const [environmentalDataPoint, environmentalDataPointFx] =
     EnvironmentalDataPoints.init();
   const [recipes, recipesFx] = Recipes.init();
@@ -84,12 +88,14 @@ export const init = () => {
 
   return [
     {
+      environments,
       environmentalDataPoint,
       recipes,
       appNav,
       overlay
     },
     Effects.batch([
+      environmentsFx.map(EnvironmentsAction),
       environmentalDataPointFx.map(EnvironmentalDataPointsAction),
       recipesFx.map(RecipesAction),
       appNavFx.map(AppNavAction),
@@ -97,6 +103,13 @@ export const init = () => {
     ])
   ];
 }
+
+const updateEnvironments = cursor({
+  get: model => model.environments,
+  set: (model, environments) => merge(model, {environments}),
+  update: Environments.update,
+  tag: EnvironmentsAction
+});
 
 const updateAppNav = cursor({
   get: model => model.appNav,
@@ -147,6 +160,8 @@ const recipeActivated = (model, recipe) =>
 
 export const update = (model, action) =>
   // Cursor-based update functions
+  action.type === 'Environments' ?
+  updateEnvironments(model, action.source) :
   action.type === 'EnvironmentalDataPoints' ?
   updateEnvironmentalDataPoints(model, action.source) :
   action.type === 'Recipes' ?

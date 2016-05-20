@@ -2,9 +2,10 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
-import {forward, thunk} from 'reflex';
+import {forward, thunk, Effects} from 'reflex';
 import {identity} from '../lang/functional';
 import {merge} from '../common/prelude';
+import * as Unknown from '../common/unknown';
 
 // Build an index object from an array.
 // Returns a new index object.
@@ -26,7 +27,8 @@ export const getID = getter('_id');
 export const indexByID = array => indexWith(array, getID, identity);
 export const orderByID = array => array.map(getID);
 
-export const model = (models, active) => ({
+// Create indexed model
+export const create = (models, active) => ({
   active,
   // Build an array of ordered recipe IDs
   order: orderByID(models),
@@ -53,3 +55,21 @@ export const children = (view, tagByID) => (model, address) =>
     model.entries[id],
     forward(address, tagBy(id), model.id === model.active)
   ));
+
+export const Activate = id => ({
+  type: 'Activate',
+  id
+});
+
+export const Reset = entries => ({
+  type: 'Reset',
+  entries
+});
+
+// @TODO handle other common indexed actions.
+export const update = (model, action) =>
+  action.type === 'Activate' ?
+  [merge(model, {active: action.id}), Effects.none] :
+  action.type === 'Reset' ?
+  [create(action.entries, model.active), Effects.none] :
+  Unknown.update(model, action);
