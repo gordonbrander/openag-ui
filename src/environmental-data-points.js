@@ -10,6 +10,7 @@ import * as Unknown from './common/unknown';
 import * as Poll from './common/poll';
 import {compose} from './lang/functional';
 import * as EnvironmentalDataPoint from './environmental-data-point';
+import * as CurrentRecipe from './environmental-data-point/recipe';
 // @TODO do proper localization
 import * as LANG from './environmental-data-point/lang';
 
@@ -54,10 +55,9 @@ const AddManyWaterTemperatures = compose(
   EnvironmentalDataPoint.AddMany
 );
 
-const ReadRecipeStart = value => ({
-  type: 'ReadRecipeStart',
-  value
-});
+const CurrentRecipeAction = tag('CurrentRecipe');
+const CurrentRecipeStart = compose(CurrentRecipeAction, CurrentRecipe.Start);
+const CurrentRecipeEnd = compose(CurrentRecipeAction, CurrentRecipe.End);
 
 const Restore = value => ({
   type: 'Restore',
@@ -68,6 +68,7 @@ const Restore = value => ({
 
 export const init = () => {
   const [poll, pollFx] = Poll.init();
+  const [currentRecipe, currentRecipeFx] = CurrentRecipe.init();
 
   const [airTemperature, airTemperatureFx] = EnvironmentalDataPoint.init(
     AIR_TEMPERATURE,
@@ -81,11 +82,13 @@ export const init = () => {
 
   return [
     {
+      currentRecipe,
       poll,
       airTemperature,
       waterTemperature
     },
     Effects.batch([
+      currentRecipeFx.map(CurrentRecipeAction),
       pollFx.map(PollAction),
       airTemperatureFx.map(AirTemperatureAction),
       waterTemperatureFx.map(WaterTemperatureAction),
@@ -115,6 +118,13 @@ const updateWaterTemperature = cursor({
   tag: WaterTemperatureAction
 });
 
+const updateCurrentRecipe = cursor({
+  get: model => model.currentRecipe,
+  set: (model, currentRecipe) => merge(model, {currentRecipe}),
+  update: CurrentRecipe.update,
+  tag: CurrentRecipeAction
+});
+
 const readDataPointFromRow = row => row.value;
 const readDataPoints = (record, predicate) =>
   record.rows
@@ -140,7 +150,7 @@ const restore = (model, record) =>
       record,
       isWaterTemperature
     )),
-    ReadRecipeStart(readMostRecentDataPoint(
+    CurrentRecipeStart(readMostRecentDataPoint(
       record,
       isRecipeStart
     ))
@@ -157,6 +167,8 @@ const gotError = (model, error) =>
 
 // Is the problem that I'm not mapping the returned effect?
 export const update = (model, action) =>
+  action.type === 'CurrentRecipe' ?
+  updateCurrentRecipe(model, action.source) :
   action.type === 'AirTemperature' ?
   updateAirTemperature(model, action.source) :
   action.type === 'WaterTemperature' ?
