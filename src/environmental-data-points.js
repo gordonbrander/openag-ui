@@ -10,11 +10,15 @@ import * as Unknown from './common/unknown';
 import * as Poll from './common/poll';
 import {compose} from './lang/functional';
 import * as EnvironmentalDataPoint from './environmental-data-point';
+import * as CurrentRecipe from './environmental-data-point/recipe';
 // @TODO do proper localization
 import * as LANG from './environmental-data-point/lang';
 
 const ORIGIN_LATEST = Config.db_origin_environmental_data_point_latest;
+const RECIPE_START = 'recipe_start';
+const RECIPE_END = 'recipe_end';
 const AIR_TEMPERATURE = 'air_temperature';
+const AIR_HUMIDITY = 'air_humidity';
 const WATER_TEMPERATURE = 'water_temperature';
 
 // Matching functions
@@ -22,7 +26,10 @@ const WATER_TEMPERATURE = 'water_temperature';
 const matcher = (key, value) => (object) =>
   object[key] === value;
 
+const isRecipeStart = matcher('variable', RECIPE_START);
+const isRecipeEnd = matcher('variable', RECIPE_END);
 const isAirTemperature = matcher('variable', AIR_TEMPERATURE);
+const isAirHumidity = matcher('variable', AIR_HUMIDITY);
 const isWaterTemperature = matcher('variable', WATER_TEMPERATURE);
 
 // Actions and action tagging functions
@@ -38,6 +45,7 @@ const MissPoll = PollAction(Poll.Miss);
 const GetLatest = Request.Get(ORIGIN_LATEST);
 
 const AirTemperatureAction = tag('AirTemperature');
+const AirHumidityAction = tag('AirHumidity');
 const WaterTemperatureAction = tag('WaterTemperature');
 
 const AddManyAirTemperatures = compose(
@@ -45,10 +53,19 @@ const AddManyAirTemperatures = compose(
   EnvironmentalDataPoint.AddMany
 );
 
+const AddManyAirHumidities = compose(
+  AirHumidityAction,
+  EnvironmentalDataPoint.AddMany
+);
+
 const AddManyWaterTemperatures = compose(
   WaterTemperatureAction,
   EnvironmentalDataPoint.AddMany
 );
+
+const CurrentRecipeAction = tag('CurrentRecipe');
+const CurrentRecipeStart = compose(CurrentRecipeAction, CurrentRecipe.Start);
+const CurrentRecipeEnd = compose(CurrentRecipeAction, CurrentRecipe.End);
 
 const Restore = value => ({
   type: 'Restore',
@@ -59,10 +76,16 @@ const Restore = value => ({
 
 export const init = () => {
   const [poll, pollFx] = Poll.init();
+  const [currentRecipe, currentRecipeFx] = CurrentRecipe.init();
 
   const [airTemperature, airTemperatureFx] = EnvironmentalDataPoint.init(
     AIR_TEMPERATURE,
     LANG[AIR_TEMPERATURE]
+  );
+
+  const [airHumidity, airHumidityFx] = EnvironmentalDataPoint.init(
+    AIR_HUMIDITY,
+    LANG[AIR_HUMIDITY]
   );
 
   const [waterTemperature, waterTemperatureFx] = EnvironmentalDataPoint.init(
@@ -72,13 +95,17 @@ export const init = () => {
 
   return [
     {
+      currentRecipe,
       poll,
       airTemperature,
+      airHumidity,
       waterTemperature
     },
     Effects.batch([
+      currentRecipeFx.map(CurrentRecipeAction),
       pollFx.map(PollAction),
       airTemperatureFx.map(AirTemperatureAction),
+      airHumidityFx.map(AirHumidityAction),
       waterTemperatureFx.map(WaterTemperatureAction),
       Effects.receive(GetLatest)
     ])
@@ -99,11 +126,25 @@ const updateAirTemperature = cursor({
   tag: AirTemperatureAction
 });
 
+const updateAirHumidity = cursor({
+  get: model => model.airHumidity,
+  set: (model, airHumidity) => merge(model, {airHumidity}),
+  update: EnvironmentalDataPoint.update,
+  tag: AirHumidityAction
+});
+
 const updateWaterTemperature = cursor({
   get: model => model.waterTemperature,
   set: (model, waterTemperature) => merge(model, {waterTemperature}),
   update: EnvironmentalDataPoint.update,
   tag: WaterTemperatureAction
+});
+
+const updateCurrentRecipe = cursor({
+  get: model => model.currentRecipe,
+  set: (model, currentRecipe) => merge(model, {currentRecipe}),
+  update: CurrentRecipe.update,
+  tag: CurrentRecipeAction
 });
 
 const readDataPointFromRow = row => row.value;
@@ -112,16 +153,33 @@ const readDataPoints = (record, predicate) =>
     .map(readDataPointFromRow)
     .filter(predicate);
 
+// Read most recent data point from record set.
+// Filter by predicate. Get most recent.
+// Returns most recent data point matching predicate or null.
+const readMostRecentDataPoint = (record, predicate) =>
+  record.rows
+    .map(readDataPointFromRow)
+    .filter(predicate)
+    .shift();
+
 const restore = (model, record) =>
   batch(update, model, [
     AddManyAirTemperatures(readDataPoints(
       record,
-      dataPoint => dataPoint.variable === AIR_TEMPERATURE
+      isAirTemperature
+    )),
+    AddManyAirHumidities(readDataPoints(
+      record,
+      isAirHumidity
     )),
     AddManyWaterTemperatures(readDataPoints(
       record,
-      dataPoint => dataPoint.variable === WATER_TEMPERATURE
+      isWaterTemperature
     )),
+    CurrentRecipeStart(readMostRecentDataPoint(
+      record,
+      isRecipeStart
+    ))
   ]);
 
 const gotOk = (model, record) =>
@@ -135,8 +193,12 @@ const gotError = (model, error) =>
 
 // Is the problem that I'm not mapping the returned effect?
 export const update = (model, action) =>
+  action.type === 'CurrentRecipe' ?
+  updateCurrentRecipe(model, action.source) :
   action.type === 'AirTemperature' ?
   updateAirTemperature(model, action.source) :
+  action.type === 'AirHumidity' ?
+  updateAirHumidity(model, action.source) :
   action.type === 'WaterTemperature' ?
   updateWaterTemperature(model, action.source) :
   action.type === 'Poll' ?
@@ -162,6 +224,13 @@ export const view = (model, address) =>
       EnvironmentalDataPoint.view,
       model.waterTemperature,
       forward(address, WaterTemperatureAction)
+    ),
+    thunk(
+      'air-humidity',
+      // @TODO fix view (renders degrees c)
+      EnvironmentalDataPoint.view,
+      model.airHumidity,
+      forward(address, AirHumidityAction)
     ),
     thunk(
       'air-temperature',

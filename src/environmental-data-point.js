@@ -3,6 +3,8 @@ import {html, forward, Effects} from 'reflex';
 import {merge} from './common/prelude';
 import * as Unknown from './common/unknown';
 
+import * as CurrentRecipe from './environmental-data-point/recipe';
+
 // Provide variable name and title for module
 export const init = (variable, title) => [
   {
@@ -49,7 +51,9 @@ const templateDataPoint = dataPoint => (
     }, ['°C'])
   ] :
   [
-    '-'
+    html.span({
+      className: 'sense-number'
+    }, ['-'])
   ]
 );
 
