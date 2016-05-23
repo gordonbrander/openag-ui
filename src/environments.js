@@ -4,7 +4,7 @@ This module handles the environment database.
 import {Effects} from 'reflex';
 import PouchDB from 'pouchdb';
 import * as Config from '../openag-config.json';
-import {merge, tag, tagged} from './common/prelude';
+import {merge, tag, tagged, batch} from './common/prelude';
 import {cursor} from './common/cursor';
 import * as Unknown from './common/unknown';
 import * as Database from './common/database';
@@ -17,6 +17,13 @@ window.EnvironmentsDB = DB;
 
 const ORIGIN = Config.db_origin_environment;
 
+// @FIXME get rid of hard-coding. We only support one environment in the UI
+// right now. Find a smarter way to deal with this.
+const chooseFirstEnvironmentId = entries =>
+  entries.length > 0 && (typeof entries[0]._id === 'string') ?
+  entries[0]._id :
+  null;
+
 // Actions and tagging functions
 
 const Pull = Database.Pull;
@@ -24,6 +31,7 @@ const Restore = Database.Restore;
 
 const IndexedAction = tag('Indexed');
 const Reset = compose(IndexedAction, Indexed.Reset);
+const Activate = compose(IndexedAction, Indexed.Activate);
 
 // Init and update
 
@@ -46,7 +54,10 @@ const pulledError = model =>
   [model, Effects.none];
 
 const restoredOk = (model, entries) =>
-  update(model, Reset(entries));
+  batch(update, model, [
+    Reset(entries),
+    Activate(chooseFirstEnvironmentId(entries))
+  ]);
 
 export const update = (model, action) =>
   action.type === 'Indexed' ?
