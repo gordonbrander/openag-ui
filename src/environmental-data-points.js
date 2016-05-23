@@ -18,6 +18,7 @@ const ORIGIN_LATEST = Config.db_origin_environmental_data_point_latest;
 const RECIPE_START = 'recipe_start';
 const RECIPE_END = 'recipe_end';
 const AIR_TEMPERATURE = 'air_temperature';
+const AIR_HUMIDITY = 'air_humidity';
 const WATER_TEMPERATURE = 'water_temperature';
 
 // Matching functions
@@ -28,6 +29,7 @@ const matcher = (key, value) => (object) =>
 const isRecipeStart = matcher('variable', RECIPE_START);
 const isRecipeEnd = matcher('variable', RECIPE_END);
 const isAirTemperature = matcher('variable', AIR_TEMPERATURE);
+const isAirHumidity = matcher('variable', AIR_HUMIDITY);
 const isWaterTemperature = matcher('variable', WATER_TEMPERATURE);
 
 // Actions and action tagging functions
@@ -43,10 +45,16 @@ const MissPoll = PollAction(Poll.Miss);
 const GetLatest = Request.Get(ORIGIN_LATEST);
 
 const AirTemperatureAction = tag('AirTemperature');
+const AirHumidityAction = tag('AirHumidity');
 const WaterTemperatureAction = tag('WaterTemperature');
 
 const AddManyAirTemperatures = compose(
   AirTemperatureAction,
+  EnvironmentalDataPoint.AddMany
+);
+
+const AddManyAirHumidities = compose(
+  AirHumidityAction,
   EnvironmentalDataPoint.AddMany
 );
 
@@ -75,6 +83,11 @@ export const init = () => {
     LANG[AIR_TEMPERATURE]
   );
 
+  const [airHumidity, airHumidityFx] = EnvironmentalDataPoint.init(
+    AIR_HUMIDITY,
+    LANG[AIR_HUMIDITY]
+  );
+
   const [waterTemperature, waterTemperatureFx] = EnvironmentalDataPoint.init(
     WATER_TEMPERATURE,
     LANG[WATER_TEMPERATURE]
@@ -85,12 +98,14 @@ export const init = () => {
       currentRecipe,
       poll,
       airTemperature,
+      airHumidity,
       waterTemperature
     },
     Effects.batch([
       currentRecipeFx.map(CurrentRecipeAction),
       pollFx.map(PollAction),
       airTemperatureFx.map(AirTemperatureAction),
+      airHumidityFx.map(AirHumidityAction),
       waterTemperatureFx.map(WaterTemperatureAction),
       Effects.receive(GetLatest)
     ])
@@ -109,6 +124,13 @@ const updateAirTemperature = cursor({
   set: (model, airTemperature) => merge(model, {airTemperature}),
   update: EnvironmentalDataPoint.update,
   tag: AirTemperatureAction
+});
+
+const updateAirHumidity = cursor({
+  get: model => model.airHumidity,
+  set: (model, airHumidity) => merge(model, {airHumidity}),
+  update: EnvironmentalDataPoint.update,
+  tag: AirHumidityAction
 });
 
 const updateWaterTemperature = cursor({
@@ -146,6 +168,10 @@ const restore = (model, record) =>
       record,
       isAirTemperature
     )),
+    AddManyAirHumidities(readDataPoints(
+      record,
+      isAirHumidity
+    )),
     AddManyWaterTemperatures(readDataPoints(
       record,
       isWaterTemperature
@@ -171,6 +197,8 @@ export const update = (model, action) =>
   updateCurrentRecipe(model, action.source) :
   action.type === 'AirTemperature' ?
   updateAirTemperature(model, action.source) :
+  action.type === 'AirHumidity' ?
+  updateAirHumidity(model, action.source) :
   action.type === 'WaterTemperature' ?
   updateWaterTemperature(model, action.source) :
   action.type === 'Poll' ?
@@ -196,6 +224,12 @@ export const view = (model, address) =>
       EnvironmentalDataPoint.view,
       model.waterTemperature,
       forward(address, WaterTemperatureAction)
+    ),
+    thunk(
+      'air-humidity',
+      EnvironmentalDataPoint.view,
+      model.airHumidity,
+      forward(address, AirHumidityAction)
     ),
     thunk(
       'air-temperature',
