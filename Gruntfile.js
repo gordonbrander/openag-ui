@@ -19,22 +19,37 @@ module.exports = function (grunt) {
           // if the source file has an extension of es6 then
           // we change the name of the source file accordingly.
           // The result file's extension is always .js
-          "./dist/main.js": ["./src/main.js"]
+          "./dist/scripts/main.js": ["./scripts/main.js"]
         }
+      }
+    },
+    copy: {
+      main: {
+        files: [
+          {
+            src: ['assets/**'],
+            dest: 'dist/'
+          },
+          {
+            src: ['index.html'],
+            dest: 'dist/index.html'
+          }
+        ]
       }
     },
     watch: {
       scripts: {
-        files: ["./src/**/*.js", './src/**/*.json', 'openag-config.json'],
+        files: ["./scripts/**/*.js", './scripts/**/*.json', 'openag-config.json'],
         tasks: ["browserify"]
       }
     }
   });
 
   grunt.loadNpmTasks("grunt-browserify");
+  grunt.loadNpmTasks('grunt-contrib-copy');
   grunt.loadNpmTasks("grunt-contrib-watch");
 
   grunt.registerTask("default", ["watch"]);
-  grunt.registerTask("build", ["browserify"]);
-  grunt.registerTask("develop", ["browserify", "watch"]);
+  grunt.registerTask("build", ["browserify", "copy"]);
+  grunt.registerTask("develop", ["browserify", "copy", "watch"]);
 };
