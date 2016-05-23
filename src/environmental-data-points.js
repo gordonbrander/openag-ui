@@ -227,6 +227,7 @@ export const view = (model, address) =>
     ),
     thunk(
       'air-humidity',
+      // @TODO fix view (renders degrees c)
       EnvironmentalDataPoint.view,
       model.airHumidity,
       forward(address, AirHumidityAction)
