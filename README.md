@@ -23,6 +23,10 @@ Build:
 
     npm run build
 
+This will generate a folder called `./dist` containing everything necessary for
+the app to run in your browser. Copy `dist` wherever you like, or drag/drop
+`dist/index.html` on to your browser to run the app.
+
 If you're doing active development, and want your JS files to automatically
 rebuild after you save, you can run
 
