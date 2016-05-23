@@ -40,16 +40,3 @@ reproduce the same UI for the same messages. To turn on this feature, edit
     }
 ```
 
-Status
-------
-
-2016-04 Blink test.
-
-- [ ] Create recipe
-- [ ] Run recipe
-- [ ] Dump sensor data
-- [ ] Upload recipe
-- [ ] Download recipe
-- [ ] Sync dataset
-- [ ] List recipes
-
