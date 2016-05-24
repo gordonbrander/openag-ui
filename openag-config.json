@@ -6,6 +6,7 @@
   "db_upstream_environmental_data_point": "http://example.com:5984/environmental_data_point",
   "db_local_recipes": "recipes",
   "db_origin_recipes": "http://18.111.2.179:5984/recipes",
+  "db_origin_recipe_handlers": "http://18.111.2.179:5984/module/_design/openag/_view/by_type?key=%22openag.brain.modules.recipe_handler:RecipeHandler%22",
   "db_local_environment": "environment",
   "db_origin_environment": "http://18.111.2.179:5984/environment",
   "db_upstream_recipes": "http://example.com:5984/recipes"
