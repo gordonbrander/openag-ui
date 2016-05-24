@@ -21,6 +21,9 @@ const AIR_TEMPERATURE = 'air_temperature';
 const AIR_HUMIDITY = 'air_humidity';
 const WATER_TEMPERATURE = 'water_temperature';
 
+const seconds = 1000;
+const POLL_TIMEOUT = 2 * seconds;
+
 // Matching functions
 
 const matcher = (key, value) => (object) =>
@@ -75,7 +78,7 @@ const Restore = value => ({
 // Init and update
 
 export const init = () => {
-  const [poll, pollFx] = Poll.init();
+  const [poll, pollFx] = Poll.init(POLL_TIMEOUT);
   const [currentRecipe, currentRecipeFx] = CurrentRecipe.init();
 
   const [airTemperature, airTemperatureFx] = EnvironmentalDataPoint.init(
