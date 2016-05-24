@@ -6,7 +6,6 @@ import * as Unknown from '../common/unknown';
 // Useful constants
 const seconds = 1000;
 const minutes = seconds * 60;
-const DELAY = 10 * seconds;
 const MAX_DELAY = 10 * minutes;
 
 // Actions and effects
@@ -35,8 +34,9 @@ export const schedule = (action, time) =>
 export const calcDelay = (delay, misses) =>
   Math.min(delay + (delay * misses), MAX_DELAY);
 
-export const init = () => [
+export const init = (timeout) => [
   {
+    timeout,
     misses: 0
   },
   Effects.none
@@ -50,14 +50,14 @@ export const update = (model, action) =>
     merge(model, {
       misses: model.misses + 1
     }),
-    Effects.receive(Schedule(calcDelay(DELAY, model.misses)))
+    Effects.receive(Schedule(calcDelay(model.timeout, model.misses)))
   ] :
   action.type === 'Pong' ?
   [
     merge(model, {
       misses: 0
     }),
-    Effects.receive(Schedule(calcDelay(DELAY, model.misses)))
+    Effects.receive(Schedule(calcDelay(model.timeout, model.misses)))
   ] :
   action.type === 'Ping' ?
   [model, Effects.none] :
