@@ -3,6 +3,7 @@ import {merge, tagged, tag, batch} from './common/prelude';
 import * as Unknown from './common/unknown';
 import {cursor} from './common/cursor';
 import * as AppNav from './app/nav';
+import * as RecipeHandlers from './recipe-handlers';
 import * as Environments from './environments';
 import * as EnvironmentalDataPoints from './environmental-data-points';
 import * as Recipes from './recipes';
@@ -18,6 +19,7 @@ const RecipesAction = action =>
 
 const EnvironmentsAction = tag('Environments');
 const EnvironmentalDataPointsAction = tag('EnvironmentalDataPoints');
+const RecipeHandlersAction = tag('RecipeHandlers');
 
 const OpenRecipes = RecipesAction(Recipes.Open);
 const CloseRecipes = RecipesAction(Recipes.Close);
@@ -83,6 +85,7 @@ export const init = () => {
   const [environmentalDataPoint, environmentalDataPointFx] =
     EnvironmentalDataPoints.init();
   const [recipes, recipesFx] = Recipes.init();
+  const [recipeHandlers, recipeHandlersFx] = RecipeHandlers.init();
   const [appNav, appNavFx] = AppNav.init();
   const [overlay, overlayFx] = Overlay.init();
 
@@ -91,6 +94,7 @@ export const init = () => {
       environments,
       environmentalDataPoint,
       recipes,
+      recipeHandlers,
       appNav,
       overlay
     },
@@ -98,6 +102,7 @@ export const init = () => {
       environmentsFx.map(EnvironmentsAction),
       environmentalDataPointFx.map(EnvironmentalDataPointsAction),
       recipesFx.map(RecipesAction),
+      recipeHandlersFx.map(RecipeHandlersAction),
       appNavFx.map(AppNavAction),
       overlayFx.map(OverlayAction)
     ])
@@ -123,6 +128,13 @@ const updateRecipes = cursor({
   set: (model, recipes) => merge(model, {recipes}),
   update: Recipes.update,
   tag: RecipesAction
+});
+
+const updateRecipeHandlers = cursor({
+  get: model => model.recipeHandlers,
+  set: (model, recipeHandlers) => merge(model, {recipeHandlers}),
+  update: RecipeHandlers.update,
+  tag: RecipeHandlersAction
 });
 
 const updateEnvironmentalDataPoints = cursor({
@@ -166,6 +178,8 @@ export const update = (model, action) =>
   updateEnvironmentalDataPoints(model, action.source) :
   action.type === 'Recipes' ?
   updateRecipes(model, action.source) :
+  action.type === 'RecipeHandlers' ?
+  updateRecipeHandlers(model, action.source) :
   action.type === 'AppNav' ?
   updateAppNav(model, action.source) :
   action.type === 'Overlay' ?
