@@ -1,6 +1,7 @@
 import {html, forward, Effects, Task, thunk} from 'reflex';
 import * as Config from '../openag-config.json';
 import PouchDB from 'pouchdb';
+import * as Template from './common/stache';
 import * as Database from './common/database';
 import {orderByID, indexByID, add} from './common/indexed';
 import * as Unknown from './common/unknown';
@@ -12,11 +13,13 @@ import {compose, constant} from './lang/functional';
 import * as RecipesForm from './recipes/form';
 import * as Recipe from './recipe';
 
-const DB = new PouchDB(Config.db_local_recipes);
+const DB = new PouchDB(Config.recipes_local);
 // Export for debugging
 window.RecipesDB = DB;
 
-const ORIGIN = Config.db_origin_recipes;
+const ORIGIN = Template.render(Config.recipes_origin, {
+  origin_url: Config.origin_url
+});
 
 // Actions and tagging functions
 

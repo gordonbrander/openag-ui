@@ -3,6 +3,7 @@ import PouchDB from 'pouchdb';
 import {html, forward, Effects, thunk} from 'reflex';
 import {merge, tagged, tag, batch} from './common/prelude';
 import * as ClassName from './common/classname';
+import * as Template from './common/stache';
 import {cursor} from './common/cursor';
 import * as Request from './common/request';
 import * as Indexed from './common/indexed';
@@ -14,7 +15,13 @@ import * as CurrentRecipe from './environmental-data-point/recipe';
 // @TODO do proper localization
 import * as LANG from './environmental-data-point/lang';
 
-const ORIGIN_LATEST = Config.db_origin_environmental_data_point_latest;
+const ORIGIN_LATEST = Template.render(
+  Config.environmental_data_point_origin_latest,
+  {
+    origin_url: Config.origin_url
+  }
+);
+
 const RECIPE_START = 'recipe_start';
 const RECIPE_END = 'recipe_end';
 const AIR_TEMPERATURE = 'air_temperature';
