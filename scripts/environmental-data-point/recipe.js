@@ -2,15 +2,17 @@ import {Effects} from 'reflex';
 import {merge} from '../common/prelude';
 import * as Unknown from '../common/unknown';
 
-export const Start = (id, startTime) => ({
+export const Start = ({id, environment, startTime}) => ({
   type: 'Start',
   id,
+  environment,
   startTime
 });
 
-export const End = (id, endTime) => ({
+export const End = ({id, environment, endTime}) => ({
   type: 'End',
   id,
+  environment,
   endTime
 });
 
@@ -30,20 +32,35 @@ const isLater = (a, b) =>
   (a > b);
 
 export const update = (model, action) =>
-  action.type === 'Start' && isLater(action.startTime, model.startTime) ?
-  [
-    merge(model, {
-      id: action.id,
-      startTime: action.startTime
-    }),
-    Effects.none
-  ] :
-  action.type === 'End' && isLater(action.endTime, model.endTime) ?
-  [
-    merge(model, {
-      id: action.id,
-      endTime: action.endTime
-    }),
-    Effects.none
-  ] :
+  action.type === 'Start'?
+  (
+    isLater(action.startTime, model.startTime) ?
+    [
+      merge(model, {
+        id: action.id,
+        startTime: action.startTime
+      }),
+      Effects.none
+    ] :
+    // If we've already seen this recipe start, do nothing.
+    [
+      model,
+      Effects.none
+    ]
+  ) :
+  action.type === 'End' ?
+  (
+    isLater(action.endTime, model.endTime) ?
+    [
+      merge(model, {
+        id: action.id,
+        endTime: action.endTime
+      }),
+      Effects.none
+    ] :
+    [
+      model,
+      Effects.none
+    ]
+  ) :
   Unknown.update(model, action);

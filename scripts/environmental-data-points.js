@@ -11,6 +11,7 @@ import * as Unknown from './common/unknown';
 import * as Poll from './common/poll';
 import {compose} from './lang/functional';
 import * as EnvironmentalDataPoint from './environmental-data-point';
+import * as Environments from './environmental-data-point/environments';
 import * as CurrentRecipe from './environmental-data-point/recipe';
 // @TODO do proper localization
 import * as LANG from './environmental-data-point/lang';
@@ -43,6 +44,9 @@ const isAirHumidity = matcher('variable', AIR_HUMIDITY);
 const isWaterTemperature = matcher('variable', WATER_TEMPERATURE);
 
 // Actions and action tagging functions
+
+const EnvironmentsAction = tag('Environments');
+const RestoreEnvironments = compose(EnvironmentsAction, Environments.Restore);
 
 const PollAction = action =>
   action.type === 'Ping' ?
@@ -86,6 +90,7 @@ const Restore = value => ({
 
 export const init = () => {
   const [poll, pollFx] = Poll.init(POLL_TIMEOUT);
+  const [environments, environmentsFx] = Environments.init();
   const [currentRecipe, currentRecipeFx] = CurrentRecipe.init();
 
   const [airTemperature, airTemperatureFx] = EnvironmentalDataPoint.init(
@@ -105,15 +110,17 @@ export const init = () => {
 
   return [
     {
-      currentRecipe,
+      environments,
       poll,
+      currentRecipe,
       airTemperature,
       airHumidity,
       waterTemperature
     },
     Effects.batch([
-      currentRecipeFx.map(CurrentRecipeAction),
+      environmentsFx.map(EnvironmentsAction),
       pollFx.map(PollAction),
+      currentRecipeFx.map(CurrentRecipeAction),
       airTemperatureFx.map(AirTemperatureAction),
       airHumidityFx.map(AirHumidityAction),
       waterTemperatureFx.map(WaterTemperatureAction),
@@ -127,6 +134,13 @@ const updatePoll = cursor({
   set: (model, poll) => merge(model, {poll}),
   update: Poll.update,
   tag: PollAction
+});
+
+const updateEnvironments = cursor({
+  get: model => model.environments,
+  set: (model, environments) => merge(model, {environments}),
+  update: Environments.update,
+  tag: EnvironmentsAction
 });
 
 const updateAirTemperature = cursor({
@@ -166,11 +180,13 @@ const readDataPoints = (record, predicate) =>
 // Read most recent data point from record set.
 // Filter by predicate. Get most recent.
 // Returns most recent data point matching predicate or null.
-const readMostRecentDataPoint = (record, predicate) =>
-  record.rows
-    .map(readDataPointFromRow)
-    .filter(predicate)
-    .shift();
+const readDataPoint = (record, predicate) =>
+  readDataPoints(record, predicate).shift();
+
+const readRecipeStartData = ({value, timestamp}) => ({
+  id: value,
+  startTime: timestamp
+});
 
 const restore = (model, record) =>
   batch(update, model, [
@@ -186,15 +202,15 @@ const restore = (model, record) =>
       record,
       isWaterTemperature
     )),
-    CurrentRecipeStart(readMostRecentDataPoint(
+    CurrentRecipeStart(readRecipeStartData(readDataPoint(
       record,
       isRecipeStart
-    ))
+    )))
   ]);
 
 const gotOk = (model, record) =>
   batch(update, model, [
-    Restore(record),
+    RestoreEnvironments(record),
     PongPoll
   ]);
 
@@ -203,6 +219,8 @@ const gotError = (model, error) =>
 
 // Is the problem that I'm not mapping the returned effect?
 export const update = (model, action) =>
+  action.type === 'Environments' ?
+  updateEnvironments(model, action.source) :
   action.type === 'CurrentRecipe' ?
   updateCurrentRecipe(model, action.source) :
   action.type === 'AirTemperature' ?

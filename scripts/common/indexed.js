@@ -5,6 +5,7 @@
 import {forward, thunk, Effects} from 'reflex';
 import {identity} from '../lang/functional';
 import {merge} from '../common/prelude';
+import {constant} from '../lang/functional';
 import * as Unknown from '../common/unknown';
 
 // Build an index object from an array.
@@ -36,13 +37,18 @@ export const create = (models, active) => ({
   entries: indexByID(models)
 });
 
+export const init = () => [
+  create([], null),
+  Effects.none
+];
+
 // Add a new indexed entry to model
-export const add = (model, entry) =>
+export const add = (model, id, entry) =>
   merge(model, {
     // Prepend new recipe id
-    order: [getID(entry), ...model.order],
+    order: [id, ...model.order],
     entries: merge(model.entries, {
-      [getID(entry)]: entry
+      [id]: entry
     })
   });
 
@@ -66,10 +72,40 @@ export const Reset = entries => ({
   entries
 });
 
+// An action representing "no further action".
+export const NoOp = {
+  type: 'NoOp'
+};
+
+const AlwaysNoOp = constant(NoOp);
+
 // @TODO handle other common indexed actions.
 export const update = (model, action) =>
+  action.type === 'NoOp' ?
+  [model, action] :
   action.type === 'Activate' ?
   [merge(model, {active: action.id}), Effects.none] :
   action.type === 'Reset' ?
   [create(action.entries, model.active), Effects.none] :
   Unknown.update(model, action);
+
+// Create an updateById function
+export const updateWithID = (update, tag, model, id, action) => {
+  if (model.order.indexOf(id) < 0) {
+    return [
+      model,
+      // @TODO can we handle this case in a way that doesn't require
+      // the modul to implement noop?
+      Effects
+        .task(Unknown.error(`model with id: ${id} is not found`))
+        .map(AlwaysNoOp)
+    ];
+  }
+  else {
+    const [entry, fx] = update(model.entries[id], action);
+    return [
+      merge(model, {entries: merge(model.entries, {[id]: entry})}),
+      fx.map(tag)
+    ];
+  }
+}
