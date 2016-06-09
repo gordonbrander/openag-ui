@@ -12,7 +12,7 @@ import * as LANG from '../environmental-data-point/lang';
 const RECIPE_START = 'recipe_start';
 const RECIPE_END = 'recipe_end';
 const AIR_TEMPERATURE = 'air_temperature';
-const AIR_HUMIDITY = 'air_humidity';
+const HUMIDITY = 'humidity';
 const WATER_TEMPERATURE = 'water_temperature';
 
 // Actions
@@ -26,17 +26,29 @@ export const AddDataPoint = value => ({
   value
 });
 
+const RecipeStartAction = tag('RecipeStart');
+const RecipeEndAction = tag('RecipeEnd');
 const AirTemperatureAction = tag('AirTemperature');
-const AirHumidityAction = tag('AirHumidity');
+const HumidityAction = tag('Humidity');
 const WaterTemperatureAction = tag('WaterTemperature');
+
+const AddRecipeStart = compose(
+  RecipeStartAction,
+  EnvironmentalDataPoint.Add
+);
+
+const AddRecipeEnd = compose(
+  RecipeEndAction,
+  EnvironmentalDataPoint.Add
+);
 
 const AddAirTemperature = compose(
   AirTemperatureAction,
   EnvironmentalDataPoint.Add
 );
 
-const AddAirHumidity = compose(
-  AirHumidityAction,
+const AddHumidity = compose(
+  HumidityAction,
   EnvironmentalDataPoint.Add
 );
 
@@ -45,23 +57,27 @@ const AddWaterTemperature = compose(
   EnvironmentalDataPoint.Add
 );
 
-const CurrentRecipeAction = tag('CurrentRecipe');
-const CurrentRecipeStart = compose(CurrentRecipeAction, CurrentRecipe.Start);
-const CurrentRecipeEnd = compose(CurrentRecipeAction, CurrentRecipe.End);
-
 // Model init and update
 
 export const init = () => {
-  const [currentRecipe, currentRecipeFx] = CurrentRecipe.init();
+  const [recipeStart, recipeStartFx] = EnvironmentalDataPoint.init(
+    RECIPE_START,
+    ''
+  );
+
+  const [recipeEnd, recipeEndFx] = EnvironmentalDataPoint.init(
+    RECIPE_END,
+    ''
+  );
 
   const [airTemperature, airTemperatureFx] = EnvironmentalDataPoint.init(
     AIR_TEMPERATURE,
     LANG[AIR_TEMPERATURE]
   );
 
-  const [airHumidity, airHumidityFx] = EnvironmentalDataPoint.init(
-    AIR_HUMIDITY,
-    LANG[AIR_HUMIDITY]
+  const [humidity, humidityFx] = EnvironmentalDataPoint.init(
+    HUMIDITY,
+    LANG[HUMIDITY]
   );
 
   const [waterTemperature, waterTemperatureFx] = EnvironmentalDataPoint.init(
@@ -71,19 +87,35 @@ export const init = () => {
 
   return [
     {
-      currentRecipe,
+      recipeStart,
+      recipeEnd,
       airTemperature,
-      airHumidity,
+      humidity,
       waterTemperature
     },
     Effects.batch([
-      currentRecipeFx.map(CurrentRecipeAction),
+      recipeStartFx.map(RecipeStartAction),
+      recipeEndFx.map(RecipeEndAction),
       airTemperatureFx.map(AirTemperatureAction),
-      airHumidityFx.map(AirHumidityAction),
+      humidityFx.map(HumidityAction),
       waterTemperatureFx.map(WaterTemperatureAction)
     ])
   ];
 };
+
+const updateRecipeStart = cursor({
+  get: model => model.recipeStart,
+  set: (model, recipeStart) => merge(model, {recipeStart}),
+  update: EnvironmentalDataPoint.update,
+  tag: RecipeStartAction
+});
+
+const updateRecipeEnd = cursor({
+  get: model => model.recipeEnd,
+  set: (model, recipeEnd) => merge(model, {recipeEnd}),
+  update: EnvironmentalDataPoint.update,
+  tag: RecipeEndAction
+});
 
 const updateAirTemperature = cursor({
   get: model => model.airTemperature,
@@ -92,11 +124,11 @@ const updateAirTemperature = cursor({
   tag: AirTemperatureAction
 });
 
-const updateAirHumidity = cursor({
-  get: model => model.airHumidity,
-  set: (model, airHumidity) => merge(model, {airHumidity}),
+const updateHumidity = cursor({
+  get: model => model.humidity,
+  set: (model, humidity) => merge(model, {humidity}),
   update: EnvironmentalDataPoint.update,
-  tag: AirHumidityAction
+  tag: HumidityAction
 });
 
 const updateWaterTemperature = cursor({
@@ -106,18 +138,15 @@ const updateWaterTemperature = cursor({
   tag: WaterTemperatureAction
 });
 
-const updateCurrentRecipe = cursor({
-  get: model => model.currentRecipe,
-  set: (model, currentRecipe) => merge(model, {currentRecipe}),
-  update: CurrentRecipe.update,
-  tag: CurrentRecipeAction
-});
-
 const addDataPoint = (model, dataPoint) =>
+  dataPoint.variable === RECIPE_START ?
+  update(model, AddRecipeStart(dataPoint.value)) :
+  dataPoint.variable === RECIPE_END ?
+  update(model, AddRecipeEnd(dataPoint.value)) :
   dataPoint.variable === AIR_TEMPERATURE ?
   update(model, AddAirTemperature(dataPoint.value)) :
-  dataPoint.variable === AIR_HUMIDITY ?
-  update(model, AddAirHumidity(dataPoint.value)) :
+  dataPoint.variable === HUMIDITY ?
+  update(model, AddHumidity(dataPoint.value)) :
   dataPoint.variable === WATER_TEMPERATURE ?
   update(model, AddWaterTemperature(dataPoint.value)) :
   // Ignore datapoints that we don't understand/don't want to render.
@@ -129,12 +158,14 @@ export const update = (model, action) =>
   [model, Effects.none] :
   action.type === 'AddDataPoint' ?
   addDataPoint(model, action.value) :
-  action.type === 'CurrentRecipe' ?
-  updateCurrentRecipe(model, action.source) :
+  action.type === 'RecipeStart' ?
+  updateRecipeStart(model, action.source) :
+  action.type === 'RecipeEnd' ?
+  updateRecipeEnd(model, action.source) :
   action.type === 'AirTemperature' ?
   updateAirTemperature(model, action.source) :
-  action.type === 'AirHumidity' ?
-  updateAirHumidity(model, action.source) :
+  action.type === 'Humidity' ?
+  updateHumidity(model, action.source) :
   action.type === 'WaterTemperature' ?
   updateWaterTemperature(model, action.source) :
   action.type === 'Restore' ?
