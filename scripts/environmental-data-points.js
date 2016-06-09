@@ -10,7 +10,6 @@ import * as Indexed from './common/indexed';
 import * as Unknown from './common/unknown';
 import * as Poll from './common/poll';
 import {compose} from './lang/functional';
-import * as EnvironmentalDataPoint from './environmental-data-point';
 import * as Environments from './environmental-data-point/environments';
 import * as CurrentRecipe from './environmental-data-point/recipe';
 // @TODO do proper localization
@@ -58,29 +57,6 @@ const MissPoll = PollAction(Poll.Miss);
 
 const GetLatest = Request.Get(ORIGIN_LATEST);
 
-const AirTemperatureAction = tag('AirTemperature');
-const AirHumidityAction = tag('AirHumidity');
-const WaterTemperatureAction = tag('WaterTemperature');
-
-const AddManyAirTemperatures = compose(
-  AirTemperatureAction,
-  EnvironmentalDataPoint.AddMany
-);
-
-const AddManyAirHumidities = compose(
-  AirHumidityAction,
-  EnvironmentalDataPoint.AddMany
-);
-
-const AddManyWaterTemperatures = compose(
-  WaterTemperatureAction,
-  EnvironmentalDataPoint.AddMany
-);
-
-const CurrentRecipeAction = tag('CurrentRecipe');
-const CurrentRecipeStart = compose(CurrentRecipeAction, CurrentRecipe.Start);
-const CurrentRecipeEnd = compose(CurrentRecipeAction, CurrentRecipe.End);
-
 const Restore = value => ({
   type: 'Restore',
   value
@@ -91,39 +67,15 @@ const Restore = value => ({
 export const init = () => {
   const [poll, pollFx] = Poll.init(POLL_TIMEOUT);
   const [environments, environmentsFx] = Environments.init();
-  const [currentRecipe, currentRecipeFx] = CurrentRecipe.init();
-
-  const [airTemperature, airTemperatureFx] = EnvironmentalDataPoint.init(
-    AIR_TEMPERATURE,
-    LANG[AIR_TEMPERATURE]
-  );
-
-  const [airHumidity, airHumidityFx] = EnvironmentalDataPoint.init(
-    AIR_HUMIDITY,
-    LANG[AIR_HUMIDITY]
-  );
-
-  const [waterTemperature, waterTemperatureFx] = EnvironmentalDataPoint.init(
-    WATER_TEMPERATURE,
-    LANG[WATER_TEMPERATURE]
-  );
 
   return [
     {
       environments,
       poll,
-      currentRecipe,
-      airTemperature,
-      airHumidity,
-      waterTemperature
     },
     Effects.batch([
       environmentsFx.map(EnvironmentsAction),
       pollFx.map(PollAction),
-      currentRecipeFx.map(CurrentRecipeAction),
-      airTemperatureFx.map(AirTemperatureAction),
-      airHumidityFx.map(AirHumidityAction),
-      waterTemperatureFx.map(WaterTemperatureAction),
       Effects.receive(GetLatest)
     ])
   ];
@@ -143,34 +95,6 @@ const updateEnvironments = cursor({
   tag: EnvironmentsAction
 });
 
-const updateAirTemperature = cursor({
-  get: model => model.airTemperature,
-  set: (model, airTemperature) => merge(model, {airTemperature}),
-  update: EnvironmentalDataPoint.update,
-  tag: AirTemperatureAction
-});
-
-const updateAirHumidity = cursor({
-  get: model => model.airHumidity,
-  set: (model, airHumidity) => merge(model, {airHumidity}),
-  update: EnvironmentalDataPoint.update,
-  tag: AirHumidityAction
-});
-
-const updateWaterTemperature = cursor({
-  get: model => model.waterTemperature,
-  set: (model, waterTemperature) => merge(model, {waterTemperature}),
-  update: EnvironmentalDataPoint.update,
-  tag: WaterTemperatureAction
-});
-
-const updateCurrentRecipe = cursor({
-  get: model => model.currentRecipe,
-  set: (model, currentRecipe) => merge(model, {currentRecipe}),
-  update: CurrentRecipe.update,
-  tag: CurrentRecipeAction
-});
-
 const readDataPointFromRow = row => row.value;
 const readDataPoints = (record, predicate) =>
   record.rows
@@ -187,26 +111,6 @@ const readRecipeStartData = ({value, timestamp}) => ({
   id: value,
   startTime: timestamp
 });
-
-const restore = (model, record) =>
-  batch(update, model, [
-    AddManyAirTemperatures(readDataPoints(
-      record,
-      isAirTemperature
-    )),
-    AddManyAirHumidities(readDataPoints(
-      record,
-      isAirHumidity
-    )),
-    AddManyWaterTemperatures(readDataPoints(
-      record,
-      isWaterTemperature
-    )),
-    CurrentRecipeStart(readRecipeStartData(readDataPoint(
-      record,
-      isRecipeStart
-    )))
-  ]);
 
 const gotOk = (model, record) =>
   batch(update, model, [
@@ -247,23 +151,23 @@ export const view = (model, address) =>
   html.div({
     className: 'dash-main'
   }, [
-    thunk(
-      'water-temperature',
-      EnvironmentalDataPoint.view,
-      model.waterTemperature,
-      forward(address, WaterTemperatureAction)
-    ),
-    thunk(
-      'air-humidity',
-      // @TODO fix view (renders degrees c)
-      EnvironmentalDataPoint.view,
-      model.airHumidity,
-      forward(address, AirHumidityAction)
-    ),
-    thunk(
-      'air-temperature',
-      EnvironmentalDataPoint.view,
-      model.airTemperature,
-      forward(address, AirTemperatureAction)
-    )
+    //thunk(
+      //'water-temperature',
+      //EnvironmentalDataPoint.view,
+      //model.waterTemperature,
+      //forward(address, WaterTemperatureAction)
+    //),
+    //thunk(
+      //'air-humidity',
+      //// @TODO fix view (renders degrees c)
+      //EnvironmentalDataPoint.view,
+      //model.airHumidity,
+      //forward(address, AirHumidityAction)
+    //),
+    //thunk(
+      //'air-temperature',
+      //EnvironmentalDataPoint.view,
+      //model.airTemperature,
+      //forward(address, AirTemperatureAction)
+    //)
   ]);
