@@ -133,26 +133,4 @@ export const update = (model, action) =>
   Unknown.update(model, action);
 
 export const view = (model, address) =>
-  html.div({
-    className: 'dash-main'
-  }, [
-    //thunk(
-      //'water-temperature',
-      //EnvironmentalDataPoint.view,
-      //model.waterTemperature,
-      //forward(address, WaterTemperatureAction)
-    //),
-    //thunk(
-      //'air-humidity',
-      //// @TODO fix view (renders degrees c)
-      //EnvironmentalDataPoint.view,
-      //model.airHumidity,
-      //forward(address, AirHumidityAction)
-    //),
-    //thunk(
-      //'air-temperature',
-      //EnvironmentalDataPoint.view,
-      //model.airTemperature,
-      //forward(address, AirTemperatureAction)
-    //)
-  ]);
+  Environments.view(model.environments, forward(address, EnvironmentsAction));

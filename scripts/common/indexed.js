@@ -28,6 +28,8 @@ export const getID = getter('_id');
 export const indexByID = array => indexWith(array, getID, identity);
 export const orderByID = array => array.map(getID);
 
+export const getByIndex = (model, i) => model.entries[model.order[i]];
+
 // Create indexed model
 export const create = (models, active) => ({
   active,

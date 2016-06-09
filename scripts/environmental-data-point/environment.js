@@ -171,3 +171,30 @@ export const update = (model, action) =>
   action.type === 'Restore' ?
   restore(model, action.value) :
   Unknown.update(model, action);
+
+// View
+
+export const view = (model, address) =>
+  html.div({
+    className: 'environment-main'
+  }, [
+    thunk(
+      'water-temperature',
+      EnvironmentalDataPoint.view,
+      model.waterTemperature,
+      forward(address, WaterTemperatureAction)
+    ),
+    thunk(
+      'humidity',
+      // @TODO fix view (renders degrees c)
+      EnvironmentalDataPoint.view,
+      model.humidity,
+      forward(address, HumidityAction)
+    ),
+    thunk(
+      'air-temperature',
+      EnvironmentalDataPoint.view,
+      model.airTemperature,
+      forward(address, AirTemperatureAction)
+    )
+  ])

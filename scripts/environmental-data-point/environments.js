@@ -14,7 +14,7 @@ export const Restore = value => ({
 });
 
 const IndexedAction = tag('Indexed');
-const AddIndexed = compose(IndexedAction, Indexed.Add);
+const ActivateIndexed = compose(IndexedAction, Indexed.Activate);
 
 // Address a specific environment by id.
 export const EnvironmentByID = (id, source) => ({
@@ -94,3 +94,17 @@ export const update = (model, action) =>
   restore(model, action.value) :
   Unknown.update(model, action);
 
+// View
+
+export const view = (model, address) =>
+  html.div({
+    className: 'environments-main'
+  }, model.order[0] ?
+    [
+      Environment.view(
+        Indexed.getByIndex(model, 0),
+        forward(address, ByID(model.order[0]))
+      )
+    ] :
+    []
+  );
