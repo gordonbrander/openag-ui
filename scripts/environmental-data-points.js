@@ -57,11 +57,6 @@ const MissPoll = PollAction(Poll.Miss);
 
 const GetLatest = Request.Get(ORIGIN_LATEST);
 
-const Restore = value => ({
-  type: 'Restore',
-  value
-});
-
 // Init and update
 
 export const init = () => {
@@ -125,14 +120,6 @@ const gotError = (model, error) =>
 export const update = (model, action) =>
   action.type === 'Environments' ?
   updateEnvironments(model, action.source) :
-  action.type === 'CurrentRecipe' ?
-  updateCurrentRecipe(model, action.source) :
-  action.type === 'AirTemperature' ?
-  updateAirTemperature(model, action.source) :
-  action.type === 'AirHumidity' ?
-  updateAirHumidity(model, action.source) :
-  action.type === 'WaterTemperature' ?
-  updateWaterTemperature(model, action.source) :
   action.type === 'Poll' ?
   updatePoll(model, action.source) :
   action.type === 'Get' ?
@@ -143,8 +130,6 @@ export const update = (model, action) =>
     gotOk(model, action.result.value) :
     gotError(model, action.result.error)
   ) :
-  action.type === 'Restore' ?
-  restore(model, action.value) :
   Unknown.update(model, action);
 
 export const view = (model, address) =>
