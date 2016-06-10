@@ -1,5 +1,6 @@
 import {html, forward, Effects, thunk} from 'reflex';
 import {merge, tagged, tag, batch} from '../common/prelude';
+import * as Config from '../../openag-config.json';
 import * as Indexed from '../common/indexed';
 import * as Unknown from '../common/unknown';
 import {cursor} from '../common/cursor';
@@ -45,7 +46,7 @@ const AddDataPointByID = (id, dataPoint) =>
 
 // Model init and update functions
 
-export const init = Indexed.init;
+export const init = () => Indexed.init(Config.active_environment);
 
 const updateIndexed = cursor({
   get: model => model,
@@ -102,11 +103,11 @@ export const update = (model, action) =>
 export const view = (model, address) =>
   html.div({
     className: 'environments-main'
-  }, model.order[0] ?
+  }, Indexed.getActive(model) ?
     [
       Environment.view(
-        Indexed.getByIndex(model, 0),
-        forward(address, ByID(model.order[0]))
+        Indexed.getActive(model),
+        forward(address, ByID(Indexed.getActive(model)))
       )
     ] :
     []

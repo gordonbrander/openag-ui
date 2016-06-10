@@ -29,6 +29,7 @@ export const indexByID = array => indexWith(array, getID, identity);
 export const orderByID = array => array.map(getID);
 
 export const getByIndex = (model, i) => model.entries[model.order[i]];
+export const getActive = (model) => model.entries[model.active];
 
 // Create indexed model
 export const create = (models, active) => ({
@@ -39,8 +40,8 @@ export const create = (models, active) => ({
   entries: indexByID(models)
 });
 
-export const init = () => [
-  create([], null),
+export const init = (active) => [
+  create([], active),
   Effects.none
 ];
 
