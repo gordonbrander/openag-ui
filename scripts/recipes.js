@@ -1,8 +1,9 @@
 import {html, forward, Effects, Task, thunk} from 'reflex';
 import * as Config from '../openag-config.json';
 import PouchDB from 'pouchdb';
+import * as Template from './common/stache';
 import * as Database from './common/database';
-import {orderByID, indexByID, add} from './common/indexed';
+import * as Indexed from './common/indexed';
 import * as Unknown from './common/unknown';
 import {merge, tag, tagged} from './common/prelude';
 import * as Modal from './common/modal';
@@ -12,11 +13,13 @@ import {compose, constant} from './lang/functional';
 import * as RecipesForm from './recipes/form';
 import * as Recipe from './recipe';
 
-const DB = new PouchDB(Config.db_local_recipes);
+const DB = new PouchDB(Config.recipes_local);
 // Export for debugging
 window.RecipesDB = DB;
 
-const ORIGIN = Config.db_origin_recipes;
+const ORIGIN = Template.render(Config.recipes_origin, {
+  origin_url: Config.origin_url
+});
 
 // Actions and tagging functions
 
@@ -64,11 +67,7 @@ const ActivatePanel = id => ({
 });
 
 // An action representing "no further action".
-const NoOp = {
-  type: 'NoOp'
-};
-
-const AlwaysNoOp = constant(NoOp);
+const NoOp = Indexed.NoOp;
 
 // Model, update and init
 
@@ -105,23 +104,8 @@ const updateRecipesForm = cursor({
   tag: RecipesFormAction
 });
 
-const updateByID = (model, id, action) => {
-  if (model.order.indexOf(id) < 0) {
-    return [
-      model,
-      Effects
-        .task(Unknown.error(`model with id: ${id} is not found`))
-        .map(AlwaysNoOp)
-    ];
-  }
-  else {
-    const [entry, fx] = Recipe.update(model.entries[id], action);
-    return [
-      merge(model, {entries: merge(model.entries, {[id]: entry})}),
-      fx.map(ByID(id))
-    ];
-  }
-}
+const updateByID = (model, id, action) =>
+  Indexed.updateWithID(Recipe.update, byID(id), model, id, action);
 
 const syncedOk = model =>
   update(model, Restore);
@@ -134,9 +118,9 @@ const syncedError = model =>
 const restoredOk = (model, recipes) => [
   merge(model, {
     // Build an array of ordered recipe IDs
-    order: orderByID(recipes),
+    order: Indexed.orderByID(recipes),
     // Index all recipes by ID
-    entries: indexByID(recipes)
+    entries: Indexed.indexByID(recipes)
   }),
   Effects.none
 ];
@@ -165,7 +149,10 @@ export const update = (model, action) =>
   action.type === 'Putted' ?
   (
     action.result.isOk ?
-    [add(model, action.result.value), Effects.none] :
+    [
+      Indexed.add(model, action.result.value._id, action.result.value),
+      Effects.none
+    ] :
     // @TODO retry
     [model, Effects.none]
   ) :

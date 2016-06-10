@@ -6,16 +6,20 @@ import PouchDB from 'pouchdb';
 import * as Config from '../openag-config.json';
 import {merge, tag, tagged, batch} from './common/prelude';
 import {cursor} from './common/cursor';
+import * as Template from './common/stache';
 import * as Unknown from './common/unknown';
 import * as Database from './common/database';
+import * as Request from './common/request';
 import * as Indexed from './common/indexed';
 import {compose} from './lang/functional';
 
-const DB = new PouchDB(Config.db_local_environment);
+const DB = new PouchDB(Config.environment_local);
 // Export for debugging
 window.EnvironmentsDB = DB;
 
-const ORIGIN = Config.db_origin_environment;
+const ORIGIN = Template.render(Config.environment_origin, {
+  origin_url: Config.origin_url
+});
 
 // @FIXME get rid of hard-coding. We only support one environment in the UI
 // right now. Find a smarter way to deal with this.
@@ -32,6 +36,11 @@ const Restore = Database.Restore;
 const IndexedAction = tag('Indexed');
 const Reset = compose(IndexedAction, Indexed.Reset);
 const Activate = compose(IndexedAction, Indexed.Activate);
+
+const ActivateEnvironment = id => ({
+  type: 'ActivateEnvironment',
+  id
+});
 
 // Init and update
 
@@ -56,8 +65,11 @@ const pulledError = model =>
 const restoredOk = (model, entries) =>
   batch(update, model, [
     Reset(entries),
-    Activate(chooseFirstEnvironmentId(entries))
+    ActivateEnvironment(chooseFirstEnvironmentId(entries))
   ]);
+
+const activateEnvironment = (model, id) =>
+  update(model, Activate(id));
 
 export const update = (model, action) =>
   action.type === 'Indexed' ?
@@ -78,4 +90,6 @@ export const update = (model, action) =>
     restoredOk(model, action.result.value) :
     restoredError(model, action.result.error)
   ) :
+  action.type === 'ActivateEnvironment' ?
+  activateEnvironment(model, action.id) :
   Unknown.update(model, action);

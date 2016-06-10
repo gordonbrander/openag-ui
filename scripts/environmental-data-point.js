@@ -40,12 +40,12 @@ export const update = (model, action) =>
   Unknown.update(model, action);
 
 // @TODO read C or F
-const templateDataPoint = dataPoint => (
-  dataPoint && dataPoint.value ?
+const templateDataPoint = value => (
+  value ?
   [
     html.span({
       className: 'sense-number'
-    }, [String(dataPoint.value)]),
+    }, [String(value)]),
     html.span({
       className: 'sense-deg'
     }, ['°C'])

@@ -7,28 +7,26 @@ const RequestRecipes = {
   type: 'RequestRecipes'
 };
 
-export const ChangeRecipe = value => ({
-  type: 'ChangeRecipe',
+export const ChangeRecipeTitle = value => ({
+  type: 'ChangeRecipeTitle',
   value
 });
 
 export const init = () => [
   {
-    recipe: {
-      title: 'Salinas Valley in Fall'
-    },
+    recipeTitle: 'Salinas Valley in Fall'
   },
   Effects.none
 ];
 
 export const update = (model, action) =>
-  action.type === 'ChangeRecipe' ?
-  [merge(model, {recipe: action.value}), Effects.none] :
+  action.type === 'ChangeRecipeTitle' ?
+  [merge(model, {recipeTitle: action.value}), Effects.none] :
   Unknown.update(model, action);
 
 const readTitle = model =>
-  typeof model.recipe.title === 'string' ?
-  model.recipe.title :
+  typeof model.recipeTitle === 'string' ?
+  model.recipeTitle :
   // @TODO localize this
   'Untitled';
 

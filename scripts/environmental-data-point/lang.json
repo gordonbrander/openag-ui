@@ -1,5 +1,5 @@
 {
   "air_temperature": "Air Temperature",
-  "air_humidity": "Humidity",
+  "humidity": "Humidity",
   "water_temperature": "Water Temperature"
 }
