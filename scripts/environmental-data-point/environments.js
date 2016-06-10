@@ -23,9 +23,12 @@ export const EnvironmentByID = (id, source) => ({
   source
 });
 
+export const EnvironmentAction = (id, action) =>
+  EnvironmentByID(id, action);
+
 // Tag actions by id
 // @TODO figure out how to generalize this.
-const ByID = id => action => EnvironmentByID(id, action);
+const ByID = id => action => EnvironmentAction(id, action);
 
 const AddDataPoint = value => ({
   type: 'AddDataPoint',
@@ -38,7 +41,7 @@ const CreateEnvironment = id => ({
 });
 
 const AddDataPointByID = (id, dataPoint) =>
-  EnvironmentByID(id, Environment.AddDataPoint(dataPoint));
+  EnvironmentAction(id, Environment.AddDataPoint(dataPoint));
 
 // Model init and update functions
 

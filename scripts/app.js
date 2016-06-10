@@ -73,7 +73,7 @@ const RequestMode = value => ({
   value
 });
 
-const ChangeAppNavRecipe = compose(AppNavAction, AppNav.ChangeRecipe);
+const ChangeAppNavRecipeTitle = compose(AppNavAction, AppNav.ChangeRecipeTitle);
 
 // Init and update
 
@@ -153,7 +153,7 @@ const exitRecipesMode = model =>
 
 const recipeActivated = (model, recipe) =>
   batch(update, model, [
-    ChangeAppNavRecipe(recipe),
+    ChangeAppNavRecipeTitle(recipe.title),
     CloseRecipes,
     CloseOverlay
   ]);
