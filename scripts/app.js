@@ -43,6 +43,9 @@ const AppNavAction = action =>
 
 // Actions
 
+const ResetEnvironmentalDataPoints =
+  EnvironmentalDataPointsAction(EnvironmentalDataPoints.Reset);
+
 const RecipeActivated = value => ({
   type: 'RecipeActivated',
   value
@@ -85,7 +88,7 @@ const ChangeAppNavRecipeTitle = compose(AppNavAction, AppNav.ChangeRecipeTitle);
 // Init and update
 
 export const init = () => {
-  const [environmentalDataPoint, environmentalDataPointFx] =
+  const [environmentalDataPoints, environmentalDataPointsFx] =
     EnvironmentalDataPoints.init();
   const [recipes, recipesFx] = Recipes.init();
   const [appNav, appNavFx] = AppNav.init();
@@ -93,13 +96,13 @@ export const init = () => {
 
   return [
     {
-      environmentalDataPoint,
+      environmentalDataPoints,
       recipes,
       appNav,
       overlay
     },
     Effects.batch([
-      environmentalDataPointFx.map(EnvironmentalDataPointsAction),
+      environmentalDataPointsFx.map(EnvironmentalDataPointsAction),
       recipesFx.map(RecipesAction),
       appNavFx.map(AppNavAction),
       overlayFx.map(OverlayAction)
@@ -122,8 +125,8 @@ const updateRecipes = cursor({
 });
 
 const updateEnvironmentalDataPoints = cursor({
-  get: model => model.environmentalDataPoint,
-  set: (model, environmentalDataPoint) => merge(model, {environmentalDataPoint}),
+  get: model => model.environmentalDataPoints,
+  set: (model, environmentalDataPoints) => merge(model, {environmentalDataPoints}),
   update: EnvironmentalDataPoints.update,
   tag: EnvironmentalDataPointsAction
 });
@@ -151,20 +154,20 @@ const recipeActivated = (model, recipe) =>
   batch(update, model, [
     ChangeAppNavRecipeTitle(recipe.title),
     // @TODO bring environments up a level
-    PostRecipe(model.environmentalDataPoint.environments.active, recipe._id),
+    PostRecipe(model.environmentalDataPoints.environments.active, recipe._id),
     CloseRecipes,
     CloseOverlay
   ]);
 
-  const postRecipe = (model, environmentID, recipeID) => {
-    const url = Template.render(Config.start_recipe_url, {
-      api_url: Config.api_url,
-      environment: environmentID
-    });
-    return Request.post(model, url, {
-      data: recipeID
-    });
-  }
+const postRecipe = (model, environmentID, recipeID) => {
+  const url = Template.render(Config.start_recipe_url, {
+    api_url: Config.api_url,
+    environment: environmentID
+  });
+  return Request.post(model, url, {
+    data: recipeID
+  });
+}
 
 export const update = (model, action) =>
   action.type === 'EnvironmentalDataPoints' ?
@@ -181,7 +184,11 @@ export const update = (model, action) =>
   action.type === 'PostRecipe' ?
   postRecipe(model, action.environmentID, action.recipeID) :
   action.type === 'Posted' ?
-  [model, Effects.none] :
+  (
+    action.result.isOk ?
+    update(model, ResetEnvironmentalDataPoints) :
+    [model, Effects.none]
+  ) :
   action.type === 'EnterRecipesMode' ?
   enterRecipesMode(model) :
   action.type === 'ExitRecipesMode' ?
@@ -193,7 +200,7 @@ export const view = (model, address) => html.div({
 }, [
   AppNav.view(model.appNav, forward(address, AppNavAction)),
   EnvironmentalDataPoints.view(
-    model.environmentalDataPoint,
+    model.environmentalDataPoints,
     forward(address, EnvironmentalDataPointsAction)
   ),
   Overlay.view(model.overlay, forward(address, OverlayAction)),

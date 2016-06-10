@@ -22,25 +22,8 @@ const ORIGIN_LATEST = Template.render(
   }
 );
 
-const RECIPE_START = 'recipe_start';
-const RECIPE_END = 'recipe_end';
-const AIR_TEMPERATURE = 'air_temperature';
-const AIR_HUMIDITY = 'air_humidity';
-const WATER_TEMPERATURE = 'water_temperature';
-
 const seconds = 1000;
 const POLL_TIMEOUT = 2 * seconds;
-
-// Matching functions
-
-const matcher = (key, value) => (object) =>
-  object[key] === value;
-
-const isRecipeStart = matcher('variable', RECIPE_START);
-const isRecipeEnd = matcher('variable', RECIPE_END);
-const isAirTemperature = matcher('variable', AIR_TEMPERATURE);
-const isAirHumidity = matcher('variable', AIR_HUMIDITY);
-const isWaterTemperature = matcher('variable', WATER_TEMPERATURE);
 
 // Actions and action tagging functions
 
