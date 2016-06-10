@@ -180,6 +180,8 @@ export const update = (model, action) =>
   recipeActivated(model, action.value) :
   action.type === 'PostRecipe' ?
   postRecipe(model, action.environmentID, action.recipeID) :
+  action.type === 'Posted' ?
+  [model, Effects.none] :
   action.type === 'EnterRecipesMode' ?
   enterRecipesMode(model) :
   action.type === 'ExitRecipesMode' ?
