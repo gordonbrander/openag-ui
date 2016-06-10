@@ -1,7 +1,10 @@
 import {html, forward, Effects} from 'reflex';
 import {merge, tagged, tag, batch} from './common/prelude';
+import * as Config from '../openag-config.json';
 import * as Unknown from './common/unknown';
 import {cursor} from './common/cursor';
+import * as Template from './common/stache';
+import * as Request from './common/request';
 import * as AppNav from './app/nav';
 import * as EnvironmentalDataPoints from './environmental-data-points';
 import * as Recipes from './recipes';
@@ -51,6 +54,12 @@ const CloseOverlay = OverlayAction(Overlay.Close);
 const CreateRecipe = recipe => ({
   type: 'CreateRecipe',
   recipe
+});
+
+const PostRecipe = (environmentID, recipeID) => ({
+  type: 'PostRecipe',
+  recipeID,
+  environmentID
 });
 
 const EnterAddRecipe = {
@@ -141,9 +150,21 @@ const exitRecipesMode = model =>
 const recipeActivated = (model, recipe) =>
   batch(update, model, [
     ChangeAppNavRecipeTitle(recipe.title),
+    // @TODO bring environments up a level
+    PostRecipe(model.environmentalDataPoint.environments.active, recipe._id),
     CloseRecipes,
     CloseOverlay
   ]);
+
+  const postRecipe = (model, environmentID, recipeID) => {
+    const url = Template.render(Config.start_recipe_url, {
+      api_url: Config.api_url,
+      environment: environmentID
+    });
+    return Request.post(model, url, {
+      data: recipeID
+    });
+  }
 
 export const update = (model, action) =>
   action.type === 'EnvironmentalDataPoints' ?
@@ -157,6 +178,8 @@ export const update = (model, action) =>
   // Specialized update functions
   action.type === 'RecipeActivated' ?
   recipeActivated(model, action.value) :
+  action.type === 'PostRecipe' ?
+  postRecipe(model, action.environmentID, action.recipeID) :
   action.type === 'EnterRecipesMode' ?
   enterRecipesMode(model) :
   action.type === 'ExitRecipesMode' ?

@@ -28,3 +28,27 @@ export const get = (model, url) => [
   GetEffect(url)
 ];
 
+export const Post = url => ({
+  type: 'Post',
+  url
+})
+
+// Apologies for the silly name
+export const Posted = result => ({
+  type: 'Posted',
+  result
+});
+
+const PostEffect = (url, body) =>
+  Effects.task(new Task((succeed, fail) => {
+    const ok = compose(succeed, Posted, Result.ok);
+    const error = compose(succeed, Posted, Result.error);
+    JsonHttp.post(url, body)
+      .then(ok, error)
+      .catch(error);
+  }));
+
+export const post = (model, url, body) => [
+  model,
+  PostEffect(url, body)
+];

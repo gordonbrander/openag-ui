@@ -11,7 +11,21 @@ export const get = url => {
   const headers = new Headers({
     'Content-Type': 'application/json',
   });
-  const request = new Request(url, headers);
+  const request = new Request(url, {
+    method: 'GET',
+    headers
+  });
   return fetch(request).then(readResponseJSON);
 }
 
+export const post = (url, body) => {
+  const headers = new Headers({
+    'Content-Type': 'application/json',
+  });
+  const request = new Request(url, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(body)
+  });
+  return fetch(request).then(readResponseJSON);
+}
