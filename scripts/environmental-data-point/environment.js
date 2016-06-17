@@ -5,6 +5,7 @@ import * as Unknown from '../common/unknown';
 import {cursor} from '../common/cursor';
 import {compose} from '../lang/functional';
 import * as EnvironmentalDataPoint from '../environmental-data-point';
+import * as LineChart from '../environmental-data-point/line-chart';
 import * as CurrentRecipe from '../environmental-data-point/recipe';
 // @TODO do proper localization
 import * as LANG from '../environmental-data-point/lang';
@@ -44,7 +45,7 @@ const AddRecipeEnd = compose(
 
 const AddAirTemperature = compose(
   AirTemperatureAction,
-  EnvironmentalDataPoint.Add
+  LineChart.Add
 );
 
 const AddHumidity = compose(
@@ -70,7 +71,7 @@ export const init = () => {
     ''
   );
 
-  const [airTemperature, airTemperatureFx] = EnvironmentalDataPoint.init(
+  const [airTemperature, airTemperatureFx] = LineChart.init(
     AIR_TEMPERATURE,
     LANG[AIR_TEMPERATURE]
   );
@@ -120,7 +121,7 @@ const updateRecipeEnd = cursor({
 const updateAirTemperature = cursor({
   get: model => model.airTemperature,
   set: (model, airTemperature) => merge(model, {airTemperature}),
-  update: EnvironmentalDataPoint.update,
+  update: LineChart.update,
   tag: AirTemperatureAction
 });
 
@@ -144,7 +145,7 @@ const addDataPoint = (model, dataPoint) =>
   dataPoint.variable === RECIPE_END ?
   update(model, AddRecipeEnd(dataPoint.value)) :
   dataPoint.variable === AIR_TEMPERATURE ?
-  update(model, AddAirTemperature(dataPoint.value)) :
+  update(model, AddAirTemperature(dataPoint.timestamp, Number.parseFloat(dataPoint.value))) :
   dataPoint.variable === HUMIDITY ?
   update(model, AddHumidity(dataPoint.value)) :
   dataPoint.variable === WATER_TEMPERATURE ?
@@ -193,7 +194,7 @@ export const view = (model, address) =>
     ),
     thunk(
       'air-temperature',
-      EnvironmentalDataPoint.view,
+      LineChart.view,
       model.airTemperature,
       forward(address, AirTemperatureAction)
     )
