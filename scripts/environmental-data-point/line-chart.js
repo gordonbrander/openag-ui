@@ -17,15 +17,6 @@ class LineChartWidget {
     this.type = 'Widget';
     this.data = data;
     this.label = label;
-    this.options = {
-      responsive: false,
-      scales: {
-        xAxes: [{
-            type: 'linear',
-            position: 'bottom'
-        }]
-      }
-    };
   }
 
   init() {
@@ -42,7 +33,20 @@ class LineChartWidget {
           data: this.data
         }]
       },
-      options: this.options
+      options: {
+        responsive: false,
+        scales: {
+          xAxes: [{
+            type: 'time',
+            time: {
+              displayFormats: {
+                minute: 'h:mm a'
+              }
+            },
+            position: 'bottom'
+          }]
+        }
+      }
     });
 
     this.chart = chart;
