@@ -4,6 +4,9 @@ import {merge} from '../common/prelude';
 import * as Unknown from '../common/unknown';
 import Chart from 'chart.js';
 
+// Limit for number of datapoints to keep for dashboard render.
+const LIMIT = 500;
+
 // Define a widget wrapper for Chart.js. This lets us define a block of code
 // that doesn't get patched via virtual dom, which is important since
 // chart.js manages its own lifecycle and event loop.
@@ -80,15 +83,25 @@ export const init = (variable, title) => [
   Effects.none
 ];
 
-const add = (model, timestamp, value) => [
+const last = array => array.length > 0 ? array[array.length - 1] : null;
+
+const addData = (model, dataPoint) =>
   merge(model, {
-    data: model.data.concat({
+    data: model.data.concat(dataPoint)
+  });
+
+const add = (model, timestamp, value) => {
+  const prev = last(model.data);
+  const next = (
+    !prev || (prev.x < timestamp && model.data.length < LIMIT) ?
+    addData(model, {
       x: timestamp,
       y: value
-    })
-  }),
-  Effects.none
-];
+    }) :
+    model
+  );
+  return [next, Effects.none];
+};
 
 export const update = (model, action) =>
   action.type === 'Add' ?
