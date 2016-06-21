@@ -145,7 +145,7 @@ const addDataPoint = (model, dataPoint) =>
   dataPoint.variable === RECIPE_END ?
   update(model, AddRecipeEnd(dataPoint.value)) :
   dataPoint.variable === AIR_TEMPERATURE ?
-  update(model, AddAirTemperature(dataPoint.timestamp, Number.parseFloat(dataPoint.value))) :
+  update(model, AddAirTemperature(dataPoint)) :
   dataPoint.variable === HUMIDITY ?
   update(model, AddHumidity(dataPoint.value)) :
   dataPoint.variable === WATER_TEMPERATURE ?
