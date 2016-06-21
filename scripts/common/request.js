@@ -14,8 +14,16 @@ export const Got = result => ({
   result
 });
 
+const GotOk = compose(Got, Result.ok);
+const GotError = compose(Got, Result.error);
+
+const GetTask = url => new Task((succeed, fail) => {
+  const ok = compose(succeed, result)
+  JsonHttp.get(url).then(ok, error).catch(error);
+});
+
 const GetEffect = (url) =>
-  Effects.task(new Task((succeed, fail) => {
+  Effects.perform(new Task((succeed, fail) => {
     const ok = compose(succeed, Got, Result.ok);
     const error = compose(succeed, Got, Result.error);
     JsonHttp.get(url)
@@ -40,7 +48,7 @@ export const Posted = result => ({
 });
 
 const PostEffect = (url, body) =>
-  Effects.task(new Task((succeed, fail) => {
+  Effects.perform(new Task((succeed, fail) => {
     const ok = compose(succeed, Posted, Result.ok);
     const error = compose(succeed, Posted, Result.error);
     JsonHttp.post(url, body)
