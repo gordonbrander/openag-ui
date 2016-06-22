@@ -1,6 +1,10 @@
+import * as Config from '../../openag-config.json';
 import {html, forward, Effects, thunk} from 'reflex';
 import {merge, tagged, tag, batch} from '../common/prelude';
-import * as Indexed from '../common/indexed';
+import * as Poll from '../common/poll';
+import * as Template from '../common/stache';
+import * as Request from '../common/request';
+import * as Result from '../common/result';
 import * as Unknown from '../common/unknown';
 import {cursor} from '../common/cursor';
 import {compose} from '../lang/functional';
@@ -16,22 +20,73 @@ const AIR_TEMPERATURE = 'air_temperature';
 const HUMIDITY = 'humidity';
 const WATER_TEMPERATURE = 'water_temperature';
 
+const seconds = 1000;
+const POLL_TIMEOUT = 2 * seconds;
+
+// Create a url string that allows you to GET latest environmental datapoints
+// from an environmen via CouchDB.
+const templateLatestUrl = (environmentID) =>
+  Template.render(Config.environmental_data_point_origin_latest, {
+    origin_url: Config.origin_url,
+    startkey: JSON.stringify([environmentID]),
+    endkey: JSON.stringify([environmentID, {}])
+  });
+
+const templateRangeUrl = (environmentID, startTime, endTime) =>
+  Template.render(Config.environmental_data_point_origin_range, {
+    origin_url: Config.origin_url,
+    startkey: JSON.stringify([environmentID, startTime]),
+    endkey: JSON.stringify([environmentID, endTime || {}])
+  });
+
 // Actions
 
 const NoOp = {
   type: 'NoOp'
 };
 
-export const AddDataPoint = value => ({
-  type: 'AddDataPoint',
-  value
-});
+const PollAction = action =>
+  action.type === 'Ping' ?
+  GetLatest :
+  tagged('Poll', action);
+
+// This is the first fetch we do for the model from the API.
+const GetRestore = {type: 'GetRestore'};
+const Restore = tag('Restore');
+
+const GetLatest = {type: 'GetLatest'};
+const Latest = tag('Latest');
+
+const GetBacklog = {type: 'GetBacklog'};
+const Reset = tag('Reset');
+
+const PongPoll = PollAction(Poll.Pong);
+const MissPoll = PollAction(Poll.Miss);
 
 const RecipeStartAction = tag('RecipeStart');
 const RecipeEndAction = tag('RecipeEnd');
 const AirTemperatureAction = tag('AirTemperature');
 const HumidityAction = tag('Humidity');
 const WaterTemperatureAction = tag('WaterTemperature');
+
+const readRow = row => row.value;
+// @FIXME must check that the value returned from http call is JSON and has
+// this structure before mapping.
+const readRecord = record => record.rows.map(readRow);
+
+// Map an incoming datapoint into an action
+const DataPointAction = dataPoint =>
+  dataPoint.variable === RECIPE_START ?
+  AddRecipeStart(dataPoint) :
+  dataPoint.variable === RECIPE_END ?
+  AddRecipeEnd(dataPoint) :
+  dataPoint.variable === AIR_TEMPERATURE ?
+  AddAirTemperature(dataPoint) :
+  dataPoint.variable === HUMIDITY ?
+  AddHumidity(dataPoint.value) :
+  dataPoint.variable === WATER_TEMPERATURE ?
+  AddWaterTemperature(dataPoint.value) :
+  NoOp;
 
 const AddRecipeStart = compose(
   RecipeStartAction,
@@ -58,9 +113,18 @@ const AddWaterTemperature = compose(
   EnvironmentalDataPoint.Add
 );
 
+// Effect
+const getBacklog = model =>
+  model.id && model.recipeStart && model.recipeStart.value && model.recipeStart.value.timestamp ?
+  Request
+    .get(templateRangeUrl(model.id, model.recipeStart.value.timestamp)) :
+  Effects.none;
+
 // Model init and update
 
-export const init = () => {
+export const init = id => {
+  const [poll, pollFx] = Poll.init(POLL_TIMEOUT);
+
   const [recipeStart, recipeStartFx] = EnvironmentalDataPoint.init(
     RECIPE_START,
     ''
@@ -88,6 +152,8 @@ export const init = () => {
 
   return [
     {
+      id,
+      poll,
       recipeStart,
       recipeEnd,
       airTemperature,
@@ -95,14 +161,65 @@ export const init = () => {
       waterTemperature
     },
     Effects.batch([
+      pollFx.map(PollAction),
       recipeStartFx.map(RecipeStartAction),
       recipeEndFx.map(RecipeEndAction),
       airTemperatureFx.map(AirTemperatureAction),
       humidityFx.map(HumidityAction),
-      waterTemperatureFx.map(WaterTemperatureAction)
+      waterTemperatureFx.map(WaterTemperatureAction),
+      Effects.receive(GetRestore)
     ])
   ];
 };
+
+export const update = (model, action) =>
+  action.type === 'NoOp' ?
+  [model, Effects.none] :
+  action.type === 'Poll' ?
+  updatePoll(model, action.source) :
+  action.type === 'GetLatest' ?
+  [model, Request.get(templateLatestUrl(model.id)).map(Latest)] :
+  action.type === 'GetBacklog' ?
+  [model, getBacklog(model)] :
+  action.type === 'Latest' ?
+  updateLatest(model, action.source) :
+  action.type === 'GetRestore' ?
+  [model, Request.get(templateLatestUrl(model.id)).map(Restore)] :
+  action.type === 'Restore' ?
+  restore(model, action.source) :
+  action.type === 'RecipeStart' ?
+  updateRecipeStart(model, action.source) :
+  action.type === 'RecipeEnd' ?
+  updateRecipeEnd(model, action.source) :
+  action.type === 'AirTemperature' ?
+  updateAirTemperature(model, action.source) :
+  action.type === 'Humidity' ?
+  updateHumidity(model, action.source) :
+  action.type === 'WaterTemperature' ?
+  updateWaterTemperature(model, action.source) :
+  Unknown.update(model, action);
+
+const restore = (model, result) => {
+  const [one, oneFx] = update(model, Latest(result));
+  const [two, twoFx] = update(one, GetBacklog);
+  return [two, twoFx];
+};
+
+const updateLatest = Result.updater(
+  (model, record) => {
+    const actions = readRecord(record).map(DataPointAction);
+    actions.push(PongPoll);
+    return batch(update, model, actions);
+  },
+  (model, error) => update(model, MissPoll)
+);
+
+const updatePoll = cursor({
+  get: model => model.poll,
+  set: (model, poll) => merge(model, {poll}),
+  update: Poll.update,
+  tag: PollAction
+});
 
 const updateRecipeStart = cursor({
   get: model => model.recipeStart,
@@ -138,40 +255,6 @@ const updateWaterTemperature = cursor({
   update: EnvironmentalDataPoint.update,
   tag: WaterTemperatureAction
 });
-
-const addDataPoint = (model, dataPoint) =>
-  dataPoint.variable === RECIPE_START ?
-  update(model, AddRecipeStart(dataPoint.value)) :
-  dataPoint.variable === RECIPE_END ?
-  update(model, AddRecipeEnd(dataPoint.value)) :
-  dataPoint.variable === AIR_TEMPERATURE ?
-  update(model, AddAirTemperature(dataPoint)) :
-  dataPoint.variable === HUMIDITY ?
-  update(model, AddHumidity(dataPoint.value)) :
-  dataPoint.variable === WATER_TEMPERATURE ?
-  update(model, AddWaterTemperature(dataPoint.value)) :
-  // Ignore datapoints that we don't understand/don't want to render.
-  update(model, NoOp);
-
-// Is the problem that I'm not mapping the returned effect?
-export const update = (model, action) =>
-  action.type === 'NoOp' ?
-  [model, Effects.none] :
-  action.type === 'AddDataPoint' ?
-  addDataPoint(model, action.value) :
-  action.type === 'RecipeStart' ?
-  updateRecipeStart(model, action.source) :
-  action.type === 'RecipeEnd' ?
-  updateRecipeEnd(model, action.source) :
-  action.type === 'AirTemperature' ?
-  updateAirTemperature(model, action.source) :
-  action.type === 'Humidity' ?
-  updateHumidity(model, action.source) :
-  action.type === 'WaterTemperature' ?
-  updateWaterTemperature(model, action.source) :
-  action.type === 'Restore' ?
-  restore(model, action.value) :
-  Unknown.update(model, action);
 
 // View
 

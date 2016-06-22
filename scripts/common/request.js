@@ -38,7 +38,7 @@ export const Get = url => ({
 
 export const Got = tag('Got');
 
-// Get is an Effect
+// Returns a get effect
 export const get = url => Effects.perform(new Task((succeed, fail) => {
   getFetch(url).then(Result.ok, Result.error).then(succeed);
 }));
@@ -46,7 +46,7 @@ export const get = url => Effects.perform(new Task((succeed, fail) => {
 export const Post = url => ({
   type: 'Post',
   url
-})
+});
 
 // Apologies for the silly name
 export const Posted = result => ({
