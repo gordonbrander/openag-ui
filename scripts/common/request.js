@@ -1,40 +1,47 @@
+import 'whatwg-fetch';
 import {Effects, Task} from 'reflex';
 import * as Result from '../common/result';
-import * as JsonHttp from '../common/json-http';
 import {compose} from '../lang/functional';
+import {tag} from '../common/prelude';
+
+// Read a Response object to JSON.
+// https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API/Using_Fetch
+const readResponseJSON = response => response.json();
+
+const getFetch = url => {
+  const headers = new Headers({
+    'Content-Type': 'application/json',
+  });
+  const request = new Request(url, {
+    method: 'GET',
+    headers
+  });
+  return fetch(request).then(readResponseJSON);
+}
+
+const postFetch = (url, body) => {
+  const headers = new Headers({
+    'Content-Type': 'application/json',
+  });
+  const request = new Request(url, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(body)
+  });
+  return fetch(request).then(readResponseJSON);
+}
 
 export const Get = url => ({
   type: 'Get',
   url
-})
-
-// Apologies for the silly name
-export const Got = result => ({
-  type: 'Got',
-  result
 });
 
-const GotOk = compose(Got, Result.ok);
-const GotError = compose(Got, Result.error);
+export const Got = tag('Got');
 
-const GetTask = url => new Task((succeed, fail) => {
-  const ok = compose(succeed, result)
-  JsonHttp.get(url).then(ok, error).catch(error);
-});
-
-const GetEffect = (url) =>
-  Effects.perform(new Task((succeed, fail) => {
-    const ok = compose(succeed, Got, Result.ok);
-    const error = compose(succeed, Got, Result.error);
-    JsonHttp.get(url)
-      .then(ok, error)
-      .catch(error);
-  }));
-
-export const get = (model, url) => [
-  model,
-  GetEffect(url)
-];
+// Get is an Effect
+export const get = url => Effects.perform(new Task((succeed, fail) => {
+  getFetch(url).then(Result.ok, Result.error).then(succeed);
+}));
 
 export const Post = url => ({
   type: 'Post',
@@ -51,9 +58,7 @@ const PostEffect = (url, body) =>
   Effects.perform(new Task((succeed, fail) => {
     const ok = compose(succeed, Posted, Result.ok);
     const error = compose(succeed, Posted, Result.error);
-    JsonHttp.post(url, body)
-      .then(ok, error)
-      .catch(error);
+    postFetch(url, body).then(ok, error);
   }));
 
 export const post = (model, url, body) => [
