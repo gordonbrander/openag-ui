@@ -199,11 +199,11 @@ export const update = (model, action) =>
   updateWaterTemperature(model, action.source) :
   Unknown.update(model, action);
 
-const restore = (model, result) => {
-  const [one, oneFx] = update(model, Latest(result));
-  const [two, twoFx] = update(one, GetBacklog);
-  return [two, twoFx];
-};
+const restore = (model, result) =>
+  batch(update, model, [
+    Latest(result),
+    GetBacklog
+  ]);
 
 const updateLatest = Result.updater(
   (model, record) => {
