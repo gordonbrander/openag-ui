@@ -56,6 +56,8 @@ const updateIndexed = cursor({
 });
 
 const readRow = row => row.value;
+// @FIXME must check that the value returned from http call is JSON and has
+// this structure before mapping.
 const readRecord = record => record.rows.map(readRow);
 
 const restore = (model, record) =>
