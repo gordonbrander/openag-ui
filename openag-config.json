@@ -7,7 +7,7 @@
   "environmental_data_point_local": "environmental_data_point",
   "environmental_data_point_origin": "{{origin_url}}/environmental_data_point",
   "environmental_data_point_origin_latest": "{{origin_url}}/environmental_data_point/_design/openag/_view/by_variable?group_level=3",
-  "environmental_data_point_range": "{{origin_url}}/environmental_data_point/_design/openag/_view/by_timestamp?include_docs=true&startkey={{startkey}}&endkey={{endkey}}",
+  "environmental_data_point_origin_range": "{{origin_url}}/environmental_data_point/_design/openag/_view/by_timestamp?include_docs=true&startkey={{startkey}}&endkey={{endkey}}",
   "recipes_local": "recipes",
   "recipes_origin": "{{origin_url}}/recipes",
   "environment_local": "environment",
