@@ -23,22 +23,6 @@ const WATER_TEMPERATURE = 'water_temperature';
 const seconds = 1000;
 const POLL_TIMEOUT = 2 * seconds;
 
-// Create a url string that allows you to GET latest environmental datapoints
-// from an environmen via CouchDB.
-const templateLatestUrl = (environmentID) =>
-  Template.render(Config.environmental_data_point_origin_latest, {
-    origin_url: Config.origin_url,
-    startkey: JSON.stringify([environmentID]),
-    endkey: JSON.stringify([environmentID, {}])
-  });
-
-const templateRangeUrl = (environmentID, startTime, endTime) =>
-  Template.render(Config.environmental_data_point_origin_range, {
-    origin_url: Config.origin_url,
-    startkey: JSON.stringify([environmentID, startTime]),
-    endkey: JSON.stringify([environmentID, endTime || {}])
-  });
-
 // Actions
 
 const NoOp = {
@@ -69,11 +53,6 @@ const AirTemperatureAction = tag('AirTemperature');
 const HumidityAction = tag('Humidity');
 const WaterTemperatureAction = tag('WaterTemperature');
 
-const readRow = row => row.value;
-// @FIXME must check that the value returned from http call is JSON and has
-// this structure before mapping.
-const readRecord = record => record.rows.map(readRow);
-
 // Map an incoming datapoint into an action
 const DataPointAction = dataPoint =>
   dataPoint.variable === RECIPE_START ?
@@ -103,6 +82,11 @@ const AddAirTemperature = compose(
   LineChart.Add
 );
 
+const InsertManyAirTemperatures = compose(
+  AirTemperatureAction,
+  LineChart.InsertMany
+);
+
 const AddHumidity = compose(
   HumidityAction,
   EnvironmentalDataPoint.Add
@@ -115,9 +99,10 @@ const AddWaterTemperature = compose(
 
 // Effect
 const getBacklog = model =>
-  model.id && model.recipeStart && model.recipeStart.value && model.recipeStart.value.timestamp ?
+  model.id && hasRecipeStart(model) ?
   Request
-    .get(templateRangeUrl(model.id, model.recipeStart.value.timestamp)) :
+    .get(templateRangeUrl(model.id, model.recipeStart.value.timestamp))
+    .map(Reset):
   Effects.none;
 
 // Model init and update
@@ -181,6 +166,8 @@ export const update = (model, action) =>
   [model, Request.get(templateLatestUrl(model.id)).map(Latest)] :
   action.type === 'GetBacklog' ?
   [model, getBacklog(model)] :
+  action.type === 'Reset' ?
+  reset(model, action.source) :
   action.type === 'Latest' ?
   updateLatest(model, action.source) :
   action.type === 'GetRestore' ?
@@ -213,6 +200,16 @@ const updateLatest = Result.updater(
   },
   (model, error) => update(model, MissPoll)
 );
+
+const reset = Result.updater(
+  (model, record) => {
+    const dataPoints = readRecord(record).filter(isAirTemperature);
+    return update(model, InsertManyAirTemperatures(dataPoints));
+  },
+  (model, error) => console.log(error)
+);
+
+const isAirTemperature = dataPoint => dataPoint.variable === AIR_TEMPERATURE;
 
 const updatePoll = cursor({
   get: model => model.poll,
@@ -281,4 +278,31 @@ export const view = (model, address) =>
       model.airTemperature,
       forward(address, AirTemperatureAction)
     )
-  ])
+  ]);
+
+// Helpers
+
+const hasRecipeStart = model =>
+  model.recipeStart && model.recipeStart.value && model.recipeStart.value.timestamp;
+
+const readRow = row => row.value;
+// @FIXME must check that the value returned from http call is JSON and has
+// this structure before mapping.
+const readRecord = record => record.rows.map(readRow);
+
+// Create a url string that allows you to GET latest environmental datapoints
+// from an environmen via CouchDB.
+const templateLatestUrl = (environmentID) =>
+  Template.render(Config.environmental_data_point_origin_latest, {
+    origin_url: Config.origin_url,
+    startkey: JSON.stringify([environmentID]),
+    endkey: JSON.stringify([environmentID, {}])
+  });
+
+const templateRangeUrl = (environmentID, startTime, endTime) =>
+  Template.render(Config.environmental_data_point_origin_range, {
+    origin_url: Config.origin_url,
+    startkey: JSON.stringify([environmentID, startTime]),
+    endkey: JSON.stringify([environmentID, endTime || {}])
+  });
+
