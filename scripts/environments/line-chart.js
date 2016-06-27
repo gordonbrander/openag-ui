@@ -36,7 +36,8 @@ class LineChartWidget {
       element,
       series,
       width: window.innerWidth,
-      height: 250,
+      // Subtract the height of the header
+      height: window.innerHeight - 72,
       // preserve: true,
       renderer: 'line',
       interpolation: 'linear',

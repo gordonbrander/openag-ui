@@ -259,6 +259,12 @@ export const view = (model, address) =>
     className: 'environment-main'
   }, [
     thunk(
+      'air-temperature',
+      LineChart.view,
+      model.airTemperature,
+      forward(address, AirTemperatureAction)
+    ),
+    thunk(
       'water-temperature',
       EnvironmentalDataPoint.view,
       model.waterTemperature,
@@ -270,12 +276,6 @@ export const view = (model, address) =>
       EnvironmentalDataPoint.view,
       model.humidity,
       forward(address, HumidityAction)
-    ),
-    thunk(
-      'air-temperature',
-      LineChart.view,
-      model.airTemperature,
-      forward(address, AirTemperatureAction)
     )
   ]);
 
