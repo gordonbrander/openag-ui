@@ -31,6 +31,10 @@ module.exports = function (grunt) {
             dest: 'dist/'
           },
           {
+            src: ['vendor/**'],
+            dest: 'dist/'
+          },
+          {
             src: ['index.html'],
             dest: 'dist/index.html'
           }
