@@ -49,7 +49,7 @@ module.exports = function (grunt) {
           './assets/**',
           'openag-config.json'
         ],
-        tasks: ["browserify"]
+        tasks: ["browserify", "copy"]
       }
     }
   });
