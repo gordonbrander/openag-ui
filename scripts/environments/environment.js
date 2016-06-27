@@ -9,10 +9,9 @@ import * as Unknown from '../common/unknown';
 import {cursor} from '../common/cursor';
 import {compose} from '../lang/functional';
 import * as EnvironmentalDataPoint from '../environmental-data-point';
-import * as LineChart from '../environmental-data-point/line-chart';
-import * as CurrentRecipe from '../environmental-data-point/recipe';
+import * as LineChart from '../environments/line-chart';
 // @TODO do proper localization
-import * as LANG from '../environmental-data-point/lang';
+import * as LANG from '../environments/lang';
 
 const RECIPE_START = 'recipe_start';
 const RECIPE_END = 'recipe_end';

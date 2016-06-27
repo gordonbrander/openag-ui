@@ -6,7 +6,7 @@ import {cursor} from './common/cursor';
 import * as Template from './common/stache';
 import * as Request from './common/request';
 import * as AppNav from './app/nav';
-import * as EnvironmentalDataPoints from './environmental-data-point/environments';
+import * as Environments from './environments';
 import * as Recipes from './recipes';
 import * as Overlay from './overlay';
 import {compose} from './lang/functional';
@@ -18,7 +18,7 @@ const RecipesAction = action =>
   RecipeActivated(action.value) :
   tagged('Recipes', action);
 
-const EnvironmentalDataPointsAction = tag('EnvironmentalDataPoints');
+const EnvironmentsAction = tag('Environments');
 
 const OpenRecipes = RecipesAction(Recipes.Open);
 const CloseRecipes = RecipesAction(Recipes.Close);
@@ -85,21 +85,20 @@ const ChangeAppNavRecipeTitle = compose(AppNavAction, AppNav.ChangeRecipeTitle);
 // Init and update
 
 export const init = () => {
-  const [environmentalDataPoints, environmentalDataPointsFx] =
-    EnvironmentalDataPoints.init();
+  const [environments, environmentsFx] = Environments.init();
   const [recipes, recipesFx] = Recipes.init();
   const [appNav, appNavFx] = AppNav.init();
   const [overlay, overlayFx] = Overlay.init();
 
   return [
     {
-      environmentalDataPoints,
+      environments,
       recipes,
       appNav,
       overlay
     },
     Effects.batch([
-      environmentalDataPointsFx.map(EnvironmentalDataPointsAction),
+      environmentsFx.map(EnvironmentsAction),
       recipesFx.map(RecipesAction),
       appNavFx.map(AppNavAction),
       overlayFx.map(OverlayAction)
@@ -121,11 +120,11 @@ const updateRecipes = cursor({
   tag: RecipesAction
 });
 
-const updateEnvironmentalDataPoints = cursor({
-  get: model => model.environmentalDataPoints,
-  set: (model, environmentalDataPoints) => merge(model, {environmentalDataPoints}),
-  update: EnvironmentalDataPoints.update,
-  tag: EnvironmentalDataPointsAction
+const updateEnvironments = cursor({
+  get: model => model.environments,
+  set: (model, environments) => merge(model, {environments}),
+  update: Environments.update,
+  tag: EnvironmentsAction
 });
 
 const updateOverlay = cursor({
@@ -151,7 +150,7 @@ const recipeActivated = (model, recipe) =>
   batch(update, model, [
     ChangeAppNavRecipeTitle(recipe.title),
     // @TODO bring environments up a level
-    PostRecipe(model.environmentalDataPoints.active, recipe._id),
+    PostRecipe(model.environments.active, recipe._id),
     CloseRecipes,
     CloseOverlay
   ]);
@@ -167,8 +166,8 @@ const postRecipe = (model, environmentID, recipeID) => {
 }
 
 export const update = (model, action) =>
-  action.type === 'EnvironmentalDataPoints' ?
-  updateEnvironmentalDataPoints(model, action.source) :
+  action.type === 'Environments' ?
+  updateEnvironments(model, action.source) :
   action.type === 'Recipes' ?
   updateRecipes(model, action.source) :
   action.type === 'AppNav' ?
@@ -192,9 +191,9 @@ export const view = (model, address) => html.div({
   className: 'app-main'
 }, [
   AppNav.view(model.appNav, forward(address, AppNavAction)),
-  EnvironmentalDataPoints.view(
-    model.environmentalDataPoints,
-    forward(address, EnvironmentalDataPointsAction)
+  Environments.view(
+    model.environments,
+    forward(address, EnvironmentsAction)
   ),
   Overlay.view(model.overlay, forward(address, OverlayAction)),
   Recipes.view(model.recipes, forward(address, RecipesAction))
