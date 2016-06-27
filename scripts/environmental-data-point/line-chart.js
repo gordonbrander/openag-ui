@@ -7,9 +7,6 @@ import Rickshaw from 'rickshaw';
 
 // Limit for number of datapoints to keep for dashboard render.
 const MAX = 500;
-const MS_SECOND = 1000;
-const MS_MINUTE = 60 * MS_SECOND;
-const MS_HOUR = MS_MINUTE * 60;
 
 // Define a widget wrapper for Chart.js. This lets us define a block of code
 // that doesn't get patched via virtual dom, which is important since
@@ -35,12 +32,6 @@ class LineChartWidget {
       }
     ];
 
-    // const series = new Rickshaw.Series.FixedDuration(this.data, null, {
-    //   timeInterval: MS_HOUR,
-    //   maxDataPoints: 100,
-    //   timeBase: new Date().getTime() / 1000
-    // });
-
     const graph = new Rickshaw.Graph({
       element,
       series,
@@ -56,11 +47,6 @@ class LineChartWidget {
     const detail = new Rickshaw.Graph.HoverDetail({
       graph: graph
     });
-
-    // const slider = new Rickshaw.Graph.RangeSlider.Preview({
-    //   graph: graph,
-    //   element: document.querySelector('#slider')
-    // });
 
     this.graph = graph;
 
@@ -152,6 +138,13 @@ const insertMany = (model, dataPoints) => {
   return [next, Effects.none];
 }
 
+// View
+
+export const view = (model, address) =>
+  new LineChartWidget(model.title, model.measured);
+
+// Helpers
+
 const getX = chartPoint => chartPoint.x;
 const isDesired = dataPoint => dataPoint.is_desired;
 const isMeasured = dataPoint => !dataPoint.is_desired;
@@ -165,8 +158,3 @@ const readDataPoint = ({timestamp, value}) => ({
 const compareByX = (a, b) => a.x > b.x ? 1 : -1;
 
 const toArrayOrderedByX = object => Ordered.toArray(object, compareByX);
-
-// View
-
-export const view = (model, address) =>
-  new LineChartWidget(model.title, model.measured);
