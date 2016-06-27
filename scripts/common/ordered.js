@@ -27,18 +27,18 @@ export const toArray = (object, compare) => {
   return array;
 }
 
-// Set a value at key on index, returning new index.
-const enter = (index, key, value) => {
-  const next = Object.assign({}, index);
+// Set a value at key on object, returning new object.
+const enter = (object, key, value) => {
+  const next = Object.assign({}, object);
   next[key] = value;
   return next;
 }
 
-// Insert value in index, but only if it doesn't already exist in index.
-export const insertNew = (index, value, readKey) => {
+// Insert value in object, but only if it doesn't already exist in object.
+export const insertNew = (object, value, readKey) => {
   const key = readKey(value);
-  return !index[key] ? enter(index, key, value) : index;
+  return !object[key] ? enter(object, key, value) : object;
 }
 
-export const insertMany = (index, array, readKey) =>
-  Object.assign({}, index, indexWith(array, readKey));
+export const insertMany = (object, array, readKey) =>
+  Object.assign({}, object, indexWith(array, readKey));
