@@ -6,7 +6,7 @@ import {cursor} from './common/cursor';
 import * as Template from './common/stache';
 import * as Request from './common/request';
 import * as AppNav from './app/nav';
-import * as EnvironmentalDataPoints from './environmental-data-points';
+import * as EnvironmentalDataPoints from './environmental-data-point/environments';
 import * as Recipes from './recipes';
 import * as Overlay from './overlay';
 import {compose} from './lang/functional';
@@ -42,9 +42,6 @@ const AppNavAction = action =>
   tagged('AppNav', action);
 
 // Actions
-
-const ResetEnvironmentalDataPoints =
-  EnvironmentalDataPointsAction(EnvironmentalDataPoints.Reset);
 
 const RecipeActivated = value => ({
   type: 'RecipeActivated',
@@ -154,7 +151,7 @@ const recipeActivated = (model, recipe) =>
   batch(update, model, [
     ChangeAppNavRecipeTitle(recipe.title),
     // @TODO bring environments up a level
-    PostRecipe(model.environmentalDataPoints.environments.active, recipe._id),
+    PostRecipe(model.environmentalDataPoints.active, recipe._id),
     CloseRecipes,
     CloseOverlay
   ]);
@@ -184,11 +181,7 @@ export const update = (model, action) =>
   action.type === 'PostRecipe' ?
   postRecipe(model, action.environmentID, action.recipeID) :
   action.type === 'Posted' ?
-  (
-    action.result.isOk ?
-    update(model, ResetEnvironmentalDataPoints) :
-    [model, Effects.none]
-  ) :
+  [model, Effects.none] :
   action.type === 'EnterRecipesMode' ?
   enterRecipesMode(model) :
   action.type === 'ExitRecipesMode' ?
