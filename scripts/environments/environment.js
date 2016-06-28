@@ -10,6 +10,7 @@ import {cursor} from '../common/cursor';
 import {compose} from '../lang/functional';
 import * as EnvironmentalDataPoint from '../environmental-data-point';
 import * as LineChart from '../environments/line-chart';
+import * as Chart from '../environments/chart';
 // @TODO do proper localization
 import * as LANG from '../environments/lang';
 
@@ -137,6 +138,7 @@ export const init = id => {
   return [
     {
       id,
+      data: [],
       poll,
       recipeStart,
       recipeEnd,
@@ -201,11 +203,12 @@ const updateLatest = Result.updater(
 );
 
 const reset = Result.updater(
-  (model, record) => {
-    const dataPoints = readRecord(record).filter(isAirTemperature);
-    return update(model, InsertManyAirTemperatures(dataPoints));
-  },
-  (model, error) => console.log(error)
+  (model, record) => [
+    merge(model, {data: readData(record)}),
+    Effects.none
+  ],
+  // @TODO retry if we have an error
+  (model, error) => update(model, NoOp)
 );
 
 const isAirTemperature = dataPoint => dataPoint.variable === AIR_TEMPERATURE;
@@ -258,12 +261,13 @@ export const view = (model, address) =>
   html.div({
     className: 'environment-main'
   }, [
-    thunk(
-      'air-temperature',
-      LineChart.view,
-      model.airTemperature,
-      forward(address, AirTemperatureAction)
-    ),
+    new Chart.Widget(model.data),
+    // thunk(
+    //   'air-temperature',
+    //   LineChart.view,
+    //   model.airTemperature,
+    //   forward(address, AirTemperatureAction)
+    // ),
     thunk(
       'water-temperature',
       EnvironmentalDataPoint.view,
@@ -288,6 +292,21 @@ const readRow = row => row.value;
 // @FIXME must check that the value returned from http call is JSON and has
 // this structure before mapping.
 const readRecord = record => record.rows.map(readRow);
+
+const compareByTimestamp = (a, b) =>
+  a.timestamp > b.timestamp ? 1 : -1;
+
+const readDataPoint = ({variable, timestamp, value}) => ({
+  variable,
+  timestamp,
+  value: Number.parseFloat(value)
+});
+
+const readData = record => {
+  const data = readRecord(record).map(readDataPoint);
+  data.sort(compareByTimestamp);
+  return data;
+};
 
 // Create a url string that allows you to GET latest environmental datapoints
 // from an environmen via CouchDB.
