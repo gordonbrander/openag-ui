@@ -12,10 +12,10 @@
     "url": "https://github.com/OpenAgInitiative/openag-ui/issues"
   },
   "dependencies": {
+    "d3": "^4.0.0",
     "pouchdb": "^5.3.1",
     "reflex": "^0.4.1",
     "reflex-virtual-dom-driver": "^0.2.0",
-    "rickshaw": "^1.5.1",
     "whatwg-fetch": "^1.0.0"
   },
   "devDependencies": {

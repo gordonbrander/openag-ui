@@ -9,7 +9,6 @@ import * as Unknown from '../common/unknown';
 import {cursor} from '../common/cursor';
 import {compose} from '../lang/functional';
 import * as EnvironmentalDataPoint from '../environmental-data-point';
-import * as LineChart from '../environments/line-chart';
 import * as Chart from '../environments/chart';
 // @TODO do proper localization
 import * as LANG from '../environments/lang';
@@ -79,12 +78,12 @@ const AddRecipeEnd = compose(
 
 const AddAirTemperature = compose(
   AirTemperatureAction,
-  LineChart.Add
+  EnvironmentalDataPoint.Add
 );
 
 const InsertManyAirTemperatures = compose(
   AirTemperatureAction,
-  LineChart.InsertMany
+  EnvironmentalDataPoint.InsertMany
 );
 
 const AddHumidity = compose(
@@ -120,7 +119,7 @@ export const init = id => {
     ''
   );
 
-  const [airTemperature, airTemperatureFx] = LineChart.init(
+  const [airTemperature, airTemperatureFx] = EnvironmentalDataPoint.init(
     AIR_TEMPERATURE,
     LANG[AIR_TEMPERATURE]
   );
@@ -237,7 +236,7 @@ const updateRecipeEnd = cursor({
 const updateAirTemperature = cursor({
   get: model => model.airTemperature,
   set: (model, airTemperature) => merge(model, {airTemperature}),
-  update: LineChart.update,
+  update: EnvironmentalDataPoint.update,
   tag: AirTemperatureAction
 });
 
