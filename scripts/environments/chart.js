@@ -128,10 +128,16 @@ export const view = (model, address) =>
   viewEmpty(model, address);
 
 // Handle the case where there is no data yet.
-const viewEmpty = (model, address) =>
-  html.div({
-    className: 'chart'
+const viewEmpty = (model, address) => {
+  const {width, height} = model;
+  return html.div({
+    className: 'chart',
+    style: {
+      width: px(width),
+      height: px(height)
+    }
   });
+}
 
 const viewData = (model, address) => {
   const {series, extentX, interval, width, height, tooltipHeight, tooltipWidth,
