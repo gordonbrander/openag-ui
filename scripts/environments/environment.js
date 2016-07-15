@@ -31,14 +31,14 @@ const PollAction = action =>
   tagged('Poll', action);
 
 // This is the first fetch we do for the model from the API.
-const GetRestore = {type: 'GetRestore'};
-const Restore = tag('Restore');
+const FetchInfo = {type: 'FetchInfo'};
+const Info = tag('Info');
 
 const GetLatest = {type: 'GetLatest'};
 const Latest = tag('Latest');
 
-const GetBacklog = {type: 'GetBacklog'};
-const Reset = tag('Reset');
+const FetchRestore = tag('FetchRestore');
+const Restore = tag('Restore');
 
 const PongPoll = PollAction(Poll.Pong);
 const MissPoll = PollAction(Poll.Miss);
@@ -46,50 +46,18 @@ const MissPoll = PollAction(Poll.Miss);
 const ChartAction = tag('Chart');
 const ChartData = compose(ChartAction, Chart.Data);
 
-const RecipeStartAction = tag('RecipeStart');
-const RecipeEndAction = tag('RecipeEnd');
+const StartRecipe = tag('StartRecipe');
+const EndRecipe = tag('EndRecipe');
 
 // Map an incoming datapoint into an action
-const DataPointAction = dataPoint =>
-  dataPoint.variable === RECIPE_START ?
-  AddRecipeStart(dataPoint) :
-  dataPoint.variable === RECIPE_END ?
-  AddRecipeEnd(dataPoint) :
-  NoOp;
-
-const AddRecipeStart = compose(
-  RecipeStartAction,
-  EnvironmentalDataPoint.Add
-);
-
-const AddRecipeEnd = compose(
-  RecipeEndAction,
-  EnvironmentalDataPoint.Add
-);
-
-// Effect
-const getBacklog = model =>
-  model.id && hasRecipeStart(model) ?
-  Request
-    .get(templateRangeUrl(model.id, model.recipeStart.value.timestamp))
-    .map(Reset):
-  Effects.none;
+const DataPointAction = dataPoint => {
+  console.log(DataPoint);
+}
 
 // Model init and update
 
 export const init = id => {
   const [poll, pollFx] = Poll.init(POLL_TIMEOUT);
-
-  const [recipeStart, recipeStartFx] = EnvironmentalDataPoint.init(
-    RECIPE_START,
-    ''
-  );
-
-  const [recipeEnd, recipeEndFx] = EnvironmentalDataPoint.init(
-    RECIPE_END,
-    ''
-  );
-
   const [chart, chartFx] = Chart.init();
 
   return [
@@ -97,15 +65,13 @@ export const init = id => {
       id,
       chart,
       poll,
-      recipeStart,
-      recipeEnd
+      recipeStart: null,
+      recipeEnd: null
     },
     Effects.batch([
       chartFx.map(ChartAction),
       pollFx.map(PollAction),
-      recipeStartFx.map(RecipeStartAction),
-      recipeEndFx.map(RecipeEndAction),
-      Effects.receive(GetRestore)
+      Effects.receive(FetchInfo)
     ])
   ];
 };
@@ -117,29 +83,81 @@ export const update = (model, action) =>
   updatePoll(model, action.source) :
   action.type === 'GetLatest' ?
   [model, Request.get(templateLatestUrl(model.id)).map(Latest)] :
-  action.type === 'GetBacklog' ?
-  [model, getBacklog(model)] :
-  action.type === 'Reset' ?
-  reset(model, action.source) :
-  action.type === 'Latest' ?
-  updateLatest(model, action.source) :
-  action.type === 'GetRestore' ?
-  [model, Request.get(templateLatestUrl(model.id)).map(Restore)] :
+  action.type === 'FetchRestore' ?
+  [model, Request.get(templateRangeUrl(model.id, action.source)).map(Restore)] :
   action.type === 'Restore' ?
   restore(model, action.source) :
+  action.type === 'Latest' ?
+  updateLatest(model, action.source) :
+  action.type === 'FetchInfo' ?
+  [model, Request.get(templateLatestUrl(model.id)).map(Info)] :
+  action.type === 'Info' ?
+  updateInfo(model, action.source) :
   action.type === 'Chart' ?
   updateChart(model, action.source) :
-  action.type === 'RecipeStart' ?
-  updateRecipeStart(model, action.source) :
-  action.type === 'RecipeEnd' ?
-  updateRecipeEnd(model, action.source) :
+  action.type === 'StartRecipe' ?
+  startRecipe(model, action.source) :
+  action.type === 'EndRecipe' ?
+  endRecipe(model, action.source) :
   Unknown.update(model, action);
 
-const restore = (model, result) =>
-  batch(update, model, [
-    Latest(result),
-    GetBacklog
-  ]);
+const startRecipe = (model, timestamp) =>
+  model.recipeStart < timestamp ?
+  [
+    merge(model, {
+      recipeStart: timestamp
+    }),
+    Effects.none
+  ] :
+  [model, Effects.none];
+
+const endRecipe = (model, timestamp) =>
+  model.recipeStart < timestamp ?
+  [
+    merge(model, {
+      recipeStart: timestamp
+    }),
+    Effects.none
+  ] :
+  [model, Effects.none];
+
+const isRowRecipeStart = row => row.value.variable === RECIPE_START;
+const isRowRecipeEnd = row => row.value.variable === RECIPE_END;
+
+const findRecipeStartInRecord = record => {
+  const row = record.rows.find(isRowRecipeStart);
+  // @TODO we should have a fallback.
+  return row ? row.value : null;
+}
+
+const findRecipeEndInRecord = record => {
+  const row = record.rows.find(isRowRecipeEnd);
+  // @TODO we should have a fallback.
+  return row ? row.value : null;
+}
+
+const updateInfo = Result.updater(
+  (model, record) => {
+    const actions = [];
+
+    // Find recipe start and end timestamps (if any)
+    const recipeStartTimestamp = findRecipeStartInRecord(record);
+    const recipeEndTimestamp = findRecipeEndInRecord(record);
+
+    if (recipeStartTimestamp) {
+      actions.push(StartRecipe(recipeStartTimestamp));
+      actions.push(GetBacklog(recipeStartTimestamp));
+    }
+
+    if (recipeEndTimestamp) {
+      actions.push(RecipeEnd(recipeEndTimestamp));
+    }
+
+    return batch(update, model, actions);
+  },
+  // If we didn't get info, try again.
+  (model, error) => update(model, FetchInfo)
+);
 
 const updateLatest = Result.updater(
   (model, record) => {
@@ -150,11 +168,8 @@ const updateLatest = Result.updater(
   (model, error) => update(model, MissPoll)
 );
 
-const reset = Result.updater(
-  (model, record) => {
-    console.log('hit Reset');
-    return update(model, ChartData(readData(record)))
-  },
+const restore = Result.updater(
+  (model, record) => update(model, ChartData(readData(record))),
   // @TODO retry if we have an error
   (model, error) => update(model, NoOp)
 );
@@ -173,20 +188,6 @@ const updatePoll = cursor({
   tag: PollAction
 });
 
-const updateRecipeStart = cursor({
-  get: model => model.recipeStart,
-  set: (model, recipeStart) => merge(model, {recipeStart}),
-  update: EnvironmentalDataPoint.update,
-  tag: RecipeStartAction
-});
-
-const updateRecipeEnd = cursor({
-  get: model => model.recipeEnd,
-  set: (model, recipeEnd) => merge(model, {recipeEnd}),
-  update: EnvironmentalDataPoint.update,
-  tag: RecipeEndAction
-});
-
 // View
 
 export const view = (model, address) =>
@@ -197,9 +198,6 @@ export const view = (model, address) =>
   ]);
 
 // Helpers
-
-const hasRecipeStart = model =>
-  model.recipeStart && model.recipeStart.value && model.recipeStart.value.timestamp;
 
 const readRow = row => row.value;
 // @FIXME must check that the value returned from http call is JSON and has
