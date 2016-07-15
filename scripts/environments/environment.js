@@ -15,9 +15,6 @@ import * as LANG from '../environments/lang';
 
 const RECIPE_START = 'recipe_start';
 const RECIPE_END = 'recipe_end';
-const AIR_TEMPERATURE = 'air_temperature';
-const HUMIDITY = 'humidity';
-const WATER_TEMPERATURE = 'water_temperature';
 
 const seconds = 1000;
 const POLL_TIMEOUT = 2 * seconds;
@@ -51,9 +48,6 @@ const ChartData = compose(ChartAction, Chart.Data);
 
 const RecipeStartAction = tag('RecipeStart');
 const RecipeEndAction = tag('RecipeEnd');
-const AirTemperatureAction = tag('AirTemperature');
-const HumidityAction = tag('Humidity');
-const WaterTemperatureAction = tag('WaterTemperature');
 
 // Map an incoming datapoint into an action
 const DataPointAction = dataPoint =>
@@ -61,12 +55,6 @@ const DataPointAction = dataPoint =>
   AddRecipeStart(dataPoint) :
   dataPoint.variable === RECIPE_END ?
   AddRecipeEnd(dataPoint) :
-  dataPoint.variable === AIR_TEMPERATURE ?
-  AddAirTemperature(dataPoint) :
-  dataPoint.variable === HUMIDITY ?
-  AddHumidity(dataPoint.value) :
-  dataPoint.variable === WATER_TEMPERATURE ?
-  AddWaterTemperature(dataPoint.value) :
   NoOp;
 
 const AddRecipeStart = compose(
@@ -76,26 +64,6 @@ const AddRecipeStart = compose(
 
 const AddRecipeEnd = compose(
   RecipeEndAction,
-  EnvironmentalDataPoint.Add
-);
-
-const AddAirTemperature = compose(
-  AirTemperatureAction,
-  EnvironmentalDataPoint.Add
-);
-
-const InsertManyAirTemperatures = compose(
-  AirTemperatureAction,
-  EnvironmentalDataPoint.InsertMany
-);
-
-const AddHumidity = compose(
-  HumidityAction,
-  EnvironmentalDataPoint.Add
-);
-
-const AddWaterTemperature = compose(
-  WaterTemperatureAction,
   EnvironmentalDataPoint.Add
 );
 
@@ -122,21 +90,6 @@ export const init = id => {
     ''
   );
 
-  const [airTemperature, airTemperatureFx] = EnvironmentalDataPoint.init(
-    AIR_TEMPERATURE,
-    LANG[AIR_TEMPERATURE]
-  );
-
-  const [humidity, humidityFx] = EnvironmentalDataPoint.init(
-    HUMIDITY,
-    LANG[HUMIDITY]
-  );
-
-  const [waterTemperature, waterTemperatureFx] = EnvironmentalDataPoint.init(
-    WATER_TEMPERATURE,
-    LANG[WATER_TEMPERATURE]
-  );
-
   const [chart, chartFx] = Chart.init();
 
   return [
@@ -145,19 +98,13 @@ export const init = id => {
       chart,
       poll,
       recipeStart,
-      recipeEnd,
-      airTemperature,
-      humidity,
-      waterTemperature
+      recipeEnd
     },
     Effects.batch([
       chartFx.map(ChartAction),
       pollFx.map(PollAction),
       recipeStartFx.map(RecipeStartAction),
       recipeEndFx.map(RecipeEndAction),
-      airTemperatureFx.map(AirTemperatureAction),
-      humidityFx.map(HumidityAction),
-      waterTemperatureFx.map(WaterTemperatureAction),
       Effects.receive(GetRestore)
     ])
   ];
@@ -186,12 +133,6 @@ export const update = (model, action) =>
   updateRecipeStart(model, action.source) :
   action.type === 'RecipeEnd' ?
   updateRecipeEnd(model, action.source) :
-  action.type === 'AirTemperature' ?
-  updateAirTemperature(model, action.source) :
-  action.type === 'Humidity' ?
-  updateHumidity(model, action.source) :
-  action.type === 'WaterTemperature' ?
-  updateWaterTemperature(model, action.source) :
   Unknown.update(model, action);
 
 const restore = (model, result) =>
@@ -202,7 +143,6 @@ const restore = (model, result) =>
 
 const updateLatest = Result.updater(
   (model, record) => {
-    console.log('hit latest');
     const actions = readRecord(record).map(DataPointAction);
     actions.push(PongPoll);
     return batch(update, model, actions);
@@ -245,27 +185,6 @@ const updateRecipeEnd = cursor({
   set: (model, recipeEnd) => merge(model, {recipeEnd}),
   update: EnvironmentalDataPoint.update,
   tag: RecipeEndAction
-});
-
-const updateAirTemperature = cursor({
-  get: model => model.airTemperature,
-  set: (model, airTemperature) => merge(model, {airTemperature}),
-  update: EnvironmentalDataPoint.update,
-  tag: AirTemperatureAction
-});
-
-const updateHumidity = cursor({
-  get: model => model.humidity,
-  set: (model, humidity) => merge(model, {humidity}),
-  update: EnvironmentalDataPoint.update,
-  tag: HumidityAction
-});
-
-const updateWaterTemperature = cursor({
-  get: model => model.waterTemperature,
-  set: (model, waterTemperature) => merge(model, {waterTemperature}),
-  update: EnvironmentalDataPoint.update,
-  tag: WaterTemperatureAction
 });
 
 // View
