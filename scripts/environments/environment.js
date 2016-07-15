@@ -260,7 +260,7 @@ export const view = (model, address) =>
   html.div({
     className: 'environment-main'
   }, [
-    new Chart.Widget(model.data),
+    Chart.view(model.data, address),
     // thunk(
     //   'air-temperature',
     //   LineChart.view,
