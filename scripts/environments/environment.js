@@ -19,6 +19,11 @@ const RECIPE_END = 'recipe_end';
 const seconds = 1000;
 const POLL_TIMEOUT = 2 * seconds;
 
+const S_MS = 1000;
+const MIN_MS = S_MS * 60;
+const HR_MS = MIN_MS * 60;
+const DAY_MS = HR_MS * 24;
+
 // Actions
 
 const NoOp = {
@@ -140,13 +145,16 @@ const updateInfo = Result.updater(
   (model, record) => {
     const actions = [];
 
+    // @FIXME this is a temporary kludge for getting data into the system
+    // when no recipe start
+    const fallback = (Date.now() - DAY_MS) / 1000;
     // Find recipe start and end timestamps (if any)
-    const recipeStartTimestamp = findRecipeStartInRecord(record);
+    const recipeStartTimestamp = findRecipeStartInRecord(record) || fallback;
     const recipeEndTimestamp = findRecipeEndInRecord(record);
 
     if (recipeStartTimestamp) {
       actions.push(StartRecipe(recipeStartTimestamp));
-      actions.push(GetBacklog(recipeStartTimestamp));
+      actions.push(FetchRestore(recipeStartTimestamp));
     }
 
     if (recipeEndTimestamp) {

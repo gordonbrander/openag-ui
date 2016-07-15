@@ -61,9 +61,9 @@ const RATIO_DOMAIN = [0, 1.0];
 
 // Actions
 
-const MoveXhair = tag('MoveXhair');
-const Scrub = tag('Scrub');
-const Data = tag('Data');
+export const MoveXhair = tag('MoveXhair');
+export const Scrub = tag('Scrub');
+export const Data = tag('Data');
 
 // Init and update functions
 
@@ -338,11 +338,11 @@ const getVariable = x => x.variable;
 
 const stepSeriesIndex = (index, dataPoint) => {
   const variable = getVariable(dataPoint);
-  if (index[variable] && dataPoint.isMeasured) {
-    index[variable].measured.push(dataPoint);
-  }
-  else if (index[variable] && !dataPoint.isMeasured) {
+  if (index[variable] && dataPoint.is_desired) {
     index[variable].desired.push(dataPoint);
+  }
+  else if (index[variable] && !dataPoint.is_desired) {
+    index[variable].measured.push(dataPoint);
   }
   return index;
 };
