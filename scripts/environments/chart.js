@@ -121,8 +121,19 @@ const updateData = (model, data) => {
 }
 
 // View function
+export const view = (model, address) =>
+  // If we have data to show, then render chart.
+  model.extentX.length ?
+  viewData(model, address) :
+  viewEmpty(model, address);
 
-export const view = (model, address) => {
+// Handle the case where there is no data yet.
+const viewEmpty = (model, address) =>
+  html.div({
+    className: 'chart'
+  });
+
+const viewData = (model, address) => {
   const {series, extentX, interval, width, height, tooltipHeight, tooltipWidth,
     scrubberAt, xhairAt} = model;
 
