@@ -1,6 +1,54 @@
 import * as d3 from 'd3';
 import {html, forward, Effects, thunk} from 'reflex';
+import {merge, tag} from '../common/prelude';
+import * as Ordered from '../common/ordered';
+import * as Unknown from '../common/unknown';
 import {compose} from '../lang/functional';
+
+// Series configuration
+// @TODO move this to JSON config file (maybe openag-config.json)
+const SERIES = [
+  {
+    variable: 'light_illuminance',
+    title: 'Light',
+    unit: 'Lux',
+    color: '#ffc500'
+  },
+  {
+    variable: 'air_temperature',
+    title: 'Air Temperature',
+    unit: '\xB0C',
+    min: 7.2,
+    max: 48.8,
+    color: '#00a5ed'
+  },
+  {
+    variable: 'water_temperature',
+    title: 'Water Temperature',
+    unit: '\xB0C',
+    min: 7.2,
+    max: 48.8,
+    color: '#0052b3'
+  },
+  {
+    variable: 'electrical_conductivity',
+    title: 'EC',
+    unit: '',
+    color: '#ffc500'
+  },
+  {
+    variable: 'potential_hydrogen',
+    title: 'Potential Hydrogen',
+    unit: '',
+    color: '#00a5ed'
+  },
+  {
+    variable: 'air_humidity',
+    title: 'Humidity',
+    unit: '%',
+    color: '#00a5ed'
+  }
+];
 
 const S_MS = 1000;
 const MIN_MS = S_MS * 60;
@@ -11,41 +59,81 @@ const SCRUBBER_HEIGHT = 40;
 const TOOLTIP_SPACE = 30;
 const RATIO_DOMAIN = [0, 1.0];
 
-const VARIABLES = {
-  'air_temperature': 'Air Temperature',
-  'air_humidity': 'Humidity',
-  'water_temperature': 'Water Temperature',
-  'electrical_conductivity': 'EC',
-  'potential_hydrogen': 'Potential Hydrogen',
-  'illuminance': 'Light'
-};
+// Actions
 
-// Chart options
+const MoveXhair = tag('MoveXhair');
+const Scrub = tag('Scrub');
+const Data = tag('Data');
 
-// The chart should show one hour's worth of datapoints per viewport width.
-const interval = HR_MS;
-// Set the dimensions of the chart viewport.
-const width = window.innerWidth;
-const height = window.innerHeight;
-const tooltipHeight = 112;
-const tooltipWidth = 424;
-const scrubberAt = 1.0;
-const xhairAt = 0.5;
+// Init and update functions
+
+export const Model = (series, extentX, width, height, scrubberAt, xhairAt) => ({
+  // Chart data series
+  series,
+  extentX,
+
+  // Time interval to show within chart viewport (visible area)
+  interval: HR_MS,
+
+  // Define dimensions
+  width: window.innerWidth,
+  height: window.innerHeight,
+  tooltipHeight: 112,
+  tooltipWidth: 424,
+
+  // Define chart state
+  scrubberAt,
+  xhairAt
+});
+
+export const init = () => [
+  Model([], [], window.innerWidth, window.innerHeight, 1.0, 0.5),
+  Effects.none
+];
+
+export const update = (model, action) =>
+  action.type === 'Scrub' ?
+  [merge(model, {scrubberAt: action.source}), Effects.none] :
+  action.type === 'MoveXhair' ?
+  [merge(model, {xhairAt: action.source}), Effects.none] :
+  action.type === 'Data' ?
+  updateData(model, action.source) :
+  Unknown.update(model, action);
+
+const updateData = (model, data) => {
+  // Read the extent of the data
+  const extentX = d3.extent(data, readX);
+
+  return (
+    // Only update the model if the new data's extent is outside the current
+    // data's extent. This way we only re-render when data changes.
+    !isSameExtent(model.extentX, extentX) ?
+    [
+      merge(model, {
+        extentX,
+        series: readSeriesFromData(data)
+      }),
+      Effects.none
+    ] :
+    // Otherwise, just return the old model.
+    [model, Effects.none]
+  );
+}
+
+// View function
 
 export const view = (model, address) => {
-  const {scrubberAt} = model;
-
-  // Find data extent over all series.
-  const extent = extentOverSeries(series, readX);
+  const {series, extentX, interval, width, height, tooltipHeight, tooltipWidth,
+    scrubberAt, xhairAt} = model;
 
   // Calculate dimensions
-  const plotWidth = calcPlotWidth(extent, interval, width);
+  const plotWidth = calcPlotWidth(extentX, interval, width);
   const plotHeight = calcPlotHeight(height, tooltipHeight);
   const svgHeight = calcSvgHeight(height);
   const tickTop = calcXhairTickTop(height, tooltipHeight);
 
   // Calculate scales
-  const x = calcTimeScale(extent, interval, width);
+  const x = calcTimeScale(extentX, interval, width);
 
   const scrubberRatioToScrubberX = d3.scaleLinear()
     .domain(RATIO_DOMAIN)
@@ -57,8 +145,8 @@ export const view = (model, address) => {
     .range([0, width])
     .clamp(true);
 
-  const scrubberXToPlotX = d3.scaleLinear()
-    .domain([0, width - 12])
+  const scrubberRatioToPlotX = d3.scaleLinear()
+    .domain(RATIO_DOMAIN)
     // Translate up to the point that the right side of the plot is adjacent
     // to the right side of the viewport.
     .range([0, plotWidth - width])
@@ -66,8 +154,21 @@ export const view = (model, address) => {
 
   const plotX = scrubberRatioToPlotX(scrubberAt);
 
+  const xhairX = xhairRatioToXhairX(xhairAt);
+  const tooltipX = calcTooltipX(xhairX, width, tooltipWidth);
+
   return html.div({
     className: 'chart',
+    onMouseMove: event => {
+      const [mouseX, mouseY] = calcRelativeMousePos(
+        event.currentTarget,
+        event.clientX, event.clientY
+      );
+
+      const xhairAt = xhairRatioToXhairX.invert(mouseX);
+      const action = MoveXhair(xhairAt);
+      address(action);
+    },
     style: {
       width: px(width),
       height: px(height)
@@ -82,16 +183,23 @@ export const view = (model, address) => {
       }
     }, series.map(viewGroup)),
     html.div({
-      className: 'chart-xhair'
+      className: 'chart-xhair',
+      style: {
+        transform: translateXY(xhairX, 0)
+      }
     }),
     html.div({
-      className: 'chart-xhair--tick'
+      className: 'chart-xhair--tick',
+      style: {
+        transform: translateXY(xhairX, tickTop)
+      }
     }),
     html.div({
       className: 'chart-tooltip',
       style: {
         width: px(tooltipWidth),
-        height: px(tooltipHeight)
+        height: px(tooltipHeight),
+        transform: translateXY(tooltipX, 0)
       }
     }, [
       html.div({
@@ -125,6 +233,13 @@ export const view = (model, address) => {
   ]);
 }
 
+const viewGroup = model =>
+  html.g({
+    className: 'chart-group'
+  });
+
+// Helpers
+
 const readX = d => d.timestamp;
 const readY = d => Number.parseFloat(d.value);
 
@@ -139,13 +254,8 @@ const getGroupTitle = group => group.title;
 const getGroupMeasured = group => group.measured;
 const getGroupDesired = group => group.desired;
 
-// Flatten an array of arrays into a 1d array.
-const flatten = arrays => Array.prototype.concat.apply(Array, arrays);
-
-// Calculate the extent over the whole chart series. In other words, find the
-// lowest value and the highest value for the series.
-const extentOverSeries = (series, readX) =>
-  d3.extent(flatten(series.map(getGroupMeasured)), readX);
+// Given 2 extents, test to see whether they are the same range.
+const isSameExtent = (a, b) => (a[0] === b[0]) && (a[1] === b[1]);
 
 const calcPlotWidth = (extent, interval, width) => {
   const durationMs = extent[1] - extent[0];
@@ -194,3 +304,44 @@ const formatDay = d3.timeFormat("%A %b %e, %Y");
 
 const px = n => n + 'px';
 const translateXY = (x, y) => 'translateX(' + x + 'px) translateY(' + y + 'px)';
+
+// Helpers for reading out data to series
+
+const readSeriesFromData = data => {
+  // Create series index
+  // Create stubs for each of the groups in the series.
+  const stubs = SERIES.map(readGroupFromConfig);
+  const index = Ordered.indexWith(stubs, getVariable);
+  const populated = data.reduce(stepSeriesIndex, index);
+  const variables = SERIES.map(getVariable);
+  return Ordered.listByKeys(populated, variables);
+}
+
+const getVariable = x => x.variable;
+
+const stepSeriesIndex = (index, dataPoint) => {
+  const variable = getVariable(dataPoint);
+  if (index[variable] && dataPoint.isMeasured) {
+    index[variable].measured.push(dataPoint);
+  }
+  else if (index[variable] && !dataPoint.isMeasured) {
+    index[variable].desired.push(dataPoint);
+  }
+  return index;
+};
+
+const readGroupFromConfig = ({variable, title, unit, min, max}) => ({
+  variable,
+  title,
+  unit,
+  min,
+  max,
+  desired: [],
+  measured: []
+});
+
+// Calculate the mouse client position relative to a given element.
+const calcRelativeMousePos = (node, clientX, clientY) => {
+  const rect = node.getBoundingClientRect();
+  return [(clientX - rect.left - node.clientLeft), (clientY - rect.top - node.clientTop)];
+}

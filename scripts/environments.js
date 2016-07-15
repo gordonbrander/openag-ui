@@ -62,7 +62,7 @@ const createEnvironment = (model, id) => {
   const next = Indexed.add(model, id, environment);
   return [
     next,
-    environmentFx.map(ByID(environment))
+    environmentFx.map(ByID(id))
   ];
 }
 
@@ -71,15 +71,18 @@ const updateEnvironmentByID = (model, id, action) =>
 
 // View
 
-export const view = (model, address) =>
-  html.div({
+export const view = (model, address) => {
+  const active = Indexed.getActive(model);
+
+  return html.div({
     className: 'environments-main'
-  }, Indexed.getActive(model) ?
+  }, active ?
     [
       Environment.view(
-        Indexed.getActive(model),
-        forward(address, ByID(Indexed.getActive(model)))
+        active,
+        forward(address, ByID(active.id))
       )
     ] :
     []
   );
+}

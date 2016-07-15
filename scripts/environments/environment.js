@@ -46,6 +46,9 @@ const Reset = tag('Reset');
 const PongPoll = PollAction(Poll.Pong);
 const MissPoll = PollAction(Poll.Miss);
 
+const ChartAction = tag('Chart');
+const ChartData = compose(ChartAction, Chart.Data);
+
 const RecipeStartAction = tag('RecipeStart');
 const RecipeEndAction = tag('RecipeEnd');
 const AirTemperatureAction = tag('AirTemperature');
@@ -134,10 +137,12 @@ export const init = id => {
     LANG[WATER_TEMPERATURE]
   );
 
+  const [chart, chartFx] = Chart.init();
+
   return [
     {
       id,
-      data: [],
+      chart,
       poll,
       recipeStart,
       recipeEnd,
@@ -146,6 +151,7 @@ export const init = id => {
       waterTemperature
     },
     Effects.batch([
+      chartFx.map(ChartAction),
       pollFx.map(PollAction),
       recipeStartFx.map(RecipeStartAction),
       recipeEndFx.map(RecipeEndAction),
@@ -174,6 +180,8 @@ export const update = (model, action) =>
   [model, Request.get(templateLatestUrl(model.id)).map(Restore)] :
   action.type === 'Restore' ?
   restore(model, action.source) :
+  action.type === 'Chart' ?
+  updateChart(model, action.source) :
   action.type === 'RecipeStart' ?
   updateRecipeStart(model, action.source) :
   action.type === 'RecipeEnd' ?
@@ -194,6 +202,7 @@ const restore = (model, result) =>
 
 const updateLatest = Result.updater(
   (model, record) => {
+    console.log('hit latest');
     const actions = readRecord(record).map(DataPointAction);
     actions.push(PongPoll);
     return batch(update, model, actions);
@@ -202,15 +211,20 @@ const updateLatest = Result.updater(
 );
 
 const reset = Result.updater(
-  (model, record) => [
-    merge(model, {data: readData(record)}),
-    Effects.none
-  ],
+  (model, record) => {
+    console.log('hit Reset');
+    return update(model, ChartData(readData(record)))
+  },
   // @TODO retry if we have an error
   (model, error) => update(model, NoOp)
 );
 
-const isAirTemperature = dataPoint => dataPoint.variable === AIR_TEMPERATURE;
+const updateChart = cursor({
+  get: model => model.chart,
+  set: (model, chart) => merge(model, {chart}),
+  update: Chart.update,
+  tag: ChartAction
+});
 
 const updatePoll = cursor({
   get: model => model.poll,
@@ -260,26 +274,7 @@ export const view = (model, address) =>
   html.div({
     className: 'environment-main'
   }, [
-    Chart.view(model.data, address),
-    // thunk(
-    //   'air-temperature',
-    //   LineChart.view,
-    //   model.airTemperature,
-    //   forward(address, AirTemperatureAction)
-    // ),
-    thunk(
-      'water-temperature',
-      EnvironmentalDataPoint.view,
-      model.waterTemperature,
-      forward(address, WaterTemperatureAction)
-    ),
-    thunk(
-      'humidity',
-      // @TODO fix view (renders degrees c)
-      EnvironmentalDataPoint.view,
-      model.humidity,
-      forward(address, HumidityAction)
-    )
+    thunk('chart', Chart.view, model.chart, forward(address, ChartAction))
   ]);
 
 // Helpers
@@ -295,9 +290,10 @@ const readRecord = record => record.rows.map(readRow);
 const compareByTimestamp = (a, b) =>
   a.timestamp > b.timestamp ? 1 : -1;
 
-const readDataPoint = ({variable, timestamp, value}) => ({
+const readDataPoint = ({variable, is_desired, timestamp, value}) => ({
   variable,
   timestamp,
+  is_desired,
   value: Number.parseFloat(value)
 });
 

@@ -27,18 +27,16 @@ export const toArray = (object, compare) => {
   return array;
 }
 
-// Set a value at key on object, returning new object.
-const enter = (object, key, value) => {
-  const next = Object.assign({}, object);
-  next[key] = value;
-  return next;
+// Read an object to an array via a list of keys.
+// The order of the values of the resulting array reflect the order of the keys.
+// Returns an array.
+export const listByKeys = (object, keys) => {
+  const ordered = [];
+  for (let i = 0; i < keys.length; i++) {
+    let key = keys[i];
+    if (object[key]) {
+      ordered.push(object[key]);
+    }
+  }
+  return ordered;
 }
-
-// Insert value in object, but only if it doesn't already exist in object.
-export const insertNew = (object, value, readKey) => {
-  const key = readKey(value);
-  return !object[key] ? enter(object, key, value) : object;
-}
-
-export const insertMany = (object, array, readKey) =>
-  Object.assign({}, object, indexWith(array, readKey));
