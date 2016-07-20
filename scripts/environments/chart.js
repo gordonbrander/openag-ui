@@ -177,13 +177,13 @@ const viewData = (model, address) => {
   const children = series.map(group => viewGroup(group, address, x, plotHeight));
 
   const svg = svgNS(html.svg({
-    width,
-    height,
+    width: plotWidth,
+    height: svgHeight,
     className: 'chart-svg',
     style: {
       // Translate SVG to move the visible portion of the plot in response
       // to scrubber.
-      // transform: translateXY(-1 * plotX, 0)
+      transform: translateXY(-1 * plotX, 0)
     }
   }, children));
 
