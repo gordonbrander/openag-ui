@@ -174,6 +174,19 @@ const viewData = (model, address) => {
   const xhairX = xhairRatioToXhairX(xhairAt);
   const tooltipX = calcTooltipX(xhairX, width, tooltipWidth);
 
+  const children = series.map(group => viewGroup(group, address, x, plotHeight));
+
+  const svg = svgNS(html.svg({
+    width,
+    height,
+    className: 'chart-svg',
+    style: {
+      // Translate SVG to move the visible portion of the plot in response
+      // to scrubber.
+      // transform: translateXY(-1 * plotX, 0)
+    }
+  }, children));
+
   return html.div({
     className: 'chart',
     onMouseMove: event => {
@@ -191,14 +204,7 @@ const viewData = (model, address) => {
       height: px(height)
     }
   }, [
-    html.svg({
-      className: 'chart-plot',
-      style: {
-        // Translate SVG to move the visible portion of the plot in response
-        // to scrubber.
-        transform: translateXY(-1 * plotX, 0)
-      }
-    }, series.map(viewGroup)),
+    svg,
     html.div({
       className: 'chart-xhair',
       style: {
@@ -250,15 +256,72 @@ const viewData = (model, address) => {
   ]);
 }
 
-const viewGroup = model =>
-  html.g({
+const viewGroup = (model, address, x, plotHeight) => {
+  const {color, min, max, measured, desired} = model;
+
+  const domain = isNumber(min) && isNumber(max) ?
+    [min, max] : d3.extent(measured, readY);
+
+  const y = d3.scaleLinear()
+    .range([plotHeight, 0])
+    .domain(domain);
+
+  const line = d3.line()
+    .x(compose(x, readX))
+    .y(compose(y, readY));
+
+  const children = measured.map(point => svgNS(html.circle({
+    className: 'chart-dot',
+    r: 3,
+    cx: x(readX(point)),
+    cy: y(readY(point)),
+    style: {
+      fill: color
+    }
+  })));
+
+  const desiredPath = svgNS(html.path({
+    d: line(desired),
+    className: 'chart-desired',
+    style: {
+      stroke: color
+    }
+  }));
+
+  children.unshift(desiredPath);
+
+  const measuredPath = svgNS(html.path({
+    d: line(measured),
+    className: 'chart-measured',
+    style: {
+      stroke: color
+    }
+  }));
+
+  children.unshift(measuredPath);
+
+  return svgNS(html.g({
     className: 'chart-group'
-  });
+  }, children));
+}
 
 // Helpers
 
-const readX = d => d.timestamp;
-const readY = d => Number.parseFloat(d.value);
+// Decorate vnode object with namespace property. This is important for SVG
+// elements because it signals that VirtualDOM should create them with
+// `createElementNS`. If you don't have the svg namespace property on your
+// instance, SVG won't render.
+const svgNS = vnode => {
+  vnode.namespace = 'http://www.w3.org/2000/svg';
+  return vnode;
+}
+
+const readX = d =>
+  // Timestamp is in seconds. For x position, read timestamp as ms.
+  d.timestamp * 1000;
+
+const readY = d =>
+  Number.parseFloat(d.value);
 
 const clamp = (v, min, max) => Math.max(Math.min(v, max), min);
 const isNumber = x => (typeof x === 'number');
@@ -347,15 +410,12 @@ const stepSeriesIndex = (index, dataPoint) => {
   return index;
 };
 
-const readGroupFromConfig = ({variable, title, unit, min, max}) => ({
-  variable,
-  title,
-  unit,
-  min,
-  max,
-  desired: [],
-  measured: []
-});
+const readGroupFromConfig = (proto) => {
+  const group = Object.create(proto);
+  group.desired = [];
+  group.measured = [];
+  return group;
+};
 
 // Calculate the mouse client position relative to a given element.
 const calcRelativeMousePos = (node, clientX, clientY) => {

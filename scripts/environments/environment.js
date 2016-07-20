@@ -24,6 +24,10 @@ const MIN_MS = S_MS * 60;
 const HR_MS = MIN_MS * 60;
 const DAY_MS = HR_MS * 24;
 
+// @FIXME this is a temporary kludge for getting data into the system
+// when no recipe start. Get the previous day's data. Range in seconds.
+const FALLBACK_START_MS = (Date.now() - DAY_MS);
+
 // Actions
 
 const NoOp = {
@@ -145,9 +149,7 @@ const updateInfo = Result.updater(
   (model, record) => {
     const actions = [];
 
-    // @FIXME this is a temporary kludge for getting data into the system
-    // when no recipe start
-    const fallback = (Date.now() - DAY_MS) / 1000;
+    const fallback = FALLBACK_START_MS / 1000;
     // Find recipe start and end timestamps (if any)
     const recipeStartTimestamp = findRecipeStartInRecord(record) || fallback;
     const recipeEndTimestamp = findRecipeEndInRecord(record);
