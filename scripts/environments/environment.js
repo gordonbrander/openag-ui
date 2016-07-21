@@ -16,17 +16,16 @@ import * as LANG from '../environments/lang';
 const RECIPE_START = 'recipe_start';
 const RECIPE_END = 'recipe_end';
 
-const seconds = 1000;
-const POLL_TIMEOUT = 2 * seconds;
-
 const S_MS = 1000;
 const MIN_MS = S_MS * 60;
 const HR_MS = MIN_MS * 60;
 const DAY_MS = HR_MS * 24;
 
+const POLL_TIMEOUT = 2 * S_MS;
+
 // @FIXME this is a temporary kludge for getting data into the system
 // when no recipe start. Get the previous day's data. Range in seconds.
-const FALLBACK_START_MS = (Date.now() - DAY_MS);
+const FALLBACK_START_MS = (Date.now() - (HR_MS * 2));
 
 // Actions
 

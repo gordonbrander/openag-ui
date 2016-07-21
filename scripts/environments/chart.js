@@ -1,7 +1,10 @@
 import * as d3 from 'd3';
 import {html, forward, Effects, thunk} from 'reflex';
 import {merge, tag} from '../common/prelude';
+import {cursor} from '../common/cursor';
+import * as Draggable from '../common/draggable';
 import * as Ordered from '../common/ordered';
+import * as ClassName from '../common/classname';
 import * as Unknown from '../common/unknown';
 import {compose} from '../lang/functional';
 
@@ -62,7 +65,7 @@ const RATIO_DOMAIN = [0, 1.0];
 // Actions
 
 export const MoveXhair = tag('MoveXhair');
-export const Scrub = tag('Scrub');
+export const ScrubberAction = tag('Scrubber');
 export const Data = tag('Data');
 
 // Init and update functions
@@ -82,7 +85,7 @@ export const Model = (series, extentX, width, height, scrubberAt, xhairAt) => ({
   tooltipWidth: 424,
 
   // Define chart state
-  scrubberAt,
+  scrubber: Draggable.Model(false, scrubberAt),
   xhairAt
 });
 
@@ -92,8 +95,8 @@ export const init = () => [
 ];
 
 export const update = (model, action) =>
-  action.type === 'Scrub' ?
-  [merge(model, {scrubberAt: action.source}), Effects.none] :
+  action.type === 'Scrubber' ?
+  updateScrub(model, action.source) :
   action.type === 'MoveXhair' ?
   [merge(model, {xhairAt: action.source}), Effects.none] :
   action.type === 'Data' ?
@@ -120,6 +123,13 @@ const updateData = (model, data) => {
   );
 }
 
+const updateScrub = cursor({
+  get: model => model.scrubber,
+  set: (model, scrubber) => merge(model, {scrubber}),
+  update: Draggable.update,
+  tag: ScrubberAction
+});
+
 // View function
 export const view = (model, address) =>
   // If we have data to show, then render chart.
@@ -141,7 +151,10 @@ const viewEmpty = (model, address) => {
 
 const viewData = (model, address) => {
   const {series, extentX, interval, width, height, tooltipHeight, tooltipWidth,
-    scrubberAt, xhairAt} = model;
+    scrubber, xhairAt} = model;
+
+  const scrubberAt = scrubber.coords;
+  const isDragging = scrubber.isDragging;
 
   // Calculate dimensions
   const plotWidth = calcPlotWidth(extentX, interval, width);
@@ -156,6 +169,8 @@ const viewData = (model, address) => {
     .domain(RATIO_DOMAIN)
     .range([0, width - 12])
     .clamp(true);
+
+  const scrubberX = scrubberRatioToScrubberX(scrubberAt)
 
   const xhairRatioToXhairX = d3.scaleLinear()
     .domain(RATIO_DOMAIN)
@@ -240,10 +255,19 @@ const viewData = (model, address) => {
       className: 'chart-scrubber'
     }, [
       html.div({
-        className: 'chart-progress'
+        className: 'chart-progress',
+        style: {
+          width: px(scrubberX)
+        }
       }),
       html.div({
-        className: 'chart-handle'
+        className: ClassName.create({
+          'chart-handle': true,
+          'chart-handle--dragging': isDragging
+        }),
+        style: {
+          transform: translateXY(scrubberX, 0)
+        }
       }, [
         html.div({
           className: 'chart-handle--cap'
