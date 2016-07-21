@@ -65,8 +65,12 @@ const RATIO_DOMAIN = [0, 1.0];
 // Actions
 
 export const MoveXhair = tag('MoveXhair');
-export const ScrubberAction = tag('Scrubber');
 export const Data = tag('Data');
+
+const ScrubberAction = tag('Scrubber');
+const MoveScrubber = compose(ScrubberAction, Draggable.Move);
+const HoldScrubber = ScrubberAction(Draggable.Hold);
+const ReleaseScrubber = ScrubberAction(Draggable.Release);
 
 // Init and update functions
 
@@ -170,7 +174,7 @@ const viewData = (model, address) => {
     .range([0, width - 12])
     .clamp(true);
 
-  const scrubberX = scrubberRatioToScrubberX(scrubberAt)
+  const scrubberX = scrubberRatioToScrubberX(scrubberAt);
 
   const xhairRatioToXhairX = d3.scaleLinear()
     .domain(RATIO_DOMAIN)
@@ -210,9 +214,13 @@ const viewData = (model, address) => {
         event.clientX, event.clientY
       );
 
+
+
       const xhairAt = xhairRatioToXhairX.invert(mouseX);
-      const action = MoveXhair(xhairAt);
-      address(action);
+      address(MoveXhair(xhairAt));
+
+      const scrubberAt = scrubberRatioToScrubberX.invert(mouseX);
+      address(MoveScrubber(scrubberAt));
     },
     style: {
       width: px(width),
@@ -261,6 +269,8 @@ const viewData = (model, address) => {
         }
       }),
       html.div({
+        onMouseDown: () => address(HoldScrubber),
+        onMouseUp: () => address(ReleaseScrubber),
         className: ClassName.create({
           'chart-handle': true,
           'chart-handle--dragging': isDragging

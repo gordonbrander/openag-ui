@@ -2,8 +2,17 @@
 import {Effects} from 'reflex';
 import * as Unknown from '../common/unknown';
 
-export const Model = (isDragging, coords) => ({
-  isDragging,
+// Actions and tagging functions
+
+const DRAGGING = true;
+
+export const Move = coords => ({
+  type: 'Move',
+  coords
+});
+
+export const Drag = coords => ({
+  type: 'Drag',
   coords
 });
 
@@ -11,14 +20,37 @@ export const Hold = {
   type: 'Hold'
 };
 
-export const Drag = coords => ({
-  type: 'Drag',
-  coords
-});
-
 export const Release = {
   type: 'Release'
 };
+
+export const NoOp = {
+  type: 'NoOp'
+};
+
+// Model and update
+
+export const Model = (isDragging, coords) => ({
+  isDragging,
+  coords
+});
+
+export const update = (model, action) =>
+  action.type === 'NoOp' ?
+  [model, Effects.none] :
+  action.type === 'Hold' ?
+  [Model(DRAGGING, model.coords), Effects.none] :
+  action.type === 'Release' ?
+  [Model(!DRAGGING, model.coords), Effects.none] :
+  action.type === 'Drag' ?
+  [Model(model.isDragging, action.coords), Effects.none] :
+  action.type === 'Move' ?
+  (
+    model.isDragging ?
+    drag(model, action.coords) :
+    noOp(model)
+  ) :
+  Unknown.update(model, action);
 
 export const hold = model =>
   update(model, Hold);
@@ -26,14 +58,8 @@ export const hold = model =>
 export const release = model =>
   update(model, Release);
 
-export const drag = model =>
-  update(model, Close);
+export const noOp = (model) =>
+  update(model, NoOp);
 
-export const update = (model, action) =>
-  action.type === 'Hold' ?
-  [Model(true, model.coords), Effects.none] :
-  action.type === 'Release' ?
-  [Model(false, model.coords), Effects.none] :
-  action.type === 'Drag' ?
-  [Model(model.isDragging, action.coords), Effects.none] :
-  Unknown.update(model, action);
+export const drag = (model, coords) =>
+  update(model, Drag(coords));
