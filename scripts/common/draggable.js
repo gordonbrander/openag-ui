@@ -39,9 +39,17 @@ export const update = (model, action) =>
   action.type === 'NoOp' ?
   [model, Effects.none] :
   action.type === 'Hold' ?
-  [Model(DRAGGING, model.coords), Effects.none] :
+  (
+    !model.isDragging ?
+    [Model(DRAGGING, model.coords), Effects.none] :
+    noOp(model)
+  ) :
   action.type === 'Release' ?
-  [Model(!DRAGGING, model.coords), Effects.none] :
+  (
+    model.isDragging ?
+    [Model(!DRAGGING, model.coords), Effects.none] :
+    noOp(model)
+  ) :
   action.type === 'Drag' ?
   [Model(model.isDragging, action.coords), Effects.none] :
   action.type === 'Move' ?

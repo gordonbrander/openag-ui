@@ -208,13 +208,12 @@ const viewData = (model, address) => {
 
   return html.div({
     className: 'chart',
+    onMouseUp: () => address(ReleaseScrubber),
     onMouseMove: event => {
       const [mouseX, mouseY] = calcRelativeMousePos(
         event.currentTarget,
         event.clientX, event.clientY
       );
-
-
 
       const xhairAt = xhairRatioToXhairX.invert(mouseX);
       address(MoveXhair(xhairAt));
@@ -269,8 +268,10 @@ const viewData = (model, address) => {
         }
       }),
       html.div({
-        onMouseDown: () => address(HoldScrubber),
-        onMouseUp: () => address(ReleaseScrubber),
+        onMouseDown: () => {
+          event.preventDefault();
+          address(HoldScrubber);
+        },
         className: ClassName.create({
           'chart-handle': true,
           'chart-handle--dragging': isDragging
