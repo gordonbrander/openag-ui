@@ -37,19 +37,19 @@ const SERIES = [
     variable: 'electrical_conductivity',
     title: 'EC',
     unit: '',
-    color: '#ffc500'
+    color: 'purple'
   },
   {
     variable: 'potential_hydrogen',
     title: 'Potential Hydrogen',
     unit: '',
-    color: '#00a5ed'
+    color: 'red'
   },
   {
     variable: 'air_humidity',
     title: 'Humidity',
     unit: '%',
-    color: '#00a5ed'
+    color: 'green'
   }
 ];
 
@@ -193,6 +193,11 @@ const viewData = (model, address) => {
   const xhairX = xhairRatioToXhairX(xhairAt);
   const tooltipX = calcTooltipX(xhairX, width, tooltipWidth);
 
+  // Calculate xhair absolute position by adding crosshair position in viewport
+  // to plot offset. Then use absolute coord in chart viewport to get inverse
+  // value (time) under xhair.
+  const xhairTime = x.invert(plotX + xhairX);
+
   const children = series.map(group => viewGroup(group, address, x, plotHeight));
 
   const svg = svgNS(html.svg({
@@ -205,6 +210,12 @@ const viewData = (model, address) => {
       transform: translateXY(-1 * plotX, 0)
     }
   }, children));
+
+  const readouts = series.map(group => {
+    const measured = displayYValueFromX(group.measured, xhairTime, readX, readY, group.unit);
+    const desired = displayYValueFromX(group.measured, xhairTime, readX, readY, group.unit);
+    return renderReadout(group, measured, desired);
+  });
 
   return html.div({
     className: 'chart',
@@ -252,11 +263,14 @@ const viewData = (model, address) => {
       }, [
         html.div({
           className: 'chart-timestamp--time'
-        }),
+        }, [formatTime(xhairTime)]),
         html.div({
           className: 'chart-timestamp--day'
-        })
-      ])
+        }, [formatDay(xhairTime)]),
+      ]),
+      html.div({
+        className: 'chart-readouts'
+      }, readouts)
     ]),
     html.div({
       className: 'chart-scrubber'
@@ -340,6 +354,37 @@ const viewGroup = (model, address, x, plotHeight) => {
   }, children));
 }
 
+const renderReadout = (group, measured, desired) =>
+  html.div({
+    className: 'chart-readout'
+  }, [
+    html.div({
+      className: 'chart-readout--legend',
+      style: {
+        backgroundColor: group.color
+      }
+    }),
+    html.span({
+      className: 'chart-readout--title',
+    }, [group.title]),
+    html.span({
+      className: 'chart-readout--measured',
+      style: {
+        color: group.color
+      }
+    }, [measured]),
+    html.span({
+      className: 'chart-readout--target',
+      // @TODO localize
+    }, ['Target:']),
+    html.span({
+      className: 'chart-readout--desired',
+      style: {
+        color: group.color
+      }
+    }, [desired])
+  ]);
+
 // Helpers
 
 // Decorate vnode object with namespace property. This is important for SVG
@@ -363,11 +408,6 @@ const isNumber = x => (typeof x === 'number');
 
 // Round to 2 decimal places.
 const round2x = float => Math.round(float * 100) / 100;
-
-const getGroupColor = group => group.color;
-const getGroupTitle = group => group.title;
-const getGroupMeasured = group => group.measured;
-const getGroupDesired = group => group.desired;
 
 // Given 2 extents, test to see whether they are the same range.
 const isSameExtent = (a, b) => (a[0] === b[0]) && (a[1] === b[1]);
@@ -405,12 +445,23 @@ const findDataPointFromX = (data, currX, readX) => {
     const i = bisectDate(data, currX, 1);
     const d0 = data[i - 1];
     const d1 = data[i];
-    // Pick closer of the two.
-    const d = currX - readX(d0) > readX(d1) - currX ? d1 : d0;
-    return d;
+
+    if (d0 && d1) {
+      // Pick closer of the two.
+      return (currX - readX(d0)) > (readX(d1) - currX) ? d1 : d0;      
+    }
+  }
+}
+
+// Display y value for x coord. Returns a string.
+const displayYValueFromX = (data, currX, readX, readY, unit) => {
+  const d = findDataPointFromX(data, currX, readX);
+  if (d) {
+    const yv = round2x(readY(d));
+    return yv + unit + '';
   }
   else {
-    return null;
+    return '-';
   }
 }
 
