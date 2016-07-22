@@ -31,6 +31,10 @@ module.exports = function (grunt) {
             dest: 'dist/'
           },
           {
+            src: ['vendor/**'],
+            dest: 'dist/'
+          },
+          {
             src: ['index.html'],
             dest: 'dist/index.html'
           }
@@ -45,7 +49,7 @@ module.exports = function (grunt) {
           './assets/**',
           'openag-config.json'
         ],
-        tasks: ["browserify"]
+        tasks: ["browserify", "copy"]
       }
     }
   });
