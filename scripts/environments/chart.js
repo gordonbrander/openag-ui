@@ -27,6 +27,7 @@ const RATIO_DOMAIN = [0, 1.0];
 
 // Actions
 
+export const Resize = tag('Resize');
 export const MoveXhair = tag('MoveXhair');
 export const Data = tag('Data');
 
@@ -357,17 +358,17 @@ const renderAxis = (scale, height) => {
     className: 'chart-time-axis'
   }, ticks.map(tick => {
     return g({
-      className: 'tick',
+      className: 'chart-tick',
       transform: `translate(${scale(tick)}, 0)`
     }, [
       line({
-        className: 'tick--line',
+        className: 'chart-tick--line',
         x2: 0.5,
         y1: 0.5,
         y2: height
       }),
       text({
-        className: 'tick--label',
+        className: 'chart-tick--text',
         x: 6.0,
         y: 16.0
       }, [

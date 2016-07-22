@@ -7,15 +7,11 @@
   position: absolute;
 }
 
-.chart-time-axis .domain {
-  display: none;
-}
-
-.chart-time-axis .tick line {
+.chart-tick--line {
   stroke: #d8d8d8;
 }
 
-.chart-time-axis .tick text {
+.chart-tick--text {
   font-size: 11px;
   fill: #b1b1b1;
 }
