@@ -18,8 +18,11 @@ const MIN_MS = S_MS * 60;
 const HR_MS = MIN_MS * 60;
 const DAY_MS = HR_MS * 24;
 
+const HEADER_HEIGHT = 72;
 const SCRUBBER_HEIGHT = 40;
 const TOOLTIP_SPACE = 30;
+const READOUT_HEIGHT = 18;
+const TOOLTIP_PADDING = 20;
 const RATIO_DOMAIN = [0, 1.0];
 
 // Actions
@@ -44,8 +47,7 @@ export const Model = (series, extentX, width, height, scrubberAt, xhairAt) => ({
 
   // Define dimensions
   width: window.innerWidth,
-  height: window.innerHeight,
-  tooltipHeight: 112,
+  height: (window.innerHeight - HEADER_HEIGHT),
   tooltipWidth: 424,
 
   // Define chart state
@@ -114,13 +116,14 @@ const viewEmpty = (model, address) => {
 }
 
 const viewData = (model, address) => {
-  const {series, extentX, interval, width, height, tooltipHeight, tooltipWidth,
+  const {series, extentX, interval, width, height, tooltipWidth,
     scrubber, xhairAt} = model;
 
   const scrubberAt = scrubber.coords;
   const isDragging = scrubber.isDragging;
 
   // Calculate dimensions
+  const tooltipHeight = (series.length * READOUT_HEIGHT) + (TOOLTIP_PADDING * 2);
   const plotWidth = calcPlotWidth(extentX, interval, width);
   const plotHeight = calcPlotHeight(height, tooltipHeight);
   const svgHeight = calcSvgHeight(height);
