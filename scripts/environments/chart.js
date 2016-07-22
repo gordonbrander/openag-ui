@@ -161,7 +161,9 @@ const viewData = (model, address) => {
   // value (time) under xhair.
   const xhairTime = x.invert(plotX + xhairX);
 
-  const children = series.map(group => viewGroup(group, address, x, plotHeight));
+  const seriesGroups = series.map(group => viewGroup(group, address, x, plotHeight));
+
+  const axis = renderAxis(x, svgHeight);
 
   const chartSvg = svg({
     width: plotWidth,
@@ -172,7 +174,7 @@ const viewData = (model, address) => {
       // to scrubber.
       transform: translateXY(-1 * plotX, 0)
     }
-  }, children);
+  }, [axis, ...seriesGroups]);
 
   const readouts = series.map(group => {
     const measured = displayYValueFromX(group.measured, xhairTime, readX, readY, group.unit);
@@ -348,10 +350,32 @@ const renderReadout = (group, measured, desired) =>
     }, [desired])
   ]);
 
-const renderAxis = (data, tick, tickFormat) =>
-  g({
+const renderAxis = (scale, height) => {
+  const ticks = scale.ticks(d3.timeHour);
+
+  return g({
     className: 'chart-time-axis'
-  }, []);
+  }, ticks.map(tick => {
+    return g({
+      className: 'tick',
+      transform: `translate(${scale(tick)}, 0)`
+    }, [
+      line({
+        className: 'tick--line',
+        x2: 0.5,
+        y1: 0.5,
+        y2: height
+      }),
+      text({
+        className: 'tick--label',
+        x: 6.0,
+        y: 16.0
+      }, [
+        formatTick(tick)
+      ])
+    ])
+  }));
+}
 
 // Helpers
 
@@ -371,6 +395,8 @@ const svg = compose(svgNS, html.svg);
 const path = compose(svgNS, html.path);
 const g = compose(svgNS, html.g);
 const circle = compose(svgNS, html.circle);
+const line = compose(svgNS, html.line);
+const text = compose(svgNS, html.text);
 
 const readX = d =>
   // Timestamp is in seconds. For x position, read timestamp as ms.
@@ -441,6 +467,7 @@ const displayYValueFromX = (data, currX, readX, readY, unit) => {
   }
 }
 
+const formatTick = d3.timeFormat("%I:%M %p %A, %b %e");
 const formatTime = d3.timeFormat('%I:%M %p');
 const formatDay = d3.timeFormat("%A %b %e, %Y");
 
