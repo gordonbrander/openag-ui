@@ -22,11 +22,11 @@
     },
     {
       "variable": "air_temperature",
-      "title": "Air Temperature",
+      "title": "Temperature",
       "unit": "\u00B0C",
       "min": 7.2,
       "max": 48.8,
-      "color": "#00a5ed"
+      "color": "#ff8300"
     },
     {
       "variable": "water_temperature",
@@ -40,13 +40,13 @@
       "variable": "electrical_conductivity",
       "title": "EC",
       "unit": "",
-      "color": "purple"
+      "color": "#AB36B2"
     },
     {
       "variable": "potential_hydrogen",
       "title": "Potential Hydrogen",
       "unit": "",
-      "color": "red"
+      "color": "#5ada00"
     },
     {
       "variable": "air_humidity",
@@ -54,7 +54,7 @@
       "unit": "%",
       "min": 0,
       "max": 100,
-      "color": "green"
+      "color": "#00a5ed"
     }
   ]
 }
