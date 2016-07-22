@@ -1,5 +1,6 @@
 import * as d3 from 'd3';
 import {html, forward, Effects, thunk} from 'reflex';
+import * as Config from '../../openag-config.json';
 import {merge, tag} from '../common/prelude';
 import {cursor} from '../common/cursor';
 import * as Draggable from '../common/draggable';
@@ -8,50 +9,9 @@ import * as ClassName from '../common/classname';
 import * as Unknown from '../common/unknown';
 import {compose} from '../lang/functional';
 
-// Series configuration
-// @TODO move this to JSON config file (maybe openag-config.json)
-const SERIES = [
-  {
-    variable: 'light_illuminance',
-    title: 'Light',
-    unit: 'Lux',
-    color: '#ffc500'
-  },
-  {
-    variable: 'air_temperature',
-    title: 'Air Temperature',
-    unit: '\xB0C',
-    min: 7.2,
-    max: 48.8,
-    color: '#00a5ed'
-  },
-  {
-    variable: 'water_temperature',
-    title: 'Water Temperature',
-    unit: '\xB0C',
-    min: 7.2,
-    max: 48.8,
-    color: '#0052b3'
-  },
-  {
-    variable: 'electrical_conductivity',
-    title: 'EC',
-    unit: '',
-    color: 'purple'
-  },
-  {
-    variable: 'potential_hydrogen',
-    title: 'Potential Hydrogen',
-    unit: '',
-    color: 'red'
-  },
-  {
-    variable: 'air_humidity',
-    title: 'Humidity',
-    unit: '%',
-    color: 'green'
-  }
-];
+// Edit openag-config.json to change which environmental datapoints are rendered
+// to screen.
+const SERIES = Config.chart;
 
 const S_MS = 1000;
 const MIN_MS = S_MS * 60;
@@ -200,7 +160,7 @@ const viewData = (model, address) => {
 
   const children = series.map(group => viewGroup(group, address, x, plotHeight));
 
-  const svg = svgNS(html.svg({
+  const chartSvg = svg({
     width: plotWidth,
     height: svgHeight,
     className: 'chart-svg',
@@ -209,7 +169,7 @@ const viewData = (model, address) => {
       // to scrubber.
       transform: translateXY(-1 * plotX, 0)
     }
-  }, children));
+  }, children);
 
   const readouts = series.map(group => {
     const measured = displayYValueFromX(group.measured, xhairTime, readX, readY, group.unit);
@@ -237,7 +197,7 @@ const viewData = (model, address) => {
       height: px(height)
     }
   }, [
-    svg,
+    chartSvg,
     html.div({
       className: 'chart-xhair',
       style: {
@@ -319,7 +279,7 @@ const viewGroup = (model, address, x, plotHeight) => {
     .x(compose(x, readX))
     .y(compose(y, readY));
 
-  const children = measured.map(point => svgNS(html.circle({
+  const children = measured.map(point => circle({
     className: 'chart-dot',
     r: 3,
     cx: x(readX(point)),
@@ -327,31 +287,31 @@ const viewGroup = (model, address, x, plotHeight) => {
     style: {
       fill: color
     }
-  })));
+  }));
 
-  const desiredPath = svgNS(html.path({
+  const desiredPath = path({
     d: line(desired),
     className: 'chart-desired',
     style: {
       stroke: color
     }
-  }));
+  });
 
   children.unshift(desiredPath);
 
-  const measuredPath = svgNS(html.path({
+  const measuredPath = path({
     d: line(measured),
     className: 'chart-measured',
     style: {
       stroke: color
     }
-  }));
+  });
 
   children.unshift(measuredPath);
 
-  return svgNS(html.g({
+  return g({
     className: 'chart-group'
-  }, children));
+  }, children);
 }
 
 const renderReadout = (group, measured, desired) =>
@@ -385,6 +345,11 @@ const renderReadout = (group, measured, desired) =>
     }, [desired])
   ]);
 
+const renderAxis = (data, tick, tickFormat) =>
+  g({
+    className: 'chart-time-axis'
+  }, []);
+
 // Helpers
 
 // Decorate vnode object with namespace property. This is important for SVG
@@ -395,6 +360,14 @@ const svgNS = vnode => {
   vnode.namespace = 'http://www.w3.org/2000/svg';
   return vnode;
 }
+
+// @WORKAROUND
+// Define a set of SVG reflex VirtualNode elements that actually work.
+// We decorate them with the svg namespace on the way out.
+const svg = compose(svgNS, html.svg);
+const path = compose(svgNS, html.path);
+const g = compose(svgNS, html.g);
+const circle = compose(svgNS, html.circle);
 
 const readX = d =>
   // Timestamp is in seconds. For x position, read timestamp as ms.

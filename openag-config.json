@@ -11,5 +11,50 @@
   "recipes_local": "recipes",
   "recipes_origin": "{{origin_url}}/recipes",
   "environment_local": "environment",
-  "environment_origin": "{{origin_url}}/environment"
+  "environment_origin": "{{origin_url}}/environment",
+
+  "chart": [
+    {
+      "variable": "light_illuminance",
+      "title": "Light",
+      "unit": "Lux",
+      "color": "#ffc500"
+    },
+    {
+      "variable": "air_temperature",
+      "title": "Air Temperature",
+      "unit": "\u00B0C",
+      "min": 7.2,
+      "max": 48.8,
+      "color": "#00a5ed"
+    },
+    {
+      "variable": "water_temperature",
+      "title": "Water Temperature",
+      "unit": "\u00B0C",
+      "min": 7.2,
+      "max": 48.8,
+      "color": "#0052b3"
+    },
+    {
+      "variable": "electrical_conductivity",
+      "title": "EC",
+      "unit": "",
+      "color": "purple"
+    },
+    {
+      "variable": "potential_hydrogen",
+      "title": "Potential Hydrogen",
+      "unit": "",
+      "color": "red"
+    },
+    {
+      "variable": "air_humidity",
+      "title": "Humidity",
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "color": "green"
+    }
+  ]
 }

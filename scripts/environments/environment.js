@@ -25,7 +25,7 @@ const POLL_TIMEOUT = 2 * S_MS;
 
 // @FIXME this is a temporary kludge for getting data into the system
 // when no recipe start. Get the previous day's data. Range in seconds.
-const FALLBACK_START_MS = (Date.now() - (HR_MS * 2));
+const FALLBACK_START_MS = (Date.now() - DAY_MS);
 
 // Actions
 
