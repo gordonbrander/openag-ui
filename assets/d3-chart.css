@@ -1,10 +1,10 @@
 .chart {
   background: #f4f4f4;
-  font: 10px sans-serif;
 }
 
 .chart-svg {
   position: absolute;
+  font: 10px sans-serif;
 }
 
 .chart-tick--line {
@@ -170,11 +170,20 @@
 }
 
 .chart-loading--img {
-  margin-left: -40px;
-  margin-top: -40px;
   height: 80px;
   width: 80px;
   position: absolute;
   left: 50%;
   top: 50%;
+  transform: translateX(-50%) translateY(-50%);
+}
+
+.chart-empty {
+  background: #d8d8d8;
+  border-radius: 8px;
+  padding: 24px;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translateX(-50%) translateY(-50%);
 }
