@@ -1,6 +1,7 @@
 import * as d3 from 'd3';
 import {html, forward, Effects, thunk} from 'reflex';
 import * as Config from '../../openag-config.json';
+import * as Lang from '../common/lang';
 import {merge, tag} from '../common/prelude';
 import {cursor} from '../common/cursor';
 import * as Draggable from '../common/draggable';
@@ -35,6 +36,8 @@ export const Resize = (width, height) => ({
 
 export const MoveXhair = tag('MoveXhair');
 export const Data = tag('Data');
+export const Loading = tag('Loading');
+export const Ready = tag('Ready');
 
 const ScrubberAction = tag('Scrubber');
 const MoveScrubber = compose(ScrubberAction, Draggable.Move);
@@ -43,7 +46,7 @@ const ReleaseScrubber = ScrubberAction(Draggable.Release);
 
 // Init and update functions
 
-export const Model = (series, extentX, width, height, scrubberAt, xhairAt) => ({
+export const Model = (series, extentX, width, height, scrubberAt, xhairAt, isLoading) => ({
   // Chart data series
   series,
   extentX,
@@ -58,11 +61,12 @@ export const Model = (series, extentX, width, height, scrubberAt, xhairAt) => ({
 
   // Define chart state
   scrubber: Draggable.Model(false, scrubberAt),
-  xhairAt
+  xhairAt,
+  isLoading
 });
 
 export const init = () => [
-  Model([], [], window.innerWidth, window.innerHeight, 1.0, 0.5),
+  Model([], [], window.innerWidth, window.innerHeight, 1.0, 0.5, false),
   Effects.none
 ];
 
@@ -75,6 +79,10 @@ export const update = (model, action) =>
   updateData(model, action.source) :
   action.type === 'Resize' ?
   updateSize(model, action.width, action.height) :
+  action.type === 'Loading' ?
+  [merge(model, {isLoading: true}), Effects.none] :
+  action.type === 'Ready' ?
+  [merge(model, {isLoading: false}), Effects.none] :
   Unknown.update(model, action);
 
 const updateData = (model, data) => {
@@ -114,13 +122,16 @@ const updateScrub = cursor({
 
 // View function
 export const view = (model, address) =>
-  // If we have data to show, then render chart.
-  model.extentX.length ?
-  viewData(model, address) :
-  viewEmpty(model, address);
+  // If model is loading, show loading view
+  model.isLoading ?
+  viewLoading(model, address) :
+  // If not loading and no data to show, render empty
+  model.extentX.length === 0 ?
+  viewEmpty(model, address) :
+  viewData(model, address);
 
 // Handle the case where there is no data yet.
-const viewEmpty = (model, address) => {
+const viewLoading = (model, address) => {
   const {width, height} = model;
   return html.div({
     className: 'chart',
@@ -135,6 +146,27 @@ const viewEmpty = (model, address) => {
       width: '80',
       height: '80'
     })
+  ]);
+}
+
+const viewEmpty = (model, address) => {
+  const {width, height} = model;
+  return html.div({
+    className: 'chart',
+    style: {
+      width: px(width),
+      height: px(height)
+    }
+  }, [
+    html.div({
+      className: 'chart-empty'
+    }, [
+      html.div({
+        className: 'chart-empty--message'
+      }, [
+        Lang.localize('No data yet. Maybe try starting a new recipe?')
+      ])
+    ])
   ]);
 }
 

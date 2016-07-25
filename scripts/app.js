@@ -6,6 +6,7 @@ import {cursor} from './common/cursor';
 import * as Template from './common/stache';
 import * as Request from './common/request';
 import * as AppNav from './app/nav';
+import * as Banner from './banner';
 import * as Environments from './environments';
 import * as Recipes from './recipes';
 import * as Overlay from './overlay';
@@ -40,6 +41,8 @@ const AppNavAction = action =>
   action.type === 'RequestRecipes' ?
   EnterRecipesMode :
   tagged('AppNav', action);
+
+const BannerAction = tag('Banner');
 
 // Actions
 
@@ -82,12 +85,15 @@ const RequestMode = value => ({
 
 const ChangeAppNavRecipeTitle = compose(AppNavAction, AppNav.ChangeRecipeTitle);
 
+const AlertWithRefresh = BannerAction(Banner.AlertWithRefresh);
+
 // Init and update
 
 export const init = () => {
   const [environments, environmentsFx] = Environments.init();
   const [recipes, recipesFx] = Recipes.init();
   const [appNav, appNavFx] = AppNav.init();
+  const [banner, bannerFx] = Banner.init();
   const [overlay, overlayFx] = Overlay.init();
 
   return [
@@ -95,12 +101,14 @@ export const init = () => {
       environments,
       recipes,
       appNav,
+      banner,
       overlay
     },
     Effects.batch([
       environmentsFx.map(EnvironmentsAction),
       recipesFx.map(RecipesAction),
       appNavFx.map(AppNavAction),
+      bannerFx.map(BannerAction),
       overlayFx.map(OverlayAction)
     ])
   ];
@@ -111,6 +119,13 @@ const updateAppNav = cursor({
   set: (model, appNav) => merge(model, {appNav}),
   update: AppNav.update,
   tag: AppNavAction
+});
+
+const updateBanner = cursor({
+  get: model => model.banner,
+  set: (model, banner) => merge(model, {banner}),
+  update: Banner.update,
+  tag: BannerAction
 });
 
 const updateRecipes = cursor({
@@ -172,6 +187,8 @@ export const update = (model, action) =>
   updateRecipes(model, action.source) :
   action.type === 'AppNav' ?
   updateAppNav(model, action.source) :
+  action.type === 'Banner' ?
+  updateBanner(model, action.source) :
   action.type === 'Overlay' ?
   updateOverlay(model, action.source) :
   // Specialized update functions
@@ -191,6 +208,7 @@ export const view = (model, address) => html.div({
   className: 'app-main'
 }, [
   AppNav.view(model.appNav, forward(address, AppNavAction)),
+  Banner.view(model.banner, forward(address, BannerAction)),
   Environments.view(
     model.environments,
     forward(address, EnvironmentsAction)

@@ -169,6 +169,7 @@ dialog {
   left: 0;
   opacity: 1;
   transition: opacity 200ms ease-out;
+  z-index: 9;
 }
 
 .ovr-overlay[hidden] {
@@ -197,6 +198,7 @@ dialog {
   display: block;
   opacity: 1;
   pointer-events: all;
+  z-index: 10;
 }
 
 .modal-main-close {
@@ -204,6 +206,46 @@ dialog {
   opacity: 0;
   transform: translateY(10vh);
   pointer-events: none;
+}
+
+/* Banner
+----------------------------------------------------------------------------- */
+
+.banner {
+  background: #ffc500;
+  font-size: 13px;
+  font-weight: bold;
+  height: 40px;
+  line-height: 40px;
+  padding: 0 24px;
+  position: absolute;
+  left: 0;
+  right: 0;
+  z-index: 5;
+  /* We deliberately avoid setting top, so it sits in the regular flow position */
+}
+
+/* Hide banner */
+.banner--close {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 200ms ease-out;
+}
+
+.banner--text {
+  padding-right: 250px;
+}
+
+.banner--refresh {
+  cursor: pointer;
+  position: absolute;
+  text-decoration: underline;
+  top: 0;
+  right: 24px;
+}
+
+.banner--refresh-close {
+  display: none;
 }
 
 /* Panel
