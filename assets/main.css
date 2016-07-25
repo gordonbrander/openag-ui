@@ -206,6 +206,25 @@ dialog {
   pointer-events: none;
 }
 
+/* Banner
+----------------------------------------------------------------------------- */
+
+.banner {
+  background: #ffc500;
+  font-size: 13px;
+  font-weight: bold;
+  height: 40px;
+  line-height: 40px;
+  padding: 0 24px;
+}
+
+/* Hide banner */
+.banner--close {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 200ms ease-out;
+}
+
 /* Panel
 ----------------------------------------------------------------------------- */
 
