@@ -85,6 +85,8 @@ const RequestMode = value => ({
 
 const ChangeAppNavRecipeTitle = compose(AppNavAction, AppNav.ChangeRecipeTitle);
 
+const AlertWithRefresh = BannerAction(Banner.AlertWithRefresh);
+
 // Init and update
 
 export const init = () => {
