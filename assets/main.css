@@ -169,6 +169,7 @@ dialog {
   left: 0;
   opacity: 1;
   transition: opacity 200ms ease-out;
+  z-index: 9;
 }
 
 .ovr-overlay[hidden] {
@@ -197,6 +198,7 @@ dialog {
   display: block;
   opacity: 1;
   pointer-events: all;
+  z-index: 10;
 }
 
 .modal-main-close {
@@ -219,7 +221,7 @@ dialog {
   position: absolute;
   left: 0;
   right: 0;
-  z-index: 11;
+  z-index: 5;
   /* We deliberately avoid setting top, so it sits in the regular flow position */
 }
 
