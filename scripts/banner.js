@@ -27,7 +27,7 @@ const open = model => Model(true, model.isRefresh, model.message);
 const close = model => Model(false, model.isRefresh, model.message);
 
 export const init = () => [
-  Model(true, true, 'There seems to be a problem with your computer'),
+  Model(false, false, ''),
   Effects.none
 ];
 
