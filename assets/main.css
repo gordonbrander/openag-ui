@@ -216,6 +216,11 @@ dialog {
   height: 40px;
   line-height: 40px;
   padding: 0 24px;
+  position: absolute;
+  left: 0;
+  right: 0;
+  z-index: 11;
+  /* We deliberately avoid setting top, so it sits in the regular flow position */
 }
 
 /* Hide banner */
@@ -223,6 +228,22 @@ dialog {
   opacity: 0;
   pointer-events: none;
   transition: opacity 200ms ease-out;
+}
+
+.banner--text {
+  padding-right: 250px;
+}
+
+.banner--refresh {
+  cursor: pointer;
+  position: absolute;
+  text-decoration: underline;
+  top: 0;
+  right: 24px;
+}
+
+.banner--refresh-close {
+  display: none;
 }
 
 /* Panel
