@@ -54,8 +54,8 @@ export const view = (model, address) =>
       ]),
       html.a({
         className: ClassName.create({
-          'nav-dashboard-icon': true,
-          'nav-dashboard-icon-active': true
+          'nav-chart-icon': true,
+          'nav-chart-icon-active': true
         })
       })
     ])

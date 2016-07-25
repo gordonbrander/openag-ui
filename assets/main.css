@@ -140,6 +140,23 @@ dialog {
   background-position: 0 -400px;
 }
 
+
+.nav-chart-icon {
+  background: url(./sprite.png) 0 -500px no-repeat;
+  background-size: 100px auto;
+  cursor: pointer;
+  display: block;
+  height: 72px;
+  width: 72px;
+  left: 288px;
+  position: absolute;
+}
+
+.nav-chart-icon-active {
+  background-position: 0 -600px;
+}
+
+
 /* Overlay
 ----------------------------------------------------------------------------- */
 
@@ -345,11 +362,4 @@ dialog {
   width: 336px;
   height: 224px;
   box-shadow: 0px 0px 2px 0px rgba(0,0,0,0.12), 0px 1px 2px 0px rgba(0,0,0,0.24);
-}
-
-/* Rickshaw Graphs
------------------------------------------------------------------------------ */
-
-.rickshaw_graph svg {
-  background-color: #f4f4f4;
 }
