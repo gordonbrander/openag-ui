@@ -168,3 +168,14 @@
   height: 48px;
   width: 2px;
 }
+
+.chart-loading--img {
+  opacity: 0.5;
+  margin-left: -40px;
+  margin-right: -40px;
+  height: 80px;
+  width: 80px;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+}

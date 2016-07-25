@@ -27,7 +27,12 @@ const RATIO_DOMAIN = [0, 1.0];
 
 // Actions
 
-export const Resize = tag('Resize');
+export const Resize = (width, height) => ({
+  type: 'Resize',
+  width,
+  height
+});
+
 export const MoveXhair = tag('MoveXhair');
 export const Data = tag('Data');
 
@@ -68,6 +73,8 @@ export const update = (model, action) =>
   [merge(model, {xhairAt: action.source}), Effects.none] :
   action.type === 'Data' ?
   updateData(model, action.source) :
+  action.type === 'Resize' ?
+  updateSize(model, action.width, action.height) :
   Unknown.update(model, action);
 
 const updateData = (model, data) => {
@@ -89,6 +96,14 @@ const updateData = (model, data) => {
     [model, Effects.none]
   );
 }
+
+const updateSize = (model, width, height) => [
+  merge(model, {
+    width,
+    height
+  }),
+  Effects.none
+];
 
 const updateScrub = cursor({
   get: model => model.scrubber,
@@ -113,7 +128,14 @@ const viewEmpty = (model, address) => {
       width: px(width),
       height: px(height)
     }
-  });
+  }, [
+    html.img({
+      className: 'chart-loading--img',
+      src: 'assets/loading.svg',
+      width: '80',
+      height: '80'
+    })
+  ]);
 }
 
 const viewData = (model, address) => {
