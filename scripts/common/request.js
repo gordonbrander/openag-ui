@@ -6,16 +6,12 @@ import {tag} from '../common/prelude';
 
 // Read a Response object to JSON.
 // https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API/Using_Fetch
-const readResponseJSON = response => new Promise((resolve, reject) => {
+const readResponseJSON = response =>
   // If HTTP request was successful.
   // See https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API/Using_Fetch.
-  if (response.ok) {
-    resolve(Result.ok(response.json()));
-  }
-  else {
-    resolve(Result.error(response));
-  }
-});
+  response.ok ?
+  response.json().then(Result.ok) :
+  Promise.resolve(Result.error(`Request failed (error status ${response.status})`));
 
 const getFetch = url => {
   const headers = new Headers({
