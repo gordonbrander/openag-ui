@@ -9,6 +9,7 @@ import * as Ordered from '../common/ordered';
 import * as ClassName from '../common/classname';
 import * as Unknown from '../common/unknown';
 import {compose} from '../lang/functional';
+import {onWindow} from '../driver/virtual-dom';
 
 // Edit openag-config.json to change which environmental datapoints are rendered
 // to screen.
@@ -61,8 +62,8 @@ export const Model = (series, extentX, width, height, scrubberAt, xhairAt, isLoa
   interval: HR_MS,
 
   // Define dimensions
-  width: window.innerWidth,
-  height: (window.innerHeight - HEADER_HEIGHT),
+  width,
+  height,
   tooltipWidth: 424,
 
   // Define chart state
@@ -72,7 +73,7 @@ export const Model = (series, extentX, width, height, scrubberAt, xhairAt, isLoa
 });
 
 export const init = () => [
-  Model([], [], window.innerWidth, window.innerHeight, 1.0, 0.5, true),
+  Model([], [], window.innerWidth, (window.innerHeight - HEADER_HEIGHT), 1.0, 0.5, true),
   Effects.none
 ];
 
@@ -152,7 +153,10 @@ const viewLoading = (model, address) => {
     style: {
       width: px(width),
       height: px(height)
-    }
+    },
+    onResize: onWindow(address, () => {
+      return Resize(window.innerWidth, (window.innerHeight - HEADER_HEIGHT));
+    })
   }, [
     html.img({
       className: 'chart-loading--img',
@@ -170,7 +174,10 @@ const viewEmpty = (model, address) => {
     style: {
       width: px(width),
       height: px(height)
-    }
+    },
+    onResize: onWindow(address, () => {
+      return Resize(window.innerWidth, (window.innerHeight - HEADER_HEIGHT));
+    })
   }, [
     html.div({
       className: 'chart-empty'
@@ -266,6 +273,9 @@ const viewData = (model, address) => {
       const scrubberAt = scrubberRatioToScrubberX.invert(mouseX);
       address(MoveScrubber(scrubberAt));
     },
+    onResize: onWindow(address, () => {
+      return Resize(window.innerWidth, (window.innerHeight - HEADER_HEIGHT));
+    }),
     style: {
       width: px(width),
       height: px(height)
