@@ -59,9 +59,9 @@ const StartRecipe = tag('StartRecipe');
 const EndRecipe = tag('EndRecipe');
 
 // Send an alert. We use this to send up problems to be displayed in banner.
-const Alert = tag('Alert');
+const AlertBanner = tag('AlertBanner');
 // Suppress a previously sent alert.
-const Suppress = {type: 'Suppress'};
+const SuppressBanner = {type: 'SuppressBanner'};
 
 // Map an incoming datapoint into an action
 const DataPointAction = dataPoint => {
@@ -186,7 +186,7 @@ const updateLatest = Result.updater(
     const [next, fx] = update(model, MissPoll);
 
     // Create alert action
-    const action = Alert(localize('Error fetching latest'));
+    const action = AlertBanner(localize('Error fetching latest'));
 
     return [
       next,
@@ -209,14 +209,14 @@ const restore = Result.updater(
       Effects.batch([
         fx,
         // Suppress any banners.
-        Effects.receive(Suppress)
+        Effects.receive(SuppressBanner)
       ])
     ];
   },
   (model, error) => {
     // @TODO retry if we have an error
     const message = localize('Uh-oh! Having trouble getting chart data. Retrying...');
-    const action = Alert(message);
+    const action = AlertBanner(message);
     return [
       model,
       Effects.batch([

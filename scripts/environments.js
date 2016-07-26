@@ -1,5 +1,5 @@
 import {html, forward, Effects, thunk} from 'reflex';
-import {merge, tagged, tag, batch} from './common/prelude';
+import {merge, tag, batch} from './common/prelude';
 import * as Config from '../openag-config.json';
 import * as Indexed from './common/indexed';
 import * as Unknown from './common/unknown';
@@ -12,6 +12,9 @@ import * as Environment from './environments/environment';
 const IndexedAction = tag('Indexed');
 const ActivateIndexed = compose(IndexedAction, Indexed.Activate);
 
+const AlertBanner = tag('AlertBanner');
+const SuppressBanner = {type: 'SuppressBanner'};
+
 // Address a specific environment by id.
 export const EnvironmentByID = (id, source) => ({
   type: 'EnvironmentByID',
@@ -20,6 +23,10 @@ export const EnvironmentByID = (id, source) => ({
 });
 
 export const EnvironmentAction = (id, action) =>
+  action.type === 'SuppressBanner' ?
+  SuppressBanner :
+  action.type === 'AlertBanner' ?
+  AlertBanner(action.source) :
   EnvironmentByID(id, action);
 
 // Tag actions by id
