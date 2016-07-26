@@ -36,7 +36,13 @@ export const Resize = (width, height) => ({
 
 export const MoveXhair = tag('MoveXhair');
 export const Data = tag('Data');
+
+// Put chart into "loading" mode. Note that chart is dumb about whether it is
+// loading or simply lacking data. You have to tell it via actions. Giving the
+// chart data via the Data action will also automatically flip `isLoading` to
+// false.
 export const Loading = tag('Loading');
+// Put chart into "not loading" mode.
 export const Ready = tag('Ready');
 
 const ScrubberAction = tag('Scrubber');
@@ -66,7 +72,7 @@ export const Model = (series, extentX, width, height, scrubberAt, xhairAt, isLoa
 });
 
 export const init = () => [
-  Model([], [], window.innerWidth, window.innerHeight, 1.0, 0.5, false),
+  Model([], [], window.innerWidth, window.innerHeight, 1.0, 0.5, true),
   Effects.none
 ];
 
@@ -89,20 +95,28 @@ const updateData = (model, data) => {
   // Read the extent of the data
   const extentX = d3.extent(data, readX);
 
-  return (
-    // Only update the model if the new data's extent is outside the current
-    // data's extent. This way we only re-render when data changes.
+  // Determine how to build model
+  const next = (
+    data.length === 0 ?
+    merge(model, {
+      series: readSeriesFromData(data),
+      // We did get data (though it was empty), so set loading to false.
+      isLoading: false
+    }) :
+
     !isSameExtent(model.extentX, extentX) ?
-    [
-      merge(model, {
-        extentX,
-        series: readSeriesFromData(data)
-      }),
-      Effects.none
-    ] :
-    // Otherwise, just return the old model.
-    [model, Effects.none]
+    merge(model, {
+      extentX,
+      series: readSeriesFromData(data),
+      // If we get data, set loading to false
+      isLoading: false
+    }) :
+
+    // Otherwise, just use the old model.
+    model
   );
+
+  return [next, Effects.none];
 }
 
 const updateSize = (model, width, height) => [
