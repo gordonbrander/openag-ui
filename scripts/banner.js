@@ -33,9 +33,17 @@ export const init = () => [
 
 export const update = (model, action) =>
   action.type === 'Alert' ?
-  [Model(false, action.source), Effects.none] :
+  (
+    action.source !== model.message ?
+    [Model(false, action.source), Effects.none] :
+    [model, Effects.none]
+  ) :
   action.type === 'AlertWithRefresh' ?
-  [Model(true, action.source), Effects.none] :
+  (
+    action.source !== model.message ?
+    [Model(true, action.source), Effects.none] :
+    [model, Effects.none]
+  ) :
   action.type === 'Suppress' ?
   [suppress(model), Effects.none] :
   Unknown.update(model, action);
