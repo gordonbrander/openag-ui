@@ -6,7 +6,17 @@ import {tag} from '../common/prelude';
 
 // Read a Response object to JSON.
 // https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API/Using_Fetch
-const readResponseJSON = response => response.json();
+const readResponseJSON = response =>
+  // If HTTP request was successful.
+  // See https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API/Using_Fetch.
+  response.ok ?
+  response.json().then(Result.ok) :
+  Promise.resolve(
+    Result.error(`Connection problem (HTTP error ${response.status})`)
+  );
+
+const readFailure = error =>
+  Result.error('No internet connection');
 
 const getFetch = url => {
   const headers = new Headers({
@@ -16,7 +26,7 @@ const getFetch = url => {
     method: 'GET',
     headers
   });
-  return fetch(request).then(readResponseJSON);
+  return fetch(request).then(readResponseJSON, readFailure);
 }
 
 const postFetch = (url, body) => {
@@ -28,7 +38,7 @@ const postFetch = (url, body) => {
     headers,
     body: JSON.stringify(body)
   });
-  return fetch(request).then(readResponseJSON);
+  return fetch(request).then(readResponseJSON, readFailure);
 }
 
 export const Get = url => ({
@@ -40,7 +50,7 @@ export const Got = tag('Got');
 
 // Returns a get effect
 export const get = url => Effects.perform(new Task((succeed, fail) => {
-  getFetch(url).then(Result.ok, Result.error).then(succeed);
+  getFetch(url).then(succeed);
 }));
 
 export const Post = url => ({
@@ -56,9 +66,8 @@ export const Posted = result => ({
 
 const PostEffect = (url, body) =>
   Effects.perform(new Task((succeed, fail) => {
-    const ok = compose(succeed, Posted, Result.ok);
-    const error = compose(succeed, Posted, Result.error);
-    postFetch(url, body).then(ok, error);
+    const posted = compose(succeed, Posted);
+    postFetch(url, body).then(posted, posted);
   }));
 
 export const post = (model, url, body) => [

@@ -9,37 +9,43 @@ import * as Unknown from './common/unknown';
 
 // Actions
 
-export const Open = {type: 'Open'};
-export const Close = {type: 'Close'};
+// Turn on banner with message
 export const Alert = tag('Alert');
+// Turn on banner with message and refresh button
 export const AlertWithRefresh = tag('AlertWithRefresh');
+// Turn off banner, clear message
+export const Suppress = {type: 'Suppress'};
 
 // Update, model, init
 
-export const Model = (isOpen, isRefresh, message) => ({
-  isOpen,
+export const Model = (isRefresh, message) => ({
   isRefresh,
   message
 });
 
 // Convenient update functions for model
-const open = model => Model(true, model.isRefresh, model.message);
-const close = model => Model(false, model.isRefresh, model.message);
+const suppress = model => Model(model.isRefresh, '');
 
 export const init = () => [
-  Model(false, false, ''),
+  Model(false, ''),
   Effects.none
 ];
 
 export const update = (model, action) =>
   action.type === 'Alert' ?
-  [Model(true, false, action.source), Effects.none] :
+  (
+    action.source !== model.message ?
+    [Model(false, action.source), Effects.none] :
+    [model, Effects.none]
+  ) :
   action.type === 'AlertWithRefresh' ?
-  [Model(true, true, action.source), Effects.none] :
-  action.type === 'Open' ?
-  [open(model), Effects.none] :
-  action.type === 'Close' ?
-  [close(model), Effects.none] :
+  (
+    action.source !== model.message ?
+    [Model(true, action.source), Effects.none] :
+    [model, Effects.none]
+  ) :
+  action.type === 'Suppress' ?
+  [suppress(model), Effects.none] :
   Unknown.update(model, action);
 
 // View
@@ -48,7 +54,8 @@ export const view = (model, address) =>
   html.div({
     className: ClassName.create({
       'banner': true,
-      'banner--close': !model.isOpen
+      // Hide banner if there is no message to show
+      'banner--close': model.message === ''
     })
   }, [
     html.div({

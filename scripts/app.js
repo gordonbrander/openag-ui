@@ -12,14 +12,19 @@ import * as Recipes from './recipes';
 import * as Overlay from './overlay';
 import {compose} from './lang/functional';
 
-// Action tagging functions
+// Actions and tagging functions
 
 const RecipesAction = action =>
   action.type === 'Activated' ?
   RecipeActivated(action.value) :
   tagged('Recipes', action);
 
-const EnvironmentsAction = tag('Environments');
+const EnvironmentsAction = action =>
+  action.type === 'AlertBanner' ?
+  AlertBannerWithRefresh(action.source) :
+  action.type === 'SuppressBanner' ?
+  SuppressBanner :
+  tagged('Environments', action);
 
 const OpenRecipes = RecipesAction(Recipes.Open);
 const CloseRecipes = RecipesAction(Recipes.Close);
@@ -43,8 +48,9 @@ const AppNavAction = action =>
   tagged('AppNav', action);
 
 const BannerAction = tag('Banner');
-
-// Actions
+const AlertBanner = compose(BannerAction, Banner.Alert);
+const AlertBannerWithRefresh = compose(BannerAction, Banner.AlertWithRefresh);
+const SuppressBanner = BannerAction(Banner.Suppress);
 
 const RecipeActivated = value => ({
   type: 'RecipeActivated',
@@ -84,8 +90,6 @@ const RequestMode = value => ({
 });
 
 const ChangeAppNavRecipeTitle = compose(AppNavAction, AppNav.ChangeRecipeTitle);
-
-const AlertWithRefresh = BannerAction(Banner.AlertWithRefresh);
 
 // Init and update
 
