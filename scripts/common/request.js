@@ -11,7 +11,12 @@ const readResponseJSON = response =>
   // See https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API/Using_Fetch.
   response.ok ?
   response.json().then(Result.ok) :
-  Promise.resolve(Result.error(`Request failed (error status ${response.status})`));
+  Promise.resolve(
+    Result.error(`Connection problem (HTTP error ${response.status})`)
+  );
+
+const readFailure = error =>
+  Result.error('No internet connection');
 
 const getFetch = url => {
   const headers = new Headers({
@@ -21,7 +26,7 @@ const getFetch = url => {
     method: 'GET',
     headers
   });
-  return fetch(request).then(readResponseJSON, Result.error);
+  return fetch(request).then(readResponseJSON, readFailure);
 }
 
 const postFetch = (url, body) => {
@@ -33,7 +38,7 @@ const postFetch = (url, body) => {
     headers,
     body: JSON.stringify(body)
   });
-  return fetch(request).then(readResponseJSON, Result.error);
+  return fetch(request).then(readResponseJSON, readFailure);
 }
 
 export const Get = url => ({
