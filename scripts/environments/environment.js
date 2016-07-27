@@ -1,5 +1,5 @@
 import * as Config from '../../openag-config.json';
-import {html, forward, Effects, thunk} from 'reflex';
+import {html, forward, Effects, Task, thunk} from 'reflex';
 import {merge, tagged, tag, batch} from '../common/prelude';
 import * as Poll from '../common/poll';
 import * as Template from '../common/stache';
@@ -7,7 +7,7 @@ import * as Request from '../common/request';
 import * as Result from '../common/result';
 import * as Unknown from '../common/unknown';
 import {cursor} from '../common/cursor';
-import {compose} from '../lang/functional';
+import {compose, constant} from '../lang/functional';
 import * as EnvironmentalDataPoint from '../environmental-data-point';
 import * as Chart from '../environments/chart';
 // @TODO do proper localization
@@ -22,6 +22,7 @@ const HR_MS = MIN_MS * 60;
 const DAY_MS = HR_MS * 24;
 
 const POLL_TIMEOUT = 2 * S_MS;
+const RETRY_TIMEOUT = 4 * S_MS;
 
 // @FIXME this is a temporary kludge for getting data into the system
 // when no recipe start. Get the previous day's data. Range in seconds.
@@ -170,8 +171,22 @@ const updateInfo = Result.updater(
 
     return batch(update, model, actions);
   },
-  // If we didn't get info, try again.
-  (model, error) => update(model, FetchInfo)
+  (model, error) => {
+    // Create alert action
+    const alertAction = AlertBanner(error);
+
+    const fetchFx = Effects
+      .perform(Task.sleep(RETRY_TIMEOUT))
+      .map(constant(FetchInfo));
+
+    return [
+      model,
+      Effects.batch([
+        fetchFx,
+        Effects.receive(alertAction)
+      ])
+    ];
+  }
 );
 
 const updateLatest = Result.updater(
@@ -186,7 +201,7 @@ const updateLatest = Result.updater(
     const [next, fx] = update(model, MissPoll);
 
     // Create alert action
-    const action = AlertBanner(localize('Error fetching latest'));
+    const action = AlertBanner(error);
 
     return [
       next,
@@ -214,13 +229,13 @@ const restore = Result.updater(
     ];
   },
   (model, error) => {
-    // @TODO retry if we have an error
-    const message = localize('Uh-oh! Having trouble getting chart data. Retrying...');
-    const action = AlertBanner(message);
+    const action = AlertBanner(error);
+
     return [
       model,
       Effects.batch([
-        FetchRestore,
+        // Wait for a second, then try to restore again.
+        Effects.perform(Task.sleep(RETRY_TIMEOUT)).map(FetchRestore),
         Effects.receive(action)
       ])
     ];
