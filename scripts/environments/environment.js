@@ -53,7 +53,7 @@ const PongPoll = PollAction(Poll.Pong);
 const MissPoll = PollAction(Poll.Miss);
 
 const ChartAction = tag('Chart');
-const ChartData = compose(ChartAction, Chart.Data);
+const SetChartData = compose(ChartAction, Chart.SetData);
 const ChartLoading = compose(ChartAction, Chart.Loading);
 
 const StartRecipe = tag('StartRecipe');
@@ -216,7 +216,7 @@ const updateLatest = Result.updater(
 
 const restore = Result.updater(
   (model, record) => {
-    const action = ChartData(readData(record));
+    const action = SetChartData(readData(record));
     const [next, fx] = update(model, action);
 
     return [

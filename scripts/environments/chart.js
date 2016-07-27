@@ -36,7 +36,8 @@ export const Resize = (width, height) => ({
 });
 
 export const MoveXhair = tag('MoveXhair');
-export const Data = tag('Data');
+export const SetData = tag('SetData');
+export const AddData = tag('AddData');
 
 // Put chart into "loading" mode. Note that chart is dumb about whether it is
 // loading or simply lacking data. You have to tell it via actions. Giving the
@@ -82,8 +83,10 @@ export const update = (model, action) =>
   updateScrub(model, action.source) :
   action.type === 'MoveXhair' ?
   [merge(model, {xhairAt: action.source}), Effects.none] :
-  action.type === 'Data' ?
+  action.type === 'SetData' ?
   updateData(model, action.source) :
+  action.type === 'AddData' ?
+  addData(model, action.source) :
   action.type === 'Resize' ?
   updateSize(model, action.width, action.height) :
   action.type === 'Loading' ?
@@ -118,6 +121,10 @@ const updateData = (model, data) => {
   );
 
   return [next, Effects.none];
+}
+
+const addData = (model, data) => {
+
 }
 
 const updateSize = (model, width, height) => [
@@ -560,28 +567,48 @@ const readSeriesFromData = data => {
   // Create stubs for each of the groups in the series.
   const stubs = SERIES.map(readGroupFromConfig);
   const index = Ordered.indexWith(stubs, getVariable);
-  const populated = data.reduce(stepSeriesIndex, index);
+  const populated = data.reduce(insertDataPointInIndex, index);
   const variables = SERIES.map(getVariable);
   return Ordered.listByKeys(populated, variables);
 }
 
 const getVariable = x => x.variable;
 
-const stepSeriesIndex = (index, dataPoint) => {
+const insertDataPointInIndex = (index, dataPoint) => {
   const variable = getVariable(dataPoint);
-  if (index[variable] && dataPoint.is_desired) {
-    index[variable].desired.push(dataPoint);
+  const group = index[variable];
+
+  // Check that this is a known variable in our configuration
+  if (group) {
+    // File datapoint away in measured or desired, making sure that it is
+    // monotonic (that a new datapoint comes after any older datapoints).
+    if (dataPoint.is_desired && isMonotonic(group.desired, dataPoint, readX)) {
+      group.desired.push(dataPoint);
+    }
+    else if (!dataPoint.is_desired && isMonotonic(group.measured, dataPoint, readX)) {
+      group.measured.push(dataPoint);
+    }
   }
-  else if (index[variable] && !dataPoint.is_desired) {
-    index[variable].measured.push(dataPoint);
-  }
+
   return index;
-};
+}
+
+// Check if an item comes after the last item in an array. "Comes after" is
+// defined by value returned from `readX`.
+const isMonotonic = (array, item, readX) => {
+  const lastItem = last(array);
+  // If there is no last item in the array, then item is greater than last
+  // array item (which is nothing). Otherwise, compare items.
+  return !lastItem ? true : readX(lastItem) < readX(item);
+}
+
+const last = array => array.length > 0 ? array[array.length - 1] : array[0];
 
 const readGroupFromConfig = (proto) => {
-  const group = Object.create(proto);
-  group.desired = [];
-  group.measured = [];
+  const group = merge(proto, {
+    desired: [],
+    measured: []
+  });
   return group;
 };
 
