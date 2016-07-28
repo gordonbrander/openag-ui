@@ -7,6 +7,7 @@ import {cursor} from '../common/cursor';
 import * as Draggable from '../common/draggable';
 import * as ClassName from '../common/classname';
 import * as Unknown from '../common/unknown';
+import {listByKeys, indexWith} from '../common/indexed';
 import {compose} from '../lang/functional';
 import {onWindow} from '../driver/virtual-dom';
 
@@ -137,10 +138,10 @@ const readGroupFromConfig = ({
 const readVariables = model => {
   const {config, data} = model;
   const groupList = config.map(readGroupFromConfig);
-  const groupIndex = Ordered.indexWith(groupList, getVariable);
+  const groupIndex = indexWith(groupList, getVariable);
   const populated = data.reduce(insertDataPoint, groupIndex);
   const variables = config.map(getVariable);
- return Ordered.listByKeys(populated, variables);
+ return listByKeys(populated, variables);
 }
 
 // Insert datapoint in index, mutating model. We use this function to build
@@ -227,7 +228,7 @@ export const view = (model, address) =>
   model.isLoading ?
   viewLoading(model, address) :
   // If not loading and no data to show, render empty
-  model.extentX.length === 0 ?
+  model.variables.data.length === 0 ?
   viewEmpty(model, address) :
   viewData(model, address);
 
@@ -675,7 +676,7 @@ const concatMonotonic = (list, additions, readX) => {
 // defined by value returned from `readX`.
 const isMonotonic = (array, item, readX) => {
   // If there is no last item in the array, then use -1 as the timestamp.
-  const timestamp = maybeMap(readX, last(list), -1);
+  const timestamp = maybeMap(readX, last(array), -1);
   return readX(item) > timestamp;
 }
 
