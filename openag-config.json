@@ -7,7 +7,7 @@
   "environmental_data_point_local": "environmental_data_point",
   "environmental_data_point_origin": "{{origin_url}}/environmental_data_point",
   "environmental_data_point_origin_latest": "{{origin_url}}/environmental_data_point/_design/openag/_view/by_variable?group_level=3&startkey={{startkey}}&endkey={{endkey}}",
-  "environmental_data_point_origin_range": "{{origin_url}}/environmental_data_point/_design/openag/_view/by_timestamp?startkey={{startkey}}&endkey={{endkey}}",
+  "environmental_data_point_origin_range": "{{origin_url}}/environmental_data_point/_design/openag/_view/by_timestamp?startkey={{startkey}}&endkey={{endkey}}&limit={{limit}}&descending={{descending}}",
   "recipes_local": "recipes",
   "recipes_origin": "{{origin_url}}/recipes",
   "environment_local": "environment",
@@ -17,13 +17,13 @@
     {
       "variable": "light_illuminance",
       "title": "Light",
-      "unit": "Lux",
+      "unit": " Lux",
       "color": "#ffc500"
     },
     {
       "variable": "air_temperature",
       "title": "Temperature",
-      "unit": "\u00B0C",
+      "unit": "\u00B0",
       "min": 7.2,
       "max": 48.8,
       "color": "#ff8300"
@@ -31,19 +31,19 @@
     {
       "variable": "water_temperature",
       "title": "Water Temperature",
-      "unit": "\u00B0C",
+      "unit": "\u00B0",
       "min": 7.2,
       "max": 48.8,
       "color": "#0052b3"
     },
     {
-      "variable": "electrical_conductivity",
+      "variable": "water_electrical_conductivity",
       "title": "EC",
       "unit": "",
       "color": "#AB36B2"
     },
     {
-      "variable": "potential_hydrogen",
+      "variable": "water_potential_hydrogen",
       "title": "Potential Hydrogen",
       "unit": "",
       "color": "#5ada00"

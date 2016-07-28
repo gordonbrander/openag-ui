@@ -24,6 +24,8 @@ const DAY_MS = HR_MS * 24;
 const POLL_TIMEOUT = 4 * S_MS;
 const RETRY_TIMEOUT = 4 * S_MS;
 
+const MAX_DATAPOINTS = 5000;
+
 // @FIXME this is a temporary kludge for getting data into the system
 // when no recipe start. Get the previous day's data. Range in seconds.
 const FALLBACK_START_MS = (Date.now() - DAY_MS);
@@ -86,7 +88,7 @@ export const init = id => {
     Effects.batch([
       chartFx.map(ChartAction),
       pollFx.map(PollAction),
-      Effects.receive(FetchInfo)
+      Effects.receive(FetchRestore(id))
     ])
   ];
 };
@@ -99,7 +101,7 @@ export const update = (model, action) =>
   action.type === 'FetchLatest' ?
   [model, Request.get(templateLatestUrl(model.id)).map(Latest)] :
   action.type === 'FetchRestore' ?
-  [model, Request.get(templateRangeUrl(model.id, action.source)).map(Restore)] :
+  [model, Request.get(templateRecentUrl(model.id, action.source)).map(Restore)] :
   action.type === 'Restore' ?
   restore(model, action.source) :
   action.type === 'Latest' ?
@@ -308,10 +310,11 @@ const templateLatestUrl = (environmentID) =>
     endkey: JSON.stringify([environmentID, {}])
   });
 
-const templateRangeUrl = (environmentID, startTime, endTime) =>
+const templateRecentUrl = (environmentID) =>
   Template.render(Config.environmental_data_point_origin_range, {
     origin_url: Config.origin_url,
-    startkey: JSON.stringify([environmentID, startTime]),
-    endkey: JSON.stringify([environmentID, endTime || {}])
+    startkey: JSON.stringify([environmentID, {}]),
+    endkey: JSON.stringify([environmentID]),
+    limit: MAX_DATAPOINTS,
+    descending: true
   });
-

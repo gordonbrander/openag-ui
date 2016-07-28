@@ -11,6 +11,8 @@ Example:
 
 const pattern = /{{(\w+)}}/g
 
+const toString = x => x + '';
+
 export const escapeHtml = string =>
   string
     .replace('<', '&lt;')
@@ -18,4 +20,4 @@ export const escapeHtml = string =>
     .replace('&', '&amp;');
 
 export const render = (string, context) =>
-  string.replace(pattern, (match, group1) => escapeHtml(context[group1] || ''));
+  string.replace(pattern, (match, group1) => escapeHtml(toString(context[group1]) || ''));

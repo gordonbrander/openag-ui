@@ -70,7 +70,7 @@ export const Model = (variables, width, height, scrubberAt, xhairAt, isLoading) 
 });
 
 export const Variables = (data, config) => ({
-  data,
+  data: data.slice().sort(comparator(readX)),
   config
 });
 
@@ -342,7 +342,7 @@ const viewData = (model, address) => {
 
   const readouts = series.map(group => {
     const measured = displayYValueFromX(group.measured, xhairTime, readX, readY, group.unit);
-    const desired = displayYValueFromX(group.measured, xhairTime, readX, readY, group.unit);
+    const desired = displayYValueFromX(group.desired, xhairTime, readX, readY, group.unit);
     return renderReadout(group, measured, desired);
   });
 
