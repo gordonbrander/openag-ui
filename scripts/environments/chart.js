@@ -52,9 +52,8 @@ const ReleaseScrubber = ScrubberAction(Draggable.Release);
 
 // Init and update functions
 
-export const Model = (variables, extentX, width, height, scrubberAt, xhairAt, isLoading) => ({
+export const Model = (variables, width, height, scrubberAt, xhairAt, isLoading) => ({
   variables,
-  extentX,
 
   // Time interval to show within chart viewport (visible area)
   interval: HR_MS,
@@ -165,7 +164,6 @@ const insertDataPoint = (index, dataPoint) => {
 export const init = () => [
   Model(
     Variables([], CHART_CONFIG),
-    [],
     window.innerWidth,
     (window.innerHeight - HEADER_HEIGHT),
     1.0,
@@ -279,9 +277,10 @@ const viewEmpty = (model, address) => {
 }
 
 const viewData = (model, address) => {
-  const {variables, extentX, interval, width, height, tooltipWidth,
+  const {variables, interval, width, height, tooltipWidth,
     scrubber, xhairAt} = model;
 
+  const extentX = d3.extent(variables.data, readX);
   const series = readVariables(variables);
 
   const scrubberAt = scrubber.coords;
@@ -568,7 +567,7 @@ const text = compose(svgNS, html.text);
 
 const readX = d =>
   // Timestamp is in seconds. For x position, read timestamp as ms.
-  d.timestamp * 1000;
+  Math.round(d.timestamp * 1000);
 
 const readY = d =>
   Number.parseFloat(d.value);
@@ -658,7 +657,7 @@ const concatMonotonic = (list, additions, readX) => {
   else {
     // Get the last timestamp (use 0 as a fallback).
     // `list` is assumed to be monotonic.
-    const timestamp = maybeMap(readX, last(list), -1);
+    const timestamp = maybeMap(readX, last(list), 0);
     // Filter the additions to just those that occur after timestamp.
     // Sort the result.
     const after = filterAbove(additions, readX, timestamp);
@@ -675,8 +674,8 @@ const concatMonotonic = (list, additions, readX) => {
 // Check if an item comes after the last item in an array. "Comes after" is
 // defined by value returned from `readX`.
 const isMonotonic = (array, item, readX) => {
-  // If there is no last item in the array, then use -1 as the timestamp.
-  const timestamp = maybeMap(readX, last(array), -1);
+  // If there is no last item in the array, then use 0 as the timestamp.
+  const timestamp = maybeMap(readX, last(array), 0);
   return readX(item) > timestamp;
 }
 
