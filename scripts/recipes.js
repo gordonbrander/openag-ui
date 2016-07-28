@@ -21,6 +21,8 @@ const ORIGIN = Template.render(Config.recipes_origin, {
   origin_url: Config.origin_url
 });
 
+const getPouchID = Indexed.getter('_id');
+
 // Actions and tagging functions
 
 const ModalAction = tag('Modal');
@@ -118,9 +120,9 @@ const syncedError = model =>
 const restoredOk = (model, recipes) => [
   merge(model, {
     // Build an array of ordered recipe IDs
-    order: Indexed.orderByID(recipes),
+    order: recipes.map(getPouchID),
     // Index all recipes by ID
-    entries: Indexed.indexByID(recipes)
+    entries: Indexed.indexWith(recipes, getPouchID)
   }),
   Effects.none
 ];

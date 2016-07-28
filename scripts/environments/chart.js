@@ -5,15 +5,12 @@ import * as Lang from '../common/lang';
 import {merge, tag} from '../common/prelude';
 import {cursor} from '../common/cursor';
 import * as Draggable from '../common/draggable';
-import * as Ordered from '../common/ordered';
 import * as ClassName from '../common/classname';
 import * as Unknown from '../common/unknown';
 import {compose} from '../lang/functional';
 import {onWindow} from '../driver/virtual-dom';
 
-// Edit openag-config.json to change which environmental datapoints are rendered
-// to screen.
-const SERIES = Config.chart;
+const CHART_CONFIG = Config.chart;
 
 const S_MS = 1000;
 const MIN_MS = S_MS * 60;
@@ -36,7 +33,8 @@ export const Resize = (width, height) => ({
 });
 
 export const MoveXhair = tag('MoveXhair');
-export const Data = tag('Data');
+export const SetData = tag('SetData');
+export const AddData = tag('AddData');
 
 // Put chart into "loading" mode. Note that chart is dumb about whether it is
 // loading or simply lacking data. You have to tell it via actions. Giving the
@@ -53,9 +51,8 @@ const ReleaseScrubber = ScrubberAction(Draggable.Release);
 
 // Init and update functions
 
-export const Model = (series, extentX, width, height, scrubberAt, xhairAt, isLoading) => ({
-  // Chart data series
-  series,
+export const Model = (variables, extentX, width, height, scrubberAt, xhairAt, isLoading) => ({
+  variables,
   extentX,
 
   // Time interval to show within chart viewport (visible area)
@@ -72,8 +69,108 @@ export const Model = (series, extentX, width, height, scrubberAt, xhairAt, isLoa
   isLoading
 });
 
+export const Variables = (data, config) => ({
+  data,
+  config
+});
+
+export const addVariablesData = (model, data) => {
+  const next = concatMonotonic(model.data, data, readX);
+  return (
+    next !== model.data ?
+    Variables(next, model.config) :
+    model
+  );
+}
+
+const Group = (
+  measured,
+  desired,
+  variable,
+  title,
+  unit,
+  min,
+  max,
+  color
+) => ({
+  measured,
+  desired,
+  variable,
+  title,
+  unit,
+  min,
+  max,
+  color
+});
+
+// Construct a group from a config object
+const readGroupFromConfig = ({
+  variable,
+  title,
+  unit,
+  min,
+  max,
+  color
+}) => Group(
+  [],
+  [],
+  variable,
+  title,
+  unit,
+  min,
+  max,
+  color
+);
+
+
+// Construct a tree structure from model (useful for view)
+//
+// Output:
+//
+//     {
+//       air_temperature: {
+//         measured: [dataPoint, dataPoint, ...],
+//         desired: [dataPoint, dataPoint, ...]
+//       },
+//       ...
+//     }
+const readVariables = model => {
+  const {config, data} = model;
+  const groupList = config.map(readGroupFromConfig);
+  const groupIndex = Ordered.indexWith(groupList, getVariable);
+  const populated = data.reduce(insertDataPoint, groupIndex);
+  const variables = config.map(getVariable);
+ return Ordered.listByKeys(populated, variables);
+}
+
+// Insert datapoint in index, mutating model. We use this function to build
+// up the variable groups index.
+// Returns mutated index.
+const insertDataPoint = (index, dataPoint) => {
+  const variable = getVariable(dataPoint);
+  const group = index[variable];
+  const type = dataPoint.is_desired ? 'desired' : 'measured';
+
+  // Check that this is a known variable in our configuration
+  // File datapoint away in measured or desired, making sure that it is
+  // monotonic (that a new datapoint comes after any older datapoints).
+  if (index[variable] && isMonotonic(index[variable][type], dataPoint, readX)) {
+    index[variable][type].push(dataPoint);
+  }
+
+  return index;
+}
+
 export const init = () => [
-  Model([], [], window.innerWidth, (window.innerHeight - HEADER_HEIGHT), 1.0, 0.5, true),
+  Model(
+    Variables([], CHART_CONFIG),
+    [],
+    window.innerWidth,
+    (window.innerHeight - HEADER_HEIGHT),
+    1.0,
+    0.5,
+    true
+  ),
   Effects.none
 ];
 
@@ -82,8 +179,8 @@ export const update = (model, action) =>
   updateScrub(model, action.source) :
   action.type === 'MoveXhair' ?
   [merge(model, {xhairAt: action.source}), Effects.none] :
-  action.type === 'Data' ?
-  updateData(model, action.source) :
+  action.type === 'AddData' ?
+  addData(model, action.source) :
   action.type === 'Resize' ?
   updateSize(model, action.width, action.height) :
   action.type === 'Loading' ?
@@ -92,28 +189,17 @@ export const update = (model, action) =>
   [merge(model, {isLoading: false}), Effects.none] :
   Unknown.update(model, action);
 
-const updateData = (model, data) => {
-  // Read the extent of the data
-  const extentX = d3.extent(data, readX);
-
-  // Determine how to build model
+const addData = (model, data) => {
+  const variables = addVariablesData(model.variables, data);
   const next = (
-    data.length === 0 ?
+    // If variables model actually updated, then create new chart model.
+    variables !== model.variables ?
     merge(model, {
-      series: readSeriesFromData(data),
-      // We did get data (though it was empty), so set loading to false.
+      // Create new variables model for data.
+      variables,
       isLoading: false
     }) :
-
-    !isSameExtent(model.extentX, extentX) ?
-    merge(model, {
-      extentX,
-      series: readSeriesFromData(data),
-      // If we get data, set loading to false
-      isLoading: false
-    }) :
-
-    // Otherwise, just use the old model.
+    // Otherwise, just return the old model.
     model
   );
 
@@ -192,8 +278,10 @@ const viewEmpty = (model, address) => {
 }
 
 const viewData = (model, address) => {
-  const {series, extentX, interval, width, height, tooltipWidth,
+  const {variables, extentX, interval, width, height, tooltipWidth,
     scrubber, xhairAt} = model;
+
+  const series = readVariables(variables);
 
   const scrubberAt = scrubber.coords;
   const isDragging = scrubber.isDragging;
@@ -553,40 +641,54 @@ const formatDay = d3.timeFormat("%A %b %e, %Y");
 const px = n => n + 'px';
 const translateXY = (x, y) => 'translateX(' + x + 'px) translateY(' + y + 'px)';
 
-// Helpers for reading out data to series
-
-const readSeriesFromData = data => {
-  // Create series index
-  // Create stubs for each of the groups in the series.
-  const stubs = SERIES.map(readGroupFromConfig);
-  const index = Ordered.indexWith(stubs, getVariable);
-  const populated = data.reduce(stepSeriesIndex, index);
-  const variables = SERIES.map(getVariable);
-  return Ordered.listByKeys(populated, variables);
-}
-
-const getVariable = x => x.variable;
-
-const stepSeriesIndex = (index, dataPoint) => {
-  const variable = getVariable(dataPoint);
-  if (index[variable] && dataPoint.is_desired) {
-    index[variable].desired.push(dataPoint);
-  }
-  else if (index[variable] && !dataPoint.is_desired) {
-    index[variable].measured.push(dataPoint);
-  }
-  return index;
-};
-
-const readGroupFromConfig = (proto) => {
-  const group = Object.create(proto);
-  group.desired = [];
-  group.measured = [];
-  return group;
-};
-
 // Calculate the mouse client position relative to a given element.
 const calcRelativeMousePos = (node, clientX, clientY) => {
   const rect = node.getBoundingClientRect();
   return [(clientX - rect.left - node.clientLeft), (clientY - rect.top - node.clientTop)];
 }
+
+const getVariable = x => x.variable;
+
+const concatMonotonic = (list, additions, readX) => {
+  // Get the last timestamp (use 0 as a fallback).
+  // `list` is assumed to be monotonic.
+  const timestamp = maybeMap(readX, last(list), -1);
+  // Filter the additions to just those that occur after timestamp.
+  // Sort the result.
+  const after = filterAbove(additions, readX, timestamp);
+  if (after.length > 0) {
+    const sorted = after.sort(comparator(readX));
+    list.concat(sorted);
+  }
+  else {
+    return list;
+  }
+}
+
+// Check if an item comes after the last item in an array. "Comes after" is
+// defined by value returned from `readX`.
+const isMonotonic = (array, item, readX) => {
+  // If there is no last item in the array, then use -1 as the timestamp.
+  const timestamp = maybeMap(readX, last(list), -1);
+  return readX(item) > timestamp;
+}
+
+// Create a comparator for sorting from a read function.
+// Returns a comparator function.
+const comparator = (read) => (a, b) => {
+  const fa = read(a);
+  const fb = read(b);
+  return (
+    a > b ? 1 :
+    a < b ? -1 :
+    0
+  );
+}
+
+const filterAbove = (array, read, value) =>
+  array.filter(item => read(item) > value);
+
+const last = array => array.length > 0 ? array[array.length - 1] : null;
+
+// Map a value with function if value is not null. Otherwise return null.
+const maybeMap = (a2b, v, fallback) => v != null ? a2b(v) : fallback;

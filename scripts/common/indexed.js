@@ -10,12 +10,11 @@ import * as Unknown from '../common/unknown';
 
 // Build an index object from an array.
 // Returns a new index object.
-export const indexWith = (array, mapKey, mapValue) => {
+export const indexWith = (array, readKey) => {
   const index = {};
   for (let object of array) {
-    // Derive key using `mapKey`, then use it to assign value derived from
-    // `mapValue`.
-    index[mapKey(object)] = mapValue(object);
+    // Derive key using `readKey`, then use it to assign value.
+    index[readKey(object)] = object;
   }
   return index;
 }
@@ -25,23 +24,23 @@ export const getter = key => object => object[key];
 
 export const getID = getter('id');
 
-export const indexByID = array => indexWith(array, getID, identity);
-export const orderByID = array => array.map(getID);
+export const indexByID = array => indexWith(array, getID);
+export const pluckID = array => array.map(getID);
 
 export const getByIndex = (model, i) => model.entries[model.order[i]];
 export const getActive = (model) => model.entries[model.active];
 
 // Create indexed model
-export const create = (models, active) => ({
+export const Model = (models, active) => ({
   active,
   // Build an array of ordered recipe IDs
-  order: orderByID(models),
+  order: pluckID(models),
   // Index all recipes by ID
   entries: indexByID(models)
 });
 
 export const init = (active) => [
-  create([], active),
+  Model([], active),
   Effects.none
 ];
 
@@ -89,7 +88,7 @@ export const update = (model, action) =>
   action.type === 'Activate' ?
   [merge(model, {active: action.id}), Effects.none] :
   action.type === 'Reset' ?
-  [create(action.entries, model.active), Effects.none] :
+  [Model(action.entries, model.active), Effects.none] :
   Unknown.update(model, action);
 
 // Create an updateById function

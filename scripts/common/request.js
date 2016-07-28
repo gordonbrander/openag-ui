@@ -1,5 +1,6 @@
 import 'whatwg-fetch';
 import {Effects, Task} from 'reflex';
+import {localize, localizeTemplate} from '../common/lang';
 import * as Result from '../common/result';
 import {compose} from '../lang/functional';
 import {tag} from '../common/prelude';
@@ -12,11 +13,15 @@ const readResponseJSON = response =>
   response.ok ?
   response.json().then(Result.ok) :
   Promise.resolve(
-    Result.error(`Connection problem (HTTP error ${response.status})`)
+    Result.error(
+      localizeTemplate('Connection problem (HTTP status {{status}})', {
+        status: response.status
+      })
+    )
   );
 
 const readFailure = error =>
-  Result.error('No internet connection');
+  Result.error(localize('Uh-oh! No response from the server.'));
 
 const getFetch = url => {
   const headers = new Headers({
