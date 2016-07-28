@@ -7,6 +7,7 @@ import {cursor} from '../common/cursor';
 import * as Draggable from '../common/draggable';
 import * as ClassName from '../common/classname';
 import * as Unknown from '../common/unknown';
+import {listByKeys, indexWith} from '../common/indexed';
 import {compose} from '../lang/functional';
 import {onWindow} from '../driver/virtual-dom';
 
@@ -51,9 +52,8 @@ const ReleaseScrubber = ScrubberAction(Draggable.Release);
 
 // Init and update functions
 
-export const Model = (variables, extentX, width, height, scrubberAt, xhairAt, isLoading) => ({
+export const Model = (variables, width, height, scrubberAt, xhairAt, isLoading) => ({
   variables,
-  extentX,
 
   // Time interval to show within chart viewport (visible area)
   interval: HR_MS,
@@ -137,10 +137,10 @@ const readGroupFromConfig = ({
 const readVariables = model => {
   const {config, data} = model;
   const groupList = config.map(readGroupFromConfig);
-  const groupIndex = Ordered.indexWith(groupList, getVariable);
+  const groupIndex = indexWith(groupList, getVariable);
   const populated = data.reduce(insertDataPoint, groupIndex);
   const variables = config.map(getVariable);
- return Ordered.listByKeys(populated, variables);
+ return listByKeys(populated, variables);
 }
 
 // Insert datapoint in index, mutating model. We use this function to build
@@ -164,7 +164,6 @@ const insertDataPoint = (index, dataPoint) => {
 export const init = () => [
   Model(
     Variables([], CHART_CONFIG),
-    [],
     window.innerWidth,
     (window.innerHeight - HEADER_HEIGHT),
     1.0,
@@ -227,7 +226,7 @@ export const view = (model, address) =>
   model.isLoading ?
   viewLoading(model, address) :
   // If not loading and no data to show, render empty
-  model.extentX.length === 0 ?
+  model.variables.data.length === 0 ?
   viewEmpty(model, address) :
   viewData(model, address);
 
@@ -278,9 +277,10 @@ const viewEmpty = (model, address) => {
 }
 
 const viewData = (model, address) => {
-  const {variables, extentX, interval, width, height, tooltipWidth,
+  const {variables, interval, width, height, tooltipWidth,
     scrubber, xhairAt} = model;
 
+  const extentX = d3.extent(variables.data, readX);
   const series = readVariables(variables);
 
   const scrubberAt = scrubber.coords;
@@ -567,7 +567,7 @@ const text = compose(svgNS, html.text);
 
 const readX = d =>
   // Timestamp is in seconds. For x position, read timestamp as ms.
-  d.timestamp * 1000;
+  Math.round(d.timestamp * 1000);
 
 const readY = d =>
   Number.parseFloat(d.value);
@@ -650,26 +650,32 @@ const calcRelativeMousePos = (node, clientX, clientY) => {
 const getVariable = x => x.variable;
 
 const concatMonotonic = (list, additions, readX) => {
-  // Get the last timestamp (use 0 as a fallback).
-  // `list` is assumed to be monotonic.
-  const timestamp = maybeMap(readX, last(list), -1);
-  // Filter the additions to just those that occur after timestamp.
-  // Sort the result.
-  const after = filterAbove(additions, readX, timestamp);
-  if (after.length > 0) {
-    const sorted = after.sort(comparator(readX));
-    list.concat(sorted);
+  // If the list is empty, take the fast path out.
+  if (list.length === 0) {
+    return additions;
   }
   else {
-    return list;
+    // Get the last timestamp (use 0 as a fallback).
+    // `list` is assumed to be monotonic.
+    const timestamp = maybeMap(readX, last(list), 0);
+    // Filter the additions to just those that occur after timestamp.
+    // Sort the result.
+    const after = filterAbove(additions, readX, timestamp);
+    if (after.length > 0) {
+      const sorted = after.sort(comparator(readX));
+      return list.concat(sorted);
+    }
+    else {
+      return list;
+    }
   }
 }
 
 // Check if an item comes after the last item in an array. "Comes after" is
 // defined by value returned from `readX`.
 const isMonotonic = (array, item, readX) => {
-  // If there is no last item in the array, then use -1 as the timestamp.
-  const timestamp = maybeMap(readX, last(list), -1);
+  // If there is no last item in the array, then use 0 as the timestamp.
+  const timestamp = maybeMap(readX, last(array), 0);
   return readX(item) > timestamp;
 }
 

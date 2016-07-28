@@ -19,6 +19,29 @@ export const indexWith = (array, readKey) => {
   return index;
 }
 
+export const toArray = (object, compare) => {
+  const array = [];
+  for (let key of Object.keys(object)) {
+    array.push(object[key]);
+  }
+  array.sort(compare);
+  return array;
+}
+
+// Read an object to an array via a list of keys.
+// The order of the values of the resulting array reflect the order of the keys.
+// Returns an array.
+export const listByKeys = (object, keys) => {
+  const ordered = [];
+  for (let i = 0; i < keys.length; i++) {
+    let key = keys[i];
+    if (object[key]) {
+      ordered.push(object[key]);
+    }
+  }
+  return ordered;
+}
+
 // Create a "getter" function that will get a particular key for an object.
 export const getter = key => object => object[key];
 
