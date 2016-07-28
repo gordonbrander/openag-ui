@@ -21,7 +21,7 @@ const MIN_MS = S_MS * 60;
 const HR_MS = MIN_MS * 60;
 const DAY_MS = HR_MS * 24;
 
-const POLL_TIMEOUT = 2 * S_MS;
+const POLL_TIMEOUT = 4 * S_MS;
 const RETRY_TIMEOUT = 4 * S_MS;
 
 // @FIXME this is a temporary kludge for getting data into the system
@@ -191,8 +191,10 @@ const updateInfo = Result.updater(
 
 const updateLatest = Result.updater(
   (model, record) => {
-    const action = AddChartData(readData(record));
-    const [next, fx] = update(model, action);
+    const [next, fx] = batch(update, model, [
+      AddChartData(readData(record)),
+      PongPoll
+    ]);
 
     return [
       next,
@@ -223,8 +225,10 @@ const updateLatest = Result.updater(
 
 const restore = Result.updater(
   (model, record) => {
-    const action = AddChartData(readData(record));
-    const [next, fx] = update(model, action);
+    const [next, fx] = batch(update, model, [
+      AddChartData(readData(record)),
+      FetchLatest
+    ]);
 
     return [
       next,
