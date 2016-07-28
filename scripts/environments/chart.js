@@ -650,18 +650,24 @@ const calcRelativeMousePos = (node, clientX, clientY) => {
 const getVariable = x => x.variable;
 
 const concatMonotonic = (list, additions, readX) => {
-  // Get the last timestamp (use 0 as a fallback).
-  // `list` is assumed to be monotonic.
-  const timestamp = maybeMap(readX, last(list), -1);
-  // Filter the additions to just those that occur after timestamp.
-  // Sort the result.
-  const after = filterAbove(additions, readX, timestamp);
-  if (after.length > 0) {
-    const sorted = after.sort(comparator(readX));
-    list.concat(sorted);
+  // If the list is empty, take the fast path out.
+  if (list.length === 0) {
+    return additions;
   }
   else {
-    return list;
+    // Get the last timestamp (use 0 as a fallback).
+    // `list` is assumed to be monotonic.
+    const timestamp = maybeMap(readX, last(list), -1);
+    // Filter the additions to just those that occur after timestamp.
+    // Sort the result.
+    const after = filterAbove(additions, readX, timestamp);
+    if (after.length > 0) {
+      const sorted = after.sort(comparator(readX));
+      return list.concat(sorted);
+    }
+    else {
+      return list;
+    }
   }
 }
 
