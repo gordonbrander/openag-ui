@@ -70,7 +70,7 @@ export const Model = (variables, width, height, scrubberAt, xhairAt, isLoading) 
 });
 
 export const Variables = (data, config) => ({
-  data,
+  data: data.slice().sort(comparator(readX)),
   config
 });
 
