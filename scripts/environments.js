@@ -44,7 +44,7 @@ export const init = () => {
   // We hard-code the active environment for now.
   const activeID = Config.active_environment;
   const [active, activeFx] = Environment.init(activeID);
-  const model = Indexed.create([active], activeID);
+  const model = Indexed.Model([active], activeID);
   return [model, activeFx.map(ByID(activeID))];
 }
 

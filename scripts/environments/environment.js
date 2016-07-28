@@ -53,7 +53,7 @@ const PongPoll = PollAction(Poll.Pong);
 const MissPoll = PollAction(Poll.Miss);
 
 const ChartAction = tag('Chart');
-const SetChartData = compose(ChartAction, Chart.SetData);
+const AddChartData = compose(ChartAction, Chart.AddData);
 const ChartLoading = compose(ChartAction, Chart.Loading);
 
 const StartRecipe = tag('StartRecipe');
@@ -191,10 +191,17 @@ const updateInfo = Result.updater(
 
 const updateLatest = Result.updater(
   (model, record) => {
-    // @FIXME
-    const actions = readRecord(record).map(DataPointAction);
-    actions.push(PongPoll);
-    return batch(update, model, actions);
+    const action = AddChartData(readData(record));
+    const [next, fx] = update(model, action);
+
+    return [
+      next,
+      Effects.batch([
+        fx,
+        // Suppress any banners.
+        Effects.receive(SuppressBanner)
+      ])
+    ];
   },
   (model, error) => {
     // Send miss poll
@@ -216,7 +223,7 @@ const updateLatest = Result.updater(
 
 const restore = Result.updater(
   (model, record) => {
-    const action = SetChartData(readData(record));
+    const action = AddChartData(readData(record));
     const [next, fx] = update(model, action);
 
     return [

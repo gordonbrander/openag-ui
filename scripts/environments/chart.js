@@ -5,15 +5,13 @@ import * as Lang from '../common/lang';
 import {merge, tag} from '../common/prelude';
 import {cursor} from '../common/cursor';
 import * as Draggable from '../common/draggable';
-import * as Ordered from '../common/ordered';
 import * as ClassName from '../common/classname';
 import * as Unknown from '../common/unknown';
 import {compose} from '../lang/functional';
 import {onWindow} from '../driver/virtual-dom';
+import * as Variables from '../environments/variables';
 
-// Edit openag-config.json to change which environmental datapoints are rendered
-// to screen.
-const SERIES = Config.chart;
+const CHART_CONFIG = Config.chart;
 
 const S_MS = 1000;
 const MIN_MS = S_MS * 60;
@@ -54,9 +52,8 @@ const ReleaseScrubber = ScrubberAction(Draggable.Release);
 
 // Init and update functions
 
-export const Model = (series, extentX, width, height, scrubberAt, xhairAt, isLoading) => ({
-  // Chart data series
-  series,
+export const Model = (variables, extentX, width, height, scrubberAt, xhairAt, isLoading) => ({
+  variables,
   extentX,
 
   // Time interval to show within chart viewport (visible area)
@@ -74,7 +71,15 @@ export const Model = (series, extentX, width, height, scrubberAt, xhairAt, isLoa
 });
 
 export const init = () => [
-  Model([], [], window.innerWidth, (window.innerHeight - HEADER_HEIGHT), 1.0, 0.5, true),
+  Model(
+    Variables.Model([], CHART_CONFIG),
+    [],
+    window.innerWidth,
+    (window.innerHeight - HEADER_HEIGHT),
+    1.0,
+    0.5,
+    true
+  ),
   Effects.none
 ];
 
@@ -83,8 +88,6 @@ export const update = (model, action) =>
   updateScrub(model, action.source) :
   action.type === 'MoveXhair' ?
   [merge(model, {xhairAt: action.source}), Effects.none] :
-  action.type === 'SetData' ?
-  updateData(model, action.source) :
   action.type === 'AddData' ?
   addData(model, action.source) :
   action.type === 'Resize' ?
@@ -95,36 +98,21 @@ export const update = (model, action) =>
   [merge(model, {isLoading: false}), Effects.none] :
   Unknown.update(model, action);
 
-const updateData = (model, data) => {
-  // Read the extent of the data
-  const extentX = d3.extent(data, readX);
-
-  // Determine how to build model
+const addData = (model, data) => {
+  const variables = Variables.addData(model.variables, data);
   const next = (
-    data.length === 0 ?
+    // If variables model actually updated, then create new chart model.
+    variables !== model.variables ?
     merge(model, {
-      series: readSeriesFromData(data),
-      // We did get data (though it was empty), so set loading to false.
+      // Create new variables model for data.
+      variables,
       isLoading: false
     }) :
-
-    !isSameExtent(model.extentX, extentX) ?
-    merge(model, {
-      extentX,
-      series: readSeriesFromData(data),
-      // If we get data, set loading to false
-      isLoading: false
-    }) :
-
-    // Otherwise, just use the old model.
+    // Otherwise, just return the old model.
     model
   );
 
   return [next, Effects.none];
-}
-
-const addData = (model, data) => {
-
 }
 
 const updateSize = (model, width, height) => [
@@ -199,8 +187,10 @@ const viewEmpty = (model, address) => {
 }
 
 const viewData = (model, address) => {
-  const {series, extentX, interval, width, height, tooltipWidth,
+  const {variables, extentX, interval, width, height, tooltipWidth,
     scrubber, xhairAt} = model;
+
+  const series = Variables.read(variables);
 
   const scrubberAt = scrubber.coords;
   const isDragging = scrubber.isDragging;
@@ -559,58 +549,6 @@ const formatDay = d3.timeFormat("%A %b %e, %Y");
 
 const px = n => n + 'px';
 const translateXY = (x, y) => 'translateX(' + x + 'px) translateY(' + y + 'px)';
-
-// Helpers for reading out data to series
-
-const readSeriesFromData = data => {
-  // Create series index
-  // Create stubs for each of the groups in the series.
-  const stubs = SERIES.map(readGroupFromConfig);
-  const index = Ordered.indexWith(stubs, getVariable);
-  const populated = data.reduce(insertDataPointInIndex, index);
-  const variables = SERIES.map(getVariable);
-  return Ordered.listByKeys(populated, variables);
-}
-
-const getVariable = x => x.variable;
-
-const insertDataPointInIndex = (index, dataPoint) => {
-  const variable = getVariable(dataPoint);
-  const group = index[variable];
-
-  // Check that this is a known variable in our configuration
-  if (group) {
-    // File datapoint away in measured or desired, making sure that it is
-    // monotonic (that a new datapoint comes after any older datapoints).
-    if (dataPoint.is_desired && isMonotonic(group.desired, dataPoint, readX)) {
-      group.desired.push(dataPoint);
-    }
-    else if (!dataPoint.is_desired && isMonotonic(group.measured, dataPoint, readX)) {
-      group.measured.push(dataPoint);
-    }
-  }
-
-  return index;
-}
-
-// Check if an item comes after the last item in an array. "Comes after" is
-// defined by value returned from `readX`.
-const isMonotonic = (array, item, readX) => {
-  const lastItem = last(array);
-  // If there is no last item in the array, then item is greater than last
-  // array item (which is nothing). Otherwise, compare items.
-  return !lastItem ? true : readX(lastItem) < readX(item);
-}
-
-const last = array => array.length > 0 ? array[array.length - 1] : array[0];
-
-const readGroupFromConfig = (proto) => {
-  const group = merge(proto, {
-    desired: [],
-    measured: []
-  });
-  return group;
-};
 
 // Calculate the mouse client position relative to a given element.
 const calcRelativeMousePos = (node, clientX, clientY) => {
