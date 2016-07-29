@@ -364,6 +364,7 @@ dialog {
 .recipes-back-icon {
   background: url(sprite.png) no-repeat 0 -200px;
   background-size: 100px auto;
+  cursor: pointer;
   display: block;
   height: 56px;
   width: 56px;
