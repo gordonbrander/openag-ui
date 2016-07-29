@@ -189,25 +189,25 @@ export const view = (model, address) =>
     open: (model.isOpen ? 'open' : void(0))
   }, [
     html.div({
-      className: 'panels-main'
+      className: ClassName.create({
+        'panels--main': true,
+        'panels--lv1': model.activePanel !== null
+      })
     }, [
       html.div({
-        className: ClassName.create({
-          'panel-main': true,
-          'panel-main-close': model.activePanel !== null
-        })
+        className: 'panel--main panel--lv0'
       }, [
         html.header({
-          className: 'panel-header'
+          className: 'panel--header'
         }, [
           html.h1({
-            className: 'panel-title'
+            className: 'panel--title'
           }, [
             // @TODO internationalize this
             'Recipes'
           ]),
           html.div({
-            className: 'panel-nav-right'
+            className: 'panel--nav-right'
           }, [
             html.a({
               className: 'recipes-create-icon',
@@ -216,7 +216,7 @@ export const view = (model, address) =>
           ])
         ]),
         html.div({
-          className: 'panel-content'
+          className: 'panel--content'
         }, [
           html.div({
             className: ClassName.create({

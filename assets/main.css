@@ -4,8 +4,8 @@
 - All styles should happen through classes
 - ...except a very small number of "reset" common styles that deal with
   global fonts, etc.
-- All classes should start with a short 3-5 letter prefix that denotes the
-  module they belong to (.rform-*). A module is a logical unit, like a lightbox.
+- All classes should start with a prefix followed by 2 dashes that denotes the
+  module they belong to (.panel--*). A module is a logical unit, like a lightbox.
 
 Don't:
 
@@ -251,15 +251,20 @@ dialog {
 /* Panel
 ----------------------------------------------------------------------------- */
 
-.panels-main {
+.panels--main {
   left: 0;
   top: 0;
   position: absolute;
   width: 100%;
   height: 100%;
+  transition: transform 200ms ease-out;
 }
 
-.panel-main {
+.panels--lv1 {
+  transform: translateX(-100%);
+}
+
+.panel--main {
   background: #fff;
   border-radius: 6px;
   overflow: hidden;
@@ -268,39 +273,48 @@ dialog {
   height: 100%;
   left: 0;
   top: 0;
+  z-index: 2;
 }
 
-.panel-main-close {
-  display: none;
+.panel--main-close {
+  z-index: 1;
 }
 
-.panel-header {
+.panel--lv1 {
+  transform: translateX(100%);
+}
+
+.panel--lv2 {
+  transform: translateX(200%);
+}
+
+.panel--header {
   background: #0052B3;
   color: #fff;
   height: 56px;
   position: relative;
 }
 
-.panel-title {
+.panel--title {
   font-size: 16px;
   line-height: 56px;
   text-align: center;
   margin: 0;
 }
 
-.panel-nav-left {
+.panel--nav-left {
   position: absolute;
   left: 0;
   top: 0;
 }
 
-.panel-nav-right {
+.panel--nav-right {
   position: absolute;
   right: 0;
   top: 0;
 }
 
-.panel-content {
+.panel--content {
   height: calc(100% - 56px);
   overflow: auto;
 }
@@ -309,6 +323,7 @@ dialog {
 ----------------------------------------------------------------------------- */
 
 .rform-main {
+  height: calc(100% - (16px * 2));
   margin: 16px;
 }
 
@@ -316,6 +331,10 @@ dialog {
   height: 100%;
   /* Contain margins */
   overflow: hidden;
+}
+
+.rform-textarea {
+  height: 100%;
 }
 
 .rform-footer {
@@ -341,6 +360,7 @@ dialog {
 .recipes-create-icon {
   background: url(sprite.png) no-repeat 0 -700px;
   background-size: 100px auto;
+  cursor: pointer;
   display: block;
   height: 56px;
   width: 56px;
@@ -349,6 +369,7 @@ dialog {
 .recipes-back-icon {
   background: url(sprite.png) no-repeat 0 -200px;
   background-size: 100px auto;
+  cursor: pointer;
   display: block;
   height: 56px;
   width: 56px;
