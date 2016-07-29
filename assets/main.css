@@ -4,8 +4,8 @@
 - All styles should happen through classes
 - ...except a very small number of "reset" common styles that deal with
   global fonts, etc.
-- All classes should start with a short 3-5 letter prefix that denotes the
-  module they belong to (.rform-*). A module is a logical unit, like a lightbox.
+- All classes should start with a prefix followed by 2 dashes that denotes the
+  module they belong to (.panel--*). A module is a logical unit, like a lightbox.
 
 Don't:
 
@@ -323,6 +323,7 @@ dialog {
 ----------------------------------------------------------------------------- */
 
 .rform-main {
+  height: calc(100% - (16px * 2));
   margin: 16px;
 }
 
@@ -330,6 +331,10 @@ dialog {
   height: 100%;
   /* Contain margins */
   overflow: hidden;
+}
+
+.rform-textarea {
+  height: 100%;
 }
 
 .rform-footer {

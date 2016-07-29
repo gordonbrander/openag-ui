@@ -85,7 +85,7 @@ export const update = (model, action) =>
   submit(model, action.recipe) :
   Unknown.update(model, action);
 
-const viewTextArea = Textarea.view('rform-textarea', 'txt-textarea');
+const viewTextArea = Textarea.view('rform-textarea', 'rform-textarea txt-textarea');
 
 const nil = void(0);
 
