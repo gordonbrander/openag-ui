@@ -13,7 +13,7 @@
   },
   "dependencies": {
     "d3": "^4.0.0",
-    "pouchdb": "^5.3.1",
+    "pouchdb-browser": "^5.4.5",
     "reflex": "^0.4.1",
     "reflex-virtual-dom-driver": "^0.2.0",
     "whatwg-fetch": "^1.0.0"

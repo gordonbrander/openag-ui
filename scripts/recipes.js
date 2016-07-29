@@ -1,6 +1,6 @@
 import {html, forward, Effects, Task, thunk} from 'reflex';
 import * as Config from '../openag-config.json';
-import PouchDB from 'pouchdb';
+import PouchDB from 'pouchdb-browser';
 import * as Template from './common/stache';
 import * as Database from './common/database';
 import * as Indexed from './common/indexed';
