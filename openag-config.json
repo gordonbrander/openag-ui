@@ -41,14 +41,18 @@
     {
       "variable": "water_electrical_conductivity",
       "title": "EC",
-      "unit": "",
-      "color": "#AB36B2"
+      "unit": " mS/cm",
+      "color": "#AB36B2",
+      "min": 0,
+      "max": 4
     },
     {
       "variable": "water_potential_hydrogen",
-      "title": "Potential Hydrogen",
+      "title": "pH",
       "unit": "",
-      "color": "#5ada00"
+      "color": "#5ada00",
+      "min": 4,
+      "max": 10
     },
     {
       "variable": "air_humidity",
