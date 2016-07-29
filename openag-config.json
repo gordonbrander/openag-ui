@@ -18,7 +18,9 @@
       "variable": "light_illuminance",
       "title": "Light",
       "unit": " Lux",
-      "color": "#ffc500"
+      "color": "#ffc500",
+      "min": 0.0001,
+      "max": 100000
     },
     {
       "variable": "air_temperature",
