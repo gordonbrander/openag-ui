@@ -451,16 +451,6 @@ const viewGroup = (model, address, x, plotHeight) => {
     .x(compose(x, readX))
     .y(compose(y, readY));
 
-  const children = measured.map(point => circle({
-    className: 'chart-dot',
-    r: 3,
-    cx: x(readX(point)),
-    cy: y(readY(point)),
-    style: {
-      fill: color
-    }
-  }));
-
   const desiredPath = path({
     d: line(desired),
     className: 'chart-desired',
@@ -468,8 +458,6 @@ const viewGroup = (model, address, x, plotHeight) => {
       stroke: color
     }
   });
-
-  children.unshift(desiredPath);
 
   const measuredPath = path({
     d: line(measured),
@@ -479,11 +467,9 @@ const viewGroup = (model, address, x, plotHeight) => {
     }
   });
 
-  children.unshift(measuredPath);
-
   return g({
     className: 'chart-group'
-  }, children);
+  }, [desiredPath, measuredPath]);
 }
 
 const renderReadout = (group, measured, desired) =>
