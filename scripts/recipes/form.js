@@ -3,6 +3,7 @@
 
 import {html, forward, Effects, thunk} from 'reflex';
 import * as Unknown from '../common/unknown';
+import {localize} from '../common/lang';
 import {merge, tag, batch} from '../common/prelude';
 import {cursor} from '../common/cursor';
 import * as ClassName from '../common/classname';
@@ -44,7 +45,8 @@ export const Clear = TextareaAction(Textarea.Clear);
 // Init and update functions
 
 export const init = () => {
-  const [textarea, textareaFx] = Textarea.init();
+  const placeholder = localize('Paste recipe JSON...');
+  const [textarea, textareaFx] = Textarea.init('', null, placeholder);
   return [
     {
       isOpen: false,
