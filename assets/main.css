@@ -251,15 +251,20 @@ dialog {
 /* Panel
 ----------------------------------------------------------------------------- */
 
-.panels-main {
+.panels--main {
   left: 0;
   top: 0;
   position: absolute;
   width: 100%;
   height: 100%;
+  transition: transform 200ms ease-out;
 }
 
-.panel-main {
+.panels--lv1 {
+  transform: translateX(-100%);
+}
+
+.panel--main {
   background: #fff;
   border-radius: 6px;
   overflow: hidden;
@@ -268,39 +273,48 @@ dialog {
   height: 100%;
   left: 0;
   top: 0;
+  z-index: 2;
 }
 
-.panel-main-close {
-  display: none;
+.panel--main-close {
+  z-index: 1;
 }
 
-.panel-header {
+.panel--lv1 {
+  transform: translateX(100%);
+}
+
+.panel--lv2 {
+  transform: translateX(200%);
+}
+
+.panel--header {
   background: #0052B3;
   color: #fff;
   height: 56px;
   position: relative;
 }
 
-.panel-title {
+.panel--title {
   font-size: 16px;
   line-height: 56px;
   text-align: center;
   margin: 0;
 }
 
-.panel-nav-left {
+.panel--nav-left {
   position: absolute;
   left: 0;
   top: 0;
 }
 
-.panel-nav-right {
+.panel--nav-right {
   position: absolute;
   right: 0;
   top: 0;
 }
 
-.panel-content {
+.panel--content {
   height: calc(100% - 56px);
   overflow: auto;
 }
@@ -341,6 +355,7 @@ dialog {
 .recipes-create-icon {
   background: url(sprite.png) no-repeat 0 -700px;
   background-size: 100px auto;
+  cursor: pointer;
   display: block;
   height: 56px;
   width: 56px;

@@ -92,21 +92,22 @@ const nil = void(0);
 export const view = (model, address, isActive) =>
   html.div({
     className: ClassName.create({
-      'panel-main': true,
-      'panel-main-close': !isActive
+      'panel--main': true,
+      'panel--lv1': true,
+      'panel--main-close': !isActive
     })
   }, [
     html.header({
-      className: 'panel-header'
+      className: 'panel--header'
     }, [
       html.h1({
-        className: 'panel-title'
+        className: 'panel--title'
       }, [
         // @TODO localize this
         'Import Recipe'
       ]),
       html.div({
-        className: 'panel-nav-left'
+        className: 'panel--nav-left'
       }, [
         html.a({
           className: 'recipes-back-icon',
@@ -114,7 +115,7 @@ export const view = (model, address, isActive) =>
         })
       ]),
       html.div({
-        className: 'panel-nav-right'
+        className: 'panel--nav-right'
       }, [
         html.button({
           className: 'btn-panel',
@@ -136,7 +137,7 @@ export const view = (model, address, isActive) =>
       ])
     ]),
     html.div({
-      className: 'panel-content'
+      className: 'panel--content'
     }, [
       html.div({
         className: 'rform-main'
