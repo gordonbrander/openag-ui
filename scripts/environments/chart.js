@@ -1,4 +1,9 @@
-import * as d3 from 'd3';
+import {extent, bisector} from 'd3-array';
+import {scaleLinear, scaleTime} from 'd3-scale';
+import {line} from 'd3-shape';
+import {timeHour} from 'd3-time';
+import {timeFormat} from 'd3-time-format';
+
 import {html, forward, Effects, thunk} from 'reflex';
 import * as Config from '../../openag-config.json';
 import * as Lang from '../common/lang';
@@ -280,7 +285,7 @@ const viewData = (model, address) => {
   const {variables, interval, width, height, tooltipWidth,
     scrubber, xhairAt} = model;
 
-  const extentX = d3.extent(variables.data, readX);
+  const extentX = extent(variables.data, readX);
   const series = readVariables(variables);
 
   const scrubberAt = scrubber.coords;
@@ -296,19 +301,19 @@ const viewData = (model, address) => {
   // Calculate scales
   const x = calcTimeScale(extentX, interval, width);
 
-  const scrubberRatioToScrubberX = d3.scaleLinear()
+  const scrubberRatioToScrubberX = scaleLinear()
     .domain(RATIO_DOMAIN)
     .range([0, width - 12])
     .clamp(true);
 
   const scrubberX = scrubberRatioToScrubberX(scrubberAt);
 
-  const xhairRatioToXhairX = d3.scaleLinear()
+  const xhairRatioToXhairX = scaleLinear()
     .domain(RATIO_DOMAIN)
     .range([0, width])
     .clamp(true);
 
-  const scrubberRatioToPlotX = d3.scaleLinear()
+  const scrubberRatioToPlotX = scaleLinear()
     .domain(RATIO_DOMAIN)
     // Translate up to the point that the right side of the plot is adjacent
     // to the right side of the viewport.
@@ -441,33 +446,33 @@ const viewGroup = (model, address, x, plotHeight) => {
   const {color, min, max, measured, desired} = model;
 
   const domain = isNumber(min) && isNumber(max) ?
-    [min, max] : d3.extent(measured, readY);
+    [min, max] : extent(measured, readY);
 
-  const y = d3.scaleLinear()
+  const y = scaleLinear()
     .range([plotHeight, 0])
     .domain(domain);
 
-  const line = d3.line()
+  const calcLine = line()
     .x(compose(x, readX))
     .y(compose(y, readY));
 
-  const desiredPath = path({
-    d: line(desired),
+  const desiredPath = svgPath({
+    d: calcLine(desired),
     className: 'chart-desired',
     style: {
       stroke: color
     }
   });
 
-  const measuredPath = path({
-    d: line(measured),
+  const measuredPath = svgPath({
+    d: calcLine(measured),
     className: 'chart-measured',
     style: {
       stroke: color
     }
   });
 
-  return g({
+  return svgG({
     className: 'chart-group'
   }, [desiredPath, measuredPath]);
 }
@@ -504,22 +509,22 @@ const renderReadout = (group, measured, desired) =>
   ]);
 
 const renderAxis = (scale, height) => {
-  const ticks = scale.ticks(d3.timeHour);
+  const ticks = scale.ticks(timeHour);
 
-  return g({
+  return svgG({
     className: 'chart-time-axis'
   }, ticks.map(tick => {
-    return g({
+    return svgG({
       className: 'chart-tick',
       transform: `translate(${scale(tick)}, 0)`
     }, [
-      line({
+      svgLine({
         className: 'chart-tick--line',
         x2: 0.5,
         y1: 0.5,
         y2: height
       }),
-      text({
+      svgText({
         className: 'chart-tick--text',
         x: 6.0,
         y: 16.0
@@ -545,11 +550,11 @@ const svgNS = vnode => {
 // Define a set of SVG reflex VirtualNode elements that actually work.
 // We decorate them with the svg namespace on the way out.
 const svg = compose(svgNS, html.svg);
-const path = compose(svgNS, html.path);
-const g = compose(svgNS, html.g);
-const circle = compose(svgNS, html.circle);
-const line = compose(svgNS, html.line);
-const text = compose(svgNS, html.text);
+const svgPath = compose(svgNS, html.path);
+const svgG = compose(svgNS, html.g);
+const svgCircle = compose(svgNS, html.circle);
+const svgLine = compose(svgNS, html.line);
+const svgText = compose(svgNS, html.text);
 
 const readX = d =>
   // Timestamp is in seconds. For x position, read timestamp as ms.
@@ -585,7 +590,7 @@ const calcXhairTickTop = (height, tooltipHeight) =>
 
 // Calculate the x scale over the whole chart series.
 const calcTimeScale = (domain, interval, width) => {
-  return d3.scaleTime()
+  return scaleTime()
     .domain(domain)
     .range([0, calcPlotWidth(domain, interval, width)]);
 }
@@ -596,7 +601,7 @@ const calcTooltipX = (x, width, tooltipWidth) =>
 const findDataPointFromX = (data, currX, readX) => {
   if (data.length > 0) {
     // Used for deriving y value from x position.
-    const bisectDate = d3.bisector(readX).left;
+    const bisectDate = bisector(readX).left;
     const i = bisectDate(data, currX, 1);
     const d0 = data[i - 1];
     const d1 = data[i];
@@ -620,9 +625,9 @@ const displayYValueFromX = (data, currX, readX, readY, unit) => {
   }
 }
 
-const formatTick = d3.timeFormat("%I:%M %p %A, %b %e");
-const formatTime = d3.timeFormat('%I:%M %p');
-const formatDay = d3.timeFormat("%A %b %e, %Y");
+const formatTick = timeFormat("%I:%M %p %A, %b %e");
+const formatTime = timeFormat('%I:%M %p');
+const formatDay = timeFormat("%A %b %e, %Y");
 
 const px = n => n + 'px';
 const translateXY = (x, y) => 'translateX(' + x + 'px) translateY(' + y + 'px)';
