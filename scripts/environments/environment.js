@@ -13,9 +13,6 @@ import * as Chart from '../environments/chart';
 // @TODO do proper localization
 import {localize} from '../common/lang';
 
-const RECIPE_START = 'recipe_start';
-const RECIPE_END = 'recipe_end';
-
 const S_MS = 1000;
 const MIN_MS = S_MS * 60;
 const HR_MS = MIN_MS * 60;
@@ -25,10 +22,6 @@ const POLL_TIMEOUT = 4 * S_MS;
 const RETRY_TIMEOUT = 4 * S_MS;
 
 const MAX_DATAPOINTS = 5000;
-
-// @FIXME this is a temporary kludge for getting data into the system
-// when no recipe start. Get the previous day's data. Range in seconds.
-const FALLBACK_START_MS = (Date.now() - DAY_MS);
 
 // Actions
 
@@ -40,10 +33,6 @@ const PollAction = action =>
   action.type === 'Ping' ?
   FetchLatest :
   tagged('Poll', action);
-
-// This is the first fetch we do for the model from the API.
-const FetchInfo = {type: 'FetchInfo'};
-const Info = tag('Info');
 
 const FetchLatest = {type: 'FetchLatest'};
 const Latest = tag('Latest');
@@ -57,9 +46,6 @@ const MissPoll = PollAction(Poll.Miss);
 const ChartAction = tag('Chart');
 const AddChartData = compose(ChartAction, Chart.AddData);
 const ChartLoading = compose(ChartAction, Chart.Loading);
-
-const StartRecipe = tag('StartRecipe');
-const EndRecipe = tag('EndRecipe');
 
 // Send an alert. We use this to send up problems to be displayed in banner.
 const AlertBanner = tag('AlertBanner');
@@ -81,9 +67,7 @@ export const init = id => {
     {
       id,
       chart,
-      poll,
-      recipeStart: null,
-      recipeEnd: null
+      poll
     },
     Effects.batch([
       chartFx.map(ChartAction),
@@ -106,90 +90,9 @@ export const update = (model, action) =>
   restore(model, action.source) :
   action.type === 'Latest' ?
   updateLatest(model, action.source) :
-  action.type === 'FetchInfo' ?
-  [model, Request.get(templateLatestUrl(model.id)).map(Info)] :
-  action.type === 'Info' ?
-  updateInfo(model, action.source) :
   action.type === 'Chart' ?
   updateChart(model, action.source) :
-  action.type === 'StartRecipe' ?
-  startRecipe(model, action.source) :
-  action.type === 'EndRecipe' ?
-  endRecipe(model, action.source) :
   Unknown.update(model, action);
-
-const startRecipe = (model, timestamp) =>
-  model.recipeStart < timestamp ?
-  [
-    merge(model, {
-      recipeStart: timestamp
-    }),
-    Effects.none
-  ] :
-  [model, Effects.none];
-
-const endRecipe = (model, timestamp) =>
-  model.recipeStart < timestamp ?
-  [
-    merge(model, {
-      recipeStart: timestamp
-    }),
-    Effects.none
-  ] :
-  [model, Effects.none];
-
-const isRowRecipeStart = row => row.value.variable === RECIPE_START;
-const isRowRecipeEnd = row => row.value.variable === RECIPE_END;
-
-const findRecipeStartInRecord = record => {
-  const row = record.rows.find(isRowRecipeStart);
-  // @TODO we should have a fallback.
-  return row ? row.value : null;
-}
-
-const findRecipeEndInRecord = record => {
-  const row = record.rows.find(isRowRecipeEnd);
-  // @TODO we should have a fallback.
-  return row ? row.value : null;
-}
-
-const updateInfo = Result.updater(
-  (model, record) => {
-    const actions = [];
-
-    const fallback = FALLBACK_START_MS / 1000;
-    // Find recipe start and end timestamps (if any)
-    const recipeStartTimestamp = findRecipeStartInRecord(record) || fallback;
-    const recipeEndTimestamp = findRecipeEndInRecord(record);
-
-    if (recipeStartTimestamp) {
-      actions.push(StartRecipe(recipeStartTimestamp));
-      actions.push(FetchRestore(recipeStartTimestamp));
-    }
-
-    if (recipeEndTimestamp) {
-      actions.push(RecipeEnd(recipeEndTimestamp));
-    }
-
-    return batch(update, model, actions);
-  },
-  (model, error) => {
-    // Create alert action
-    const alertAction = AlertBanner(error);
-
-    const fetchFx = Effects
-      .perform(Task.sleep(RETRY_TIMEOUT))
-      .map(constant(FetchInfo));
-
-    return [
-      model,
-      Effects.batch([
-        fetchFx,
-        Effects.receive(alertAction)
-      ])
-    ];
-  }
-);
 
 const updateLatest = Result.updater(
   (model, record) => {

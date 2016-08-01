@@ -6,7 +6,7 @@ import {timeFormat} from 'd3-time-format';
 
 import {html, forward, Effects, thunk} from 'reflex';
 import * as Config from '../../openag-config.json';
-import * as Lang from '../common/lang';
+import {localize} from '../common/lang';
 import {merge, tag} from '../common/prelude';
 import {cursor} from '../common/cursor';
 import * as Draggable from '../common/draggable';
@@ -14,6 +14,7 @@ import * as ClassName from '../common/classname';
 import * as Unknown from '../common/unknown';
 import {listByKeys, indexWith} from '../common/indexed';
 import {compose} from '../lang/functional';
+import {find} from '../lang/find';
 import {onWindow} from '../driver/virtual-dom';
 
 const CHART_CONFIG = Config.chart;
@@ -29,6 +30,9 @@ const TOOLTIP_SPACE = 30;
 const READOUT_HEIGHT = 18;
 const TOOLTIP_PADDING = 20;
 const RATIO_DOMAIN = [0, 1.0];
+
+const RECIPE_START = 'recipe_start';
+const RECIPE_END = 'recipe_end';
 
 // Actions
 
@@ -57,8 +61,22 @@ const ReleaseScrubber = ScrubberAction(Draggable.Release);
 
 // Init and update functions
 
-export const Model = (variables, width, height, scrubberAt, xhairAt, isLoading) => ({
+export const Model = (
   variables,
+  config,
+  recipeStart,
+  recipeEnd,
+  width,
+  height,
+  scrubberAt,
+  xhairAt,
+  isLoading
+) => ({
+  variables,
+  config,
+
+  recipeStart,
+  recipeEnd,
 
   // Time interval to show within chart viewport (visible area)
   interval: HR_MS,
@@ -74,19 +92,7 @@ export const Model = (variables, width, height, scrubberAt, xhairAt, isLoading) 
   isLoading
 });
 
-export const Variables = (data, config) => ({
-  data: data.slice().sort(comparator(readX)),
-  config
-});
-
-export const addVariablesData = (model, data) => {
-  const next = concatMonotonic(model.data, data, readX);
-  return (
-    next !== model.data ?
-    Variables(next, model.config) :
-    model
-  );
-}
+export const Variables = (data) => data.slice().sort(comparator(readX));
 
 const Group = (
   measured,
@@ -139,13 +145,13 @@ const readGroupFromConfig = ({
 //       },
 //       ...
 //     }
-const readVariables = model => {
-  const {config, data} = model;
+const readSeries = (model) => {
+  const {variables, config} = model;
   const groupList = config.map(readGroupFromConfig);
   const groupIndex = indexWith(groupList, getVariable);
-  const populated = data.reduce(insertDataPoint, groupIndex);
-  const variables = config.map(getVariable);
- return listByKeys(populated, variables);
+  const populated = variables.reduce(insertDataPoint, groupIndex);
+  const variableKeys = config.map(getVariable);
+ return listByKeys(populated, variableKeys);
 }
 
 // Insert datapoint in index, mutating model. We use this function to build
@@ -168,7 +174,10 @@ const insertDataPoint = (index, dataPoint) => {
 
 export const init = () => [
   Model(
-    Variables([], CHART_CONFIG),
+    Variables([]),
+    CHART_CONFIG,
+    null,
+    null,
     window.innerWidth,
     (window.innerHeight - HEADER_HEIGHT),
     1.0,
@@ -194,20 +203,26 @@ export const update = (model, action) =>
   Unknown.update(model, action);
 
 const addData = (model, data) => {
-  const variables = addVariablesData(model.variables, data);
-  const next = (
-    // If variables model actually updated, then create new chart model.
-    variables !== model.variables ?
-    merge(model, {
+  const variables = concatMonotonic(model.variables, data, readX);
+
+  // If variables model actually updated, then create new chart model.
+  if (model.variables !== variables) {
+    const recipeStart = maybeMap(readRecipeTimeValue, find(variables, isRecipeStart), model.recipeStart);
+    const recipeEnd = maybeMap(readRecipeTimeValue, find(variables, isRecipeEnd), model.recipeEnd);
+
+    const next = merge(model, {
       // Create new variables model for data.
       variables,
-      isLoading: false
-    }) :
-    // Otherwise, just return the old model.
-    model
-  );
+      isLoading: false,
+      recipeStart,
+      recipeEnd
+    });
 
-  return [next, Effects.none];
+    return [next, Effects.none];
+  }
+  else {
+    return [model, Effects.none];
+  }
 }
 
 const updateSize = (model, width, height) => [
@@ -231,7 +246,7 @@ export const view = (model, address) =>
   model.isLoading ?
   viewLoading(model, address) :
   // If not loading and no data to show, render empty
-  model.variables.data.length === 0 ?
+  model.variables.length === 0 ?
   viewEmpty(model, address) :
   viewData(model, address);
 
@@ -275,7 +290,7 @@ const viewEmpty = (model, address) => {
       html.div({
         className: 'chart-empty--message'
       }, [
-        Lang.localize('No data yet. Maybe try starting a new recipe?')
+        localize('No data yet. Maybe try starting a new recipe?')
       ])
     ])
   ]);
@@ -283,10 +298,10 @@ const viewEmpty = (model, address) => {
 
 const viewData = (model, address) => {
   const {variables, interval, width, height, tooltipWidth,
-    scrubber, xhairAt} = model;
+    scrubber, xhairAt, recipeStart, recipeEnd} = model;
 
-  const extentX = extent(variables.data, readX);
-  const series = readVariables(variables);
+  const extentX = extent(variables, readX);
+  const series = readSeries(model);
 
   const scrubberAt = scrubber.coords;
   const isDragging = scrubber.isDragging;
@@ -330,9 +345,29 @@ const viewData = (model, address) => {
   // value (time) under xhair.
   const xhairTime = x.invert(plotX + xhairX);
 
-  const seriesGroups = series.map(group => viewGroup(group, address, x, plotHeight));
+  const children = series.map(group => viewGroup(group, address, x, plotHeight));
 
   const axis = renderAxis(x, svgHeight);
+  children.push(axis);
+
+  if (recipeStart) {
+    const recipeStartMarker = renderMarker(
+      x(recipeStart),
+      svgHeight,
+      localize('Recipe Started')
+    );
+
+    children.push(recipeStartMarker);
+  }
+
+  if (recipeEnd) {
+    const recipeEndMarker = renderMarker(
+      x(recipeEnd),
+      svgHeight,
+      localize('Recipe Ended')
+    );
+    children.push(recipeEndMarker);
+  }
 
   const chartSvg = svg({
     width: plotWidth,
@@ -343,7 +378,7 @@ const viewData = (model, address) => {
       // to scrubber.
       transform: translateXY(-1 * plotX, 0)
     }
-  }, [axis, ...seriesGroups]);
+  }, children);
 
   const readouts = series.map(group => {
     const measured = displayYValueFromX(group.measured, xhairTime, readX, readY, group.unit);
@@ -498,8 +533,9 @@ const renderReadout = (group, measured, desired) =>
     }, [measured]),
     html.span({
       className: 'chart-readout--target',
-      // @TODO localize
-    }, ['Target:']),
+    }, [
+      localize('Target:')
+    ]),
     html.span({
       className: 'chart-readout--desired',
       style: {
@@ -508,31 +544,31 @@ const renderReadout = (group, measured, desired) =>
     }, [desired])
   ]);
 
+const renderMarker = (x, height, text) =>
+  svgG({
+    className: 'chart-tick',
+    transform: `translate(${x}, 0)`
+  }, [
+    svgLine({
+      className: 'chart-tick--line',
+      x2: 0.5,
+      y1: 0.5,
+      y2: height
+    }),
+    svgText({
+      className: 'chart-tick--text',
+      x: 6.0,
+      y: 16.0
+    }, [
+      text
+    ])
+  ]);
+
 const renderAxis = (scale, height) => {
   const ticks = scale.ticks(timeHour);
-
   return svgG({
     className: 'chart-time-axis'
-  }, ticks.map(tick => {
-    return svgG({
-      className: 'chart-tick',
-      transform: `translate(${scale(tick)}, 0)`
-    }, [
-      svgLine({
-        className: 'chart-tick--line',
-        x2: 0.5,
-        y1: 0.5,
-        y2: height
-      }),
-      svgText({
-        className: 'chart-tick--text',
-        x: 6.0,
-        y: 16.0
-      }, [
-        formatTick(tick)
-      ])
-    ])
-  }));
+  }, ticks.map(tick => renderMarker(scale(tick), height, formatTick(tick))));
 }
 
 // Helpers
@@ -562,6 +598,9 @@ const readX = d =>
 
 const readY = d =>
   Number.parseFloat(d.value);
+
+const readRecipeTimeValue = d =>
+  Number.parseFloat(d.value) * 1000;
 
 const clamp = (v, min, max) => Math.max(Math.min(v, max), min);
 const isNumber = x => (typeof x === 'number');
@@ -689,3 +728,6 @@ const last = array => array.length > 0 ? array[array.length - 1] : null;
 
 // Map a value with function if value is not null. Otherwise return null.
 const maybeMap = (a2b, v, fallback) => v != null ? a2b(v) : fallback;
+
+const isRecipeStart = x => x.variable === RECIPE_START;
+const isRecipeEnd = x => x.variable === RECIPE_END;
