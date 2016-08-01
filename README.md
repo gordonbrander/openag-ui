@@ -32,15 +32,11 @@ rebuild after you save, you can run
 
     npm run develop
 
+This command will also generate source maps for the Javascript files.
+
 The front-end can also log all the messages that go through the system to the
 console. This is useful for debugging, since the UI is deterministic and will
-reproduce the same UI for the same messages. To turn on this feature, edit
-`openag-config.json` and set the `debug` field to `true`.
+reproduce the same UI for the same messages.
+To turn on this feature, add `?debug=true` to the end of the url.
 
-```js
-    {
-      "debug": true
-      // ...
-    }
-```
-
+    http://example.com/?debug=true
