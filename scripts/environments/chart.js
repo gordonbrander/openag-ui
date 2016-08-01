@@ -57,8 +57,9 @@ const ReleaseScrubber = ScrubberAction(Draggable.Release);
 
 // Init and update functions
 
-export const Model = (variables, width, height, scrubberAt, xhairAt, isLoading) => ({
+export const Model = (variables, config, width, height, scrubberAt, xhairAt, isLoading) => ({
   variables,
+  config,
 
   // Time interval to show within chart viewport (visible area)
   interval: HR_MS,
@@ -74,19 +75,7 @@ export const Model = (variables, width, height, scrubberAt, xhairAt, isLoading) 
   isLoading
 });
 
-export const Variables = (data, config) => ({
-  data: data.slice().sort(comparator(readX)),
-  config
-});
-
-export const addVariablesData = (model, data) => {
-  const next = concatMonotonic(model.data, data, readX);
-  return (
-    next !== model.data ?
-    Variables(next, model.config) :
-    model
-  );
-}
+export const Variables = (data) => data.slice().sort(comparator(readX));
 
 const Group = (
   measured,
@@ -139,13 +128,13 @@ const readGroupFromConfig = ({
 //       },
 //       ...
 //     }
-const readVariables = model => {
-  const {config, data} = model;
+const readSeries = (model) => {
+  const {variables, config} = model;
   const groupList = config.map(readGroupFromConfig);
   const groupIndex = indexWith(groupList, getVariable);
-  const populated = data.reduce(insertDataPoint, groupIndex);
-  const variables = config.map(getVariable);
- return listByKeys(populated, variables);
+  const populated = variables.reduce(insertDataPoint, groupIndex);
+  const variableKeys = config.map(getVariable);
+ return listByKeys(populated, variableKeys);
 }
 
 // Insert datapoint in index, mutating model. We use this function to build
@@ -168,7 +157,8 @@ const insertDataPoint = (index, dataPoint) => {
 
 export const init = () => [
   Model(
-    Variables([], CHART_CONFIG),
+    Variables([]),
+    CHART_CONFIG,
     window.innerWidth,
     (window.innerHeight - HEADER_HEIGHT),
     1.0,
@@ -194,7 +184,7 @@ export const update = (model, action) =>
   Unknown.update(model, action);
 
 const addData = (model, data) => {
-  const variables = addVariablesData(model.variables, data);
+  const variables = concatMonotonic(model.variables, data, readX);
   const next = (
     // If variables model actually updated, then create new chart model.
     variables !== model.variables ?
@@ -231,7 +221,7 @@ export const view = (model, address) =>
   model.isLoading ?
   viewLoading(model, address) :
   // If not loading and no data to show, render empty
-  model.variables.data.length === 0 ?
+  model.variables.length === 0 ?
   viewEmpty(model, address) :
   viewData(model, address);
 
@@ -285,8 +275,8 @@ const viewData = (model, address) => {
   const {variables, interval, width, height, tooltipWidth,
     scrubber, xhairAt} = model;
 
-  const extentX = extent(variables.data, readX);
-  const series = readVariables(variables);
+  const extentX = extent(variables, readX);
+  const series = readSeries(model);
 
   const scrubberAt = scrubber.coords;
   const isDragging = scrubber.isDragging;
