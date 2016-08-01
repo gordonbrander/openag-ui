@@ -12,7 +12,11 @@
     "url": "https://github.com/OpenAgInitiative/openag-ui/issues"
   },
   "dependencies": {
-    "d3": "^4.0.0",
+    "d3-array": "^1.0.0",
+    "d3-scale": "^1.0.2",
+    "d3-shape": "^1.0.1",
+    "d3-time": "^1.0.1",
+    "d3-time-format": "^2.0.1",
     "pouchdb-browser": "^5.4.5",
     "reflex": "^0.4.1",
     "reflex-virtual-dom-driver": "^0.2.0",
