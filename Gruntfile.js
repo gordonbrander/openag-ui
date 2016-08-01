@@ -66,7 +66,7 @@ module.exports = function (grunt) {
           './assets/**',
           'openag-config.json'
         ],
-        tasks: ["browserify", "copy"]
+        tasks: ["browserify:dev", "copy"]
       }
     }
   });
