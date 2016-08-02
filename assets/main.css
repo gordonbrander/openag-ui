@@ -39,6 +39,7 @@ dialog {
 
 .ir {
   background-repeat: no-repeat;
+  display: block;
   text-indent: 100%;
   white-space: nowrap;
   overflow: hidden;
@@ -154,7 +155,6 @@ dialog {
   background: url(./sprite.png) 0 -500px no-repeat;
   background-size: 100px auto;
   cursor: pointer;
-  display: block;
   height: 72px;
   width: 72px;
   left: 288px;

@@ -2,6 +2,7 @@ import {html, forward, Effects, thunk} from 'reflex';
 import {merge, tagged, tag} from '../common/prelude';
 import * as Unknown from '../common/unknown';
 import * as ClassName from '../common/classname';
+import {localize} from '../common/lang';
 
 const RequestRecipes = {
   type: 'RequestRecipes'
@@ -54,9 +55,12 @@ export const view = (model, address) =>
       ]),
       html.a({
         className: ClassName.create({
+          'ir': true,
           'nav-chart-icon': true,
           'nav-chart-icon-active': true
         })
-      })
+      }, [
+        localize('Chart')
+      ])
     ])
   ]);
