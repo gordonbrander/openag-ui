@@ -85,7 +85,7 @@ export const update = (model, action) =>
   action.type === 'FetchLatest' ?
   [model, Request.get(templateLatestUrl(model.id)).map(Latest)] :
   action.type === 'FetchRestore' ?
-  [model, Request.get(templateRecentUrl(model.id, action.source)).map(Restore)] :
+  [model, Request.get(templateRecentUrl(model.id)).map(Restore)] :
   action.type === 'Restore' ?
   restore(model, action.source) :
   action.type === 'Latest' ?
@@ -207,14 +207,14 @@ const readData = record => {
 // Create a url string that allows you to GET latest environmental datapoints
 // from an environmen via CouchDB.
 const templateLatestUrl = (environmentID) =>
-  Template.render(Config.environmental_data_point_origin_latest, {
+  Template.render(Config.environmental_data_point.origin_latest, {
     origin_url: Config.origin_url,
     startkey: JSON.stringify([environmentID]),
     endkey: JSON.stringify([environmentID, {}])
   });
 
 const templateRecentUrl = (environmentID) =>
-  Template.render(Config.environmental_data_point_origin_range, {
+  Template.render(Config.environmental_data_point.origin_range, {
     origin_url: Config.origin_url,
     startkey: JSON.stringify([environmentID, {}]),
     endkey: JSON.stringify([environmentID]),
