@@ -3,9 +3,10 @@ import {scaleLinear, scaleTime} from 'd3-scale';
 import {line} from 'd3-shape';
 import {timeHour} from 'd3-time';
 import {timeFormat} from 'd3-time-format';
-
 import {html, forward, Effects, thunk} from 'reflex';
+
 import * as Config from '../../openag-config.json';
+
 import {localize} from '../common/lang';
 import {merge, tag} from '../common/prelude';
 import {cursor} from '../common/cursor';
@@ -16,6 +17,8 @@ import {listByKeys, indexWith} from '../common/indexed';
 import {compose} from '../lang/functional';
 import {find} from '../lang/find';
 import {onWindow} from '../driver/virtual-dom';
+
+import * as Toolbox from '../environments/toolbox';
 
 const CHART_CONFIG = Config.chart;
 
@@ -473,7 +476,8 @@ const viewData = (model, address) => {
           className: 'chart-handle--line'
         })
       ])
-    ])
+    ]),
+    thunk('chart-toolbox', Toolbox.view, model, address)
   ]);
 }
 
