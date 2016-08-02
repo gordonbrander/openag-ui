@@ -200,7 +200,13 @@ export const view = (model, address) =>
   }, [
     thunk('chart', Chart.view, model.chart, forward(address, TagChart)),
     thunk('chart-toolbox', Toolbox.view, model, forward(address, TagToolbox)),
-    thunk('chart-export', Exporter.view, model.exporter, address, model.id)
+    thunk(
+      'chart-export',
+      Exporter.view,
+      model.exporter,
+      forward(address, TagExporter),
+      model.id
+    )
   ]);
 
 // Helpers

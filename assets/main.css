@@ -191,6 +191,24 @@ dialog {
 /* Modal
 ----------------------------------------------------------------------------- */
 
+.modal-overlay {
+  background: rgba(0, 0, 0, 0.2);
+  height: 100vh;
+  position: fixed;
+  width: 100vw;
+  top: 0;
+  left: 0;
+  opacity: 1;
+  transition: opacity 200ms ease-out;
+  z-index: 9;
+}
+
+.modal-overlay[hidden] {
+  display: block;
+  opacity: 0;
+  pointer-events: none;
+}
+
 .modal-main {
   background: #fff;
   border-radius: 6px;

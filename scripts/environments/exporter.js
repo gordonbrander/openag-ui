@@ -27,46 +27,57 @@ export const update = Modal.update;
 
 // View
 
+const nil = void(0);
+
 export const view = (model, address, environmentID) => {
   const variables = Config.chart.map(readVariable);
 
-  return html.dialog({
-    className: ClassName.create({
-      'modal-main': true,
-      'modal-main--close': !model.isOpen
-    }),
-    open: (model.isOpen ? 'open' : void(0))
+  return html.div({
+    className: 'modal'
   }, [
     html.div({
-      className: 'panels--main'
+      className: 'modal-overlay',
+      hidden: !model.isOpen ? 'hidden' : nil,
+      onClick: () => address(Close)
+    }),
+    html.dialog({
+      className: ClassName.create({
+        'modal-main': true,
+        'modal-main--close': !model.isOpen
+      }),
+      open: (model.isOpen ? 'open' : nil)
     }, [
       html.div({
-        className: 'panel--main panel--lv0'
+        className: 'panels--main'
       }, [
-        html.header({
-          className: 'panel--header'
-        }, [
-          html.h1({
-            className: 'panel--title'
-          }, [
-            localize('Export CSV')
-          ])
-        ]),
         html.div({
-          className: 'panel--content'
+          className: 'panel--main panel--lv0'
         }, [
-          html.ul(
-            {},
-            Config.chart.map(config => renderExport(
-              environmentID,
-              config.variable,
-              config.title
-            ))
-          )
+          html.header({
+            className: 'panel--header'
+          }, [
+            html.h1({
+              className: 'panel--title'
+            }, [
+              localize('Export CSV')
+            ])
+          ]),
+          html.div({
+            className: 'panel--content'
+          }, [
+            html.ul(
+              {},
+              Config.chart.map(config => renderExport(
+                environmentID,
+                config.variable,
+                config.title
+              ))
+            )
+          ])
         ])
       ])
     ])
-  ]);
+  ])
 }
 
 const renderExport = (environmentID, variable, title) =>
