@@ -298,8 +298,8 @@ dialog {
 }
 
 .panel--header {
-  background: #0052B3;
-  color: #fff;
+  border-bottom: 1px solid #f4f4f4;
+  color: #595959;
   height: 56px;
   position: relative;
 }
