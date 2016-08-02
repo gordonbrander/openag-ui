@@ -185,7 +185,7 @@ export const view = (model, address) =>
   html.dialog({
     className: ClassName.create({
       'modal-main': true,
-      'modal-main-close': !model.isOpen
+      'modal-main--close': !model.isOpen
     }),
     open: (model.isOpen ? 'open' : void(0))
   }, [
