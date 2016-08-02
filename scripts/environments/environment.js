@@ -7,11 +7,11 @@ import * as Request from '../common/request';
 import * as Result from '../common/result';
 import * as Unknown from '../common/unknown';
 import {cursor} from '../common/cursor';
-import {compose, constant} from '../lang/functional';
-import * as EnvironmentalDataPoint from '../environmental-data-point';
-import * as Chart from '../environments/chart';
-// @TODO do proper localization
 import {localize} from '../common/lang';
+import {compose, constant} from '../lang/functional';
+import * as Chart from '../environments/chart';
+import * as Toolbox from '../environments/toolbox';
+import * as Exporter from '../environments/exporter';
 
 const S_MS = 1000;
 const MIN_MS = S_MS * 60;
@@ -29,7 +29,15 @@ const NoOp = {
   type: 'NoOp'
 };
 
-const PollAction = action =>
+const TagExporter = tag('Exporter');
+const OpenExporter = TagExporter(Exporter.Open);
+
+const TagToolbox = action =>
+  action.type === 'OpenExporter' ?
+  OpenExporter :
+  tagged('Toolbox', action);
+
+const TagPoll = action =>
   action.type === 'Ping' ?
   FetchLatest :
   tagged('Poll', action);
@@ -40,12 +48,12 @@ const Latest = tag('Latest');
 const FetchRestore = tag('FetchRestore');
 const Restore = tag('Restore');
 
-const PongPoll = PollAction(Poll.Pong);
-const MissPoll = PollAction(Poll.Miss);
+const PongPoll = TagPoll(Poll.Pong);
+const MissPoll = TagPoll(Poll.Miss);
 
-const ChartAction = tag('Chart');
-const AddChartData = compose(ChartAction, Chart.AddData);
-const ChartLoading = compose(ChartAction, Chart.Loading);
+const TagChart = tag('Chart');
+const AddChartData = compose(TagChart, Chart.AddData);
+const ChartLoading = compose(TagChart, Chart.Loading);
 
 // Send an alert. We use this to send up problems to be displayed in banner.
 const AlertBanner = tag('AlertBanner');
@@ -62,16 +70,19 @@ const DataPointAction = dataPoint => {
 export const init = id => {
   const [poll, pollFx] = Poll.init(POLL_TIMEOUT);
   const [chart, chartFx] = Chart.init();
+  const [exporter, exporterFx] = Exporter.init();
 
   return [
     {
       id,
       chart,
-      poll
+      poll,
+      exporter
     },
     Effects.batch([
-      chartFx.map(ChartAction),
-      pollFx.map(PollAction),
+      chartFx.map(TagChart),
+      pollFx.map(TagPoll),
+      exporterFx.map(TagExporter),
       Effects.receive(FetchRestore(id))
     ])
   ];
@@ -82,16 +93,18 @@ export const update = (model, action) =>
   [model, Effects.none] :
   action.type === 'Poll' ?
   updatePoll(model, action.source) :
+  action.type === 'Exporter' ?
+  updateExporter(model, action.source) :
+  action.type === 'Chart' ?
+  updateChart(model, action.source) :
   action.type === 'FetchLatest' ?
   [model, Request.get(templateLatestUrl(model.id)).map(Latest)] :
   action.type === 'FetchRestore' ?
-  [model, Request.get(templateRecentUrl(model.id, action.source)).map(Restore)] :
+  [model, Request.get(templateRecentUrl(model.id)).map(Restore)] :
   action.type === 'Restore' ?
   restore(model, action.source) :
   action.type === 'Latest' ?
   updateLatest(model, action.source) :
-  action.type === 'Chart' ?
-  updateChart(model, action.source) :
   Unknown.update(model, action);
 
 const updateLatest = Result.updater(
@@ -162,14 +175,21 @@ const updateChart = cursor({
   get: model => model.chart,
   set: (model, chart) => merge(model, {chart}),
   update: Chart.update,
-  tag: ChartAction
+  tag: TagChart
+});
+
+const updateExporter = cursor({
+  get: model => model.exporter,
+  set: (model, exporter) => merge(model, {exporter}),
+  update: Exporter.update,
+  tag: TagExporter
 });
 
 const updatePoll = cursor({
   get: model => model.poll,
   set: (model, poll) => merge(model, {poll}),
   update: Poll.update,
-  tag: PollAction
+  tag: TagPoll
 });
 
 // View
@@ -178,7 +198,15 @@ export const view = (model, address) =>
   html.div({
     className: 'environment-main'
   }, [
-    thunk('chart', Chart.view, model.chart, forward(address, ChartAction))
+    thunk('chart', Chart.view, model.chart, forward(address, TagChart)),
+    thunk('chart-toolbox', Toolbox.view, model, forward(address, TagToolbox)),
+    thunk(
+      'chart-export',
+      Exporter.view,
+      model.exporter,
+      forward(address, TagExporter),
+      model.id
+    )
   ]);
 
 // Helpers
@@ -207,14 +235,14 @@ const readData = record => {
 // Create a url string that allows you to GET latest environmental datapoints
 // from an environmen via CouchDB.
 const templateLatestUrl = (environmentID) =>
-  Template.render(Config.environmental_data_point_origin_latest, {
+  Template.render(Config.environmental_data_point.origin_latest, {
     origin_url: Config.origin_url,
     startkey: JSON.stringify([environmentID]),
     endkey: JSON.stringify([environmentID, {}])
   });
 
 const templateRecentUrl = (environmentID) =>
-  Template.render(Config.environmental_data_point_origin_range, {
+  Template.render(Config.environmental_data_point.origin_range, {
     origin_url: Config.origin_url,
     startkey: JSON.stringify([environmentID, {}]),
     endkey: JSON.stringify([environmentID]),

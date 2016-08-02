@@ -187,3 +187,35 @@
   top: 50%;
   transform: translateX(-50%) translateY(-70%);
 }
+
+/* Chart toolbox
+----------------------------------------------------------------------------- */
+
+.chart-toolbox {
+  background: #fff;
+  border-radius: 28px;
+  height: 56px;
+  min-width: 56px;
+  position: absolute;
+  right: 24px;
+  top: 24px;
+}
+
+.chart-toolbox,
+.chart-toolbox li {
+  list-style: none;
+  padding: 0;
+  margin: 0;  
+}
+
+.chart-toolbox--cmd {
+  cursor: pointer;
+  height: 56px;
+  width: 56px;
+}
+
+.chart-toolbox--cmd-export {
+  background-image: url(sprite.png);
+  background-size: 100px auto;
+  background-position: 0 -800px;
+}

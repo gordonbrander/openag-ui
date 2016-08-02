@@ -3,9 +3,10 @@ import {scaleLinear, scaleTime} from 'd3-scale';
 import {line} from 'd3-shape';
 import {timeHour} from 'd3-time';
 import {timeFormat} from 'd3-time-format';
-
 import {html, forward, Effects, thunk} from 'reflex';
+
 import * as Config from '../../openag-config.json';
+
 import {localize} from '../common/lang';
 import {merge, tag} from '../common/prelude';
 import {cursor} from '../common/cursor';
@@ -94,26 +95,6 @@ export const Model = (
 
 export const Variables = (data) => data.slice().sort(comparator(readX));
 
-const Group = (
-  measured,
-  desired,
-  variable,
-  title,
-  unit,
-  min,
-  max,
-  color
-) => ({
-  measured,
-  desired,
-  variable,
-  title,
-  unit,
-  min,
-  max,
-  color
-});
-
 // Construct a group from a config object
 const readGroupFromConfig = ({
   variable,
@@ -122,16 +103,16 @@ const readGroupFromConfig = ({
   min,
   max,
   color
-}) => Group(
-  [],
-  [],
+}) => ({
+  measured: [],
+  desired: [],
   variable,
   title,
   unit,
   min,
   max,
   color
-);
+});
 
 
 // Construct a tree structure from model (useful for view)
