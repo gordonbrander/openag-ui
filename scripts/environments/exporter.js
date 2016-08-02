@@ -42,7 +42,7 @@ export const view = (model, address, environmentID) => {
     }),
     html.dialog({
       className: ClassName.create({
-        'modal-main': true,
+        'modal-main modal-main--menu': true,
         'modal-main--close': !model.isOpen
       }),
       open: (model.isOpen ? 'open' : nil)
@@ -66,7 +66,9 @@ export const view = (model, address, environmentID) => {
             className: 'panel--content'
           }, [
             html.ul(
-              {},
+              {
+                className: 'menu-list'
+              },
               Config.chart.map(config => renderExport(
                 environmentID,
                 config.variable,
