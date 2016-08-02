@@ -105,8 +105,7 @@ export const view = (model, address, isActive) =>
       html.h1({
         className: 'panel--title'
       }, [
-        // @TODO localize this
-        'Import Recipe'
+        localize('Import Recipe')
       ]),
       html.div({
         className: 'panel--nav-left'
@@ -133,8 +132,7 @@ export const view = (model, address, isActive) =>
             address(Submit(el.value));
           }
         }, [
-          // @TODO localize this
-          'Save'
+          localize('Save')
         ])
       ])
     ]),

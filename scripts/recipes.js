@@ -9,6 +9,7 @@ import {merge, tag, tagged} from './common/prelude';
 import * as Modal from './common/modal';
 import {cursor} from './common/cursor';
 import * as ClassName from './common/classname';
+import {localize} from './common/lang';
 import {compose, constant} from './lang/functional';
 import * as RecipesForm from './recipes/form';
 import * as Recipe from './recipe';
@@ -203,8 +204,7 @@ export const view = (model, address) =>
           html.h1({
             className: 'panel--title'
           }, [
-            // @TODO internationalize this
-            'Recipes'
+            localize('Recipes')
           ]),
           html.div({
             className: 'panel--nav-right'
