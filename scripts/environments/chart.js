@@ -97,26 +97,6 @@ export const Model = (
 
 export const Variables = (data) => data.slice().sort(comparator(readX));
 
-const Group = (
-  measured,
-  desired,
-  variable,
-  title,
-  unit,
-  min,
-  max,
-  color
-) => ({
-  measured,
-  desired,
-  variable,
-  title,
-  unit,
-  min,
-  max,
-  color
-});
-
 // Construct a group from a config object
 const readGroupFromConfig = ({
   variable,
@@ -125,16 +105,16 @@ const readGroupFromConfig = ({
   min,
   max,
   color
-}) => Group(
-  [],
-  [],
+}) => ({
+  measured: [],
+  desired: [],
   variable,
   title,
   unit,
   min,
   max,
   color
-);
+});
 
 
 // Construct a tree structure from model (useful for view)
