@@ -386,39 +386,6 @@ dialog {
   overflow: hidden;
 }
 
-/* Sensors
------------------------------------------------------------------------------ */
-
-.sense-main {
-  margin: 0;
-  padding: 24px;
-}
-
-.sense-main:nth-child(even) {
-  background-color: #EDEDED;
-}
-
-.sense-title {
-  color: #989898;
-  font-size: 14px;
-  text-transform: uppercase;
-}
-
-.sense-number {
-  font-weight: bold;
-  font-size: 72px;
-  line-height: 72px;
-}
-
-.sense-deg {
-  color: #989898;
-  font-size: 24px;
-  font-weight: bold;
-  line-height: 24px;
-  vertical-align: top;
-}
-
-
 /* Recipe
 ----------------------------------------------------------------------------- */
 

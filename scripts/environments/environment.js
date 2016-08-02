@@ -9,7 +9,6 @@ import * as Unknown from '../common/unknown';
 import {cursor} from '../common/cursor';
 import {localize} from '../common/lang';
 import {compose, constant} from '../lang/functional';
-import * as EnvironmentalDataPoint from '../environmental-data-point';
 import * as Chart from '../environments/chart';
 import * as Toolbox from '../environments/toolbox';
 
