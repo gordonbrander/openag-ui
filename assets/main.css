@@ -352,15 +352,11 @@ dialog {
   padding: 12px;
 }
 
-/* Dashboard
+/* Environment
 ----------------------------------------------------------------------------- */
 
-.dash-main {
-  background-color: #F4F4F4;
-}
-
-.dash-main-close {
-  display: none;
+.environment-main {
+  position: relative;
 }
 
 /* Recipes library

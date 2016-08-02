@@ -18,8 +18,6 @@ import {compose} from '../lang/functional';
 import {find} from '../lang/find';
 import {onWindow} from '../driver/virtual-dom';
 
-import * as Toolbox from '../environments/toolbox';
-
 const CHART_CONFIG = Config.chart;
 
 const S_MS = 1000;
@@ -456,8 +454,7 @@ const viewData = (model, address) => {
           className: 'chart-handle--line'
         })
       ])
-    ]),
-    thunk('chart-toolbox', Toolbox.view, model, address)
+    ])
   ]);
 }
 

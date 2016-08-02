@@ -7,11 +7,11 @@ import * as Request from '../common/request';
 import * as Result from '../common/result';
 import * as Unknown from '../common/unknown';
 import {cursor} from '../common/cursor';
+import {localize} from '../common/lang';
 import {compose, constant} from '../lang/functional';
 import * as EnvironmentalDataPoint from '../environmental-data-point';
 import * as Chart from '../environments/chart';
-// @TODO do proper localization
-import {localize} from '../common/lang';
+import * as Toolbox from '../environments/toolbox';
 
 const S_MS = 1000;
 const MIN_MS = S_MS * 60;
@@ -178,7 +178,8 @@ export const view = (model, address) =>
   html.div({
     className: 'environment-main'
   }, [
-    thunk('chart', Chart.view, model.chart, forward(address, ChartAction))
+    thunk('chart', Chart.view, model.chart, forward(address, ChartAction)),
+    thunk('chart-toolbox', Toolbox.view, model, address)
   ]);
 
 // Helpers
