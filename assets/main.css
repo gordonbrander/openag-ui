@@ -34,6 +34,15 @@ dialog {
   padding: 0;
 }
 
+/* Image replacement
+----------------------------------------------------------------------------- */
+
+.ir {
+  background-repeat: no-repeat;
+  text-indent: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+}
 
 /* Buttons
 ----------------------------------------------------------------------------- */
