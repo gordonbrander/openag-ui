@@ -26,7 +26,7 @@ const getPouchID = Indexed.getter('_id');
 
 // Actions and tagging functions
 
-const ModalAction = tag('Modal');
+const TagModal = tag('Modal');
 
 const RecipesFormAction = action =>
   action.type === 'Back' ?
@@ -51,8 +51,8 @@ const ByID = id => action =>
 export const Restore = Database.Restore;
 export const Put = Database.Put;
 
-export const Open = ModalAction(Modal.Open);
-export const Close = ModalAction(Modal.Close);
+export const Open = TagModal(Modal.Open);
+export const Close = TagModal(Modal.Close);
 
 export const ActivateByID = id => ({
   type: 'ActivateByID',
@@ -97,7 +97,7 @@ export const init = () => {
 
 const updateModal = cursor({
   update: Modal.update,
-  tag: ModalAction
+  tag: TagModal
 });
 
 const updateRecipesForm = cursor({
@@ -181,62 +181,73 @@ export const update = (model, action) =>
   updateByID(model, action.id, action.source) :
   Unknown.update(model, action);
 
+const nil = void(0);
+
 export const view = (model, address) =>
-  html.dialog({
-    className: ClassName.create({
-      'modal-main': true,
-      'modal-main--close': !model.isOpen
-    }),
-    open: (model.isOpen ? 'open' : void(0))
+  html.div({
+    className: 'modal'
   }, [
     html.div({
+      className: 'modal-overlay',
+      hidden: !model.isOpen ? 'hidden' : nil,
+      onClick: () => address(Close)
+    }),
+    html.dialog({
       className: ClassName.create({
-        'panels--main': true,
-        'panels--lv1': model.activePanel !== null
-      })
+        'modal-main': true,
+        'modal-main--close': !model.isOpen
+      }),
+      open: (model.isOpen ? 'open' : void(0))
     }, [
       html.div({
-        className: 'panel--main panel--lv0'
+        className: ClassName.create({
+          'panels--main': true,
+          'panels--lv1': model.activePanel !== null
+        })
       }, [
-        html.header({
-          className: 'panel--header'
+        html.div({
+          className: 'panel--main panel--lv0'
         }, [
-          html.h1({
-            className: 'panel--title'
+          html.header({
+            className: 'panel--header'
           }, [
-            localize('Recipes')
+            html.h1({
+              className: 'panel--title'
+            }, [
+              localize('Recipes')
+            ]),
+            html.div({
+              className: 'panel--nav-right'
+            }, [
+              html.a({
+                className: 'recipes-create-icon',
+                onClick: () => address(ActivatePanel('form'))
+              })
+            ])
           ]),
           html.div({
-            className: 'panel--nav-right'
+            className: 'panel--content'
           }, [
-            html.a({
-              className: 'recipes-create-icon',
-              onClick: () => address(ActivatePanel('form'))
-            })
+            html.div({
+              className: ClassName.create({
+                'recipes-main': true,
+                'recipes-main-close': !model.isOpen
+              })
+            }, model.order.map(id => thunk(
+              id,
+              Recipe.view,
+              model.entries[id],
+              forward(address, ByID(id))
+            )))
           ])
         ]),
-        html.div({
-          className: 'panel--content'
-        }, [
-          html.div({
-            className: ClassName.create({
-              'recipes-main': true,
-              'recipes-main-close': !model.isOpen
-            })
-          }, model.order.map(id => thunk(
-            id,
-            Recipe.view,
-            model.entries[id],
-            forward(address, ByID(id))
-          )))
-        ])
-      ]),
-      thunk(
-        'recipes-form',
-        RecipesForm.view,
-        model.recipesForm,
-        forward(address, RecipesFormAction),
-        model.activePanel === 'form'
-      )
+        thunk(
+          'recipes-form',
+          RecipesForm.view,
+          model.recipesForm,
+          forward(address, RecipesFormAction),
+          model.activePanel === 'form'
+        )
+      ])
     ])
   ]);
