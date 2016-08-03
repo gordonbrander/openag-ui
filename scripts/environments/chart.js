@@ -11,7 +11,7 @@ import {localize} from '../common/lang';
 import {merge, tag} from '../common/prelude';
 import {cursor} from '../common/cursor';
 import * as Draggable from '../common/draggable';
-import * as ClassName from '../common/classname';
+import {classed} from '../common/attr';
 import * as Unknown from '../common/unknown';
 import {listByKeys, indexWith} from '../common/indexed';
 import {compose} from '../lang/functional';
@@ -439,7 +439,7 @@ const viewData = (model, address) => {
           event.preventDefault();
           address(HoldScrubber);
         },
-        className: ClassName.create({
+        className: classed({
           'chart-handle': true,
           'chart-handle--dragging': isDragging
         }),

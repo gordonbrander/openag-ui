@@ -8,7 +8,7 @@ import * as Unknown from './common/unknown';
 import {merge, tag, tagged} from './common/prelude';
 import * as Modal from './common/modal';
 import {cursor} from './common/cursor';
-import * as ClassName from './common/classname';
+import {classed, toggle} from './common/attr';
 import {localize} from './common/lang';
 import {compose, constant} from './lang/functional';
 import * as RecipesForm from './recipes/form';
@@ -90,7 +90,7 @@ export const init = () => {
     Effects.batch([
       recipesFormFx,
       Effects.receive(Restore),
-      Database.DoSync(DB, ORIGIN)
+      Database.sync(DB, ORIGIN)
     ])
   ];
 };
@@ -148,7 +148,7 @@ export const update = (model, action) =>
   action.type === 'NoOp' ?
   [model, Effects.none] :
   action.type === 'Put' ?
-  Database.put(model, DB, action.value) :
+  [model, Database.put(DB, action.value)] :
   action.type === 'Putted' ?
   (
     action.result.isOk ?
@@ -160,7 +160,7 @@ export const update = (model, action) =>
     [model, Effects.none]
   ) :
   action.type === 'Restore' ?
-  Database.restore(model, DB) :
+  [model, Database.restore(DB)] :
   action.type === 'Restored' ?
   (
     action.result.isOk ?
@@ -181,26 +181,24 @@ export const update = (model, action) =>
   updateByID(model, action.id, action.source) :
   Unknown.update(model, action);
 
-const nil = void(0);
-
 export const view = (model, address) =>
   html.div({
     className: 'modal'
   }, [
     html.div({
       className: 'modal-overlay',
-      hidden: !model.isOpen ? 'hidden' : nil,
+      hidden: toggle(!model.isOpen, 'hidden'),
       onClick: () => address(Close)
     }),
     html.dialog({
-      className: ClassName.create({
+      className: classed({
         'modal-main': true,
         'modal-main--close': !model.isOpen
       }),
-      open: (model.isOpen ? 'open' : void(0))
+      open: toggle(model.isOpen, 'open')
     }, [
       html.div({
-        className: ClassName.create({
+        className: classed({
           'panels--main': true,
           'panels--lv1': model.activePanel !== null
         })
@@ -229,7 +227,7 @@ export const view = (model, address) =>
             className: 'panel--content'
           }, [
             html.div({
-              className: ClassName.create({
+              className: classed({
                 'recipes-main': true,
                 'recipes-main-close': !model.isOpen
               })

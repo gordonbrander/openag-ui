@@ -4,6 +4,27 @@ import {Effects, Task} from 'reflex';
 import * as Result from '../common/result';
 import {compose, constant} from '../lang/functional';
 
+export const Get = id => ({
+  type: 'Get',
+  id
+});
+
+export const Got = result => ({
+  type: 'Got',
+  result
+});
+
+export const get = (db, id) =>
+  Effects.perform(new Task(succeed => {
+    db
+      .get(id)
+      .then(
+        compose(succeed, Got, Result.ok),
+        compose(succeed, Got, Result.error)
+      )
+      .catch(compose(succeed, Got, Result.error));
+  }));
+
 export const Put = value => ({
   type: 'Put',
   value
@@ -15,19 +36,16 @@ export const Putted = result => ({
   result
 });
 
-export const DoPut = (db, doc) =>
+export const put = (db, doc) =>
   Effects.perform(new Task((succeed, fail) => {
     const alwaysDoc = constant(doc);
     db
       .put(doc)
       .then(
-          compose(succeed, Putted, Result.ok, alwaysDoc),
-          compose(succeed, Putted, Result.error)
+        compose(succeed, Putted, Result.ok, alwaysDoc),
+        compose(succeed, Putted, Result.error)
       );
   }));
-
-export const put = (model, db, doc) =>
-  [model, DoPut(db, doc)];
 
 // Request a restore from database.
 export const Restore = {
@@ -44,7 +62,8 @@ const readDocFromRow = row => row.doc;
 const readDocs = database => database.rows.map(readDocFromRow);
 
 // Request in-memory restore from DB
-const DoRestore = db =>
+// Returns an effect.
+export const restore = db =>
   Effects.perform(new Task((succeed, fail) => {
     db
       .allDocs({
@@ -60,9 +79,6 @@ const DoRestore = db =>
       );
   }));
 
-export const restore = (model, db) =>
-  [model, DoRestore(db)];
-
 // Sync actions and effects
 // See https://pouchdb.com/api.html#sync
 // https://pouchdb.com/api.html#replication
@@ -77,7 +93,7 @@ export const Pushed = result => ({
   result
 });
 
-const DoPush = (db, replica) =>
+export const push = (db, replica) =>
   Effects.perform(new Task((succeed, fail) => {
     // Pouch will throw an error from xhr if there is no internet connection.
     // @TODO find out why Pouch isn't catching these 404s within the promise.
@@ -94,9 +110,6 @@ const DoPush = (db, replica) =>
     }
   }));
 
-export const push = (model, db, replica) =>
-  [model, DoPush(db, replica)];
-
 // Request down-directional sync
 export const Pull = {
   type: 'Pull'
@@ -107,7 +120,7 @@ export const Pulled = result => ({
   result
 });
 
-const DoPull = (db, replica) =>
+export const pull = (db, replica) =>
   Effects.perform(new Task((succeed, fail) => {
     db
       .replicate.from(replica)
@@ -117,9 +130,6 @@ const DoPull = (db, replica) =>
       )
       .catch(compose(succeed, Pulled, Result.error));
   }));
-
-export const pull = (model, db, replica) =>
-  [model, DoPull(db, replica)];
 
 // Request bi-directional sync
 export const Sync = {
@@ -131,7 +141,7 @@ export const Synced = result => ({
   result
 });
 
-export const DoSync = (db, replica) =>
+export const sync = (db, replica) =>
   Effects.perform(new Task((succeed, fail) => {
     try {
       db
@@ -145,6 +155,3 @@ export const DoSync = (db, replica) =>
       succeed(Synced(Result.error(error)));
     }
   }));
-
-export const sync = (model, db, replica) =>
-  [model, DoSync(db, replica)];

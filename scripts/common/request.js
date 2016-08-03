@@ -63,19 +63,14 @@ export const Post = url => ({
   url
 });
 
-// Apologies for the silly name
 export const Posted = result => ({
   type: 'Posted',
   result
 });
 
-const PostEffect = (url, body) =>
+// Returns post effect
+export const post = (url, body) =>
   Effects.perform(new Task((succeed, fail) => {
     const posted = compose(succeed, Posted);
     postFetch(url, body).then(posted, posted);
   }));
-
-export const post = (model, url, body) => [
-  model,
-  PostEffect(url, body)
-];

@@ -10,6 +10,7 @@ import {html, forward, Effects} from 'reflex';
 import {compose} from '../lang/functional';
 import {tag, tagged, merge, always} from '../common/prelude';
 import {cursor} from "../common/cursor"
+import {toggle} from '../common/attr';
 import * as Unknown from '../common/unknown';
 import * as Focusable from '../common/focusable';
 import * as Editable from '../common/editable';
@@ -99,13 +100,11 @@ const decodeChange = compose(
   event => Change(event.target.value, decodeSelection(event))
 );
 
-const nil = void(0);
-
 export const view = (className) => (model, address) =>
   html.input({
     type: 'input',
     placeholder: model.placeholder,
     value: model.value,
-    disabled: (model.isDisabled ? true : nil),
+    disabled: toggle(model.isDisabled, true),
     onInput: on(address, decodeChange),
   });

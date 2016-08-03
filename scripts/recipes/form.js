@@ -6,7 +6,7 @@ import * as Unknown from '../common/unknown';
 import {localize} from '../common/lang';
 import {merge, tag, batch} from '../common/prelude';
 import {cursor} from '../common/cursor';
-import * as ClassName from '../common/classname';
+import {classed} from '../common/attr';
 import * as Textarea from '../common/textarea';
 import * as Recipes from '../recipes';
 
@@ -89,11 +89,9 @@ export const update = (model, action) =>
 
 const viewTextArea = Textarea.view('rform-textarea', 'rform-textarea txt-textarea');
 
-const nil = void(0);
-
 export const view = (model, address, isActive) =>
   html.div({
-    className: ClassName.create({
+    className: classed({
       'panel--main': true,
       'panel--lv1': true,
       'panel--main-close': !isActive
