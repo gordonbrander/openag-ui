@@ -15,7 +15,7 @@ export const Putted = result => ({
   result
 });
 
-export const DoPut = (db, doc) =>
+export const put = (db, doc) =>
   Effects.perform(new Task((succeed, fail) => {
     const alwaysDoc = constant(doc);
     db
@@ -25,9 +25,6 @@ export const DoPut = (db, doc) =>
           compose(succeed, Putted, Result.error)
       );
   }));
-
-export const put = (model, db, doc) =>
-  [model, DoPut(db, doc)];
 
 // Request a restore from database.
 export const Restore = {

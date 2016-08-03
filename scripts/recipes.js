@@ -148,7 +148,7 @@ export const update = (model, action) =>
   action.type === 'NoOp' ?
   [model, Effects.none] :
   action.type === 'Put' ?
-  Database.put(model, DB, action.value) :
+  [model, Database.put(DB, action.value)] :
   action.type === 'Putted' ?
   (
     action.result.isOk ?
