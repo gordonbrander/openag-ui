@@ -49,7 +49,10 @@ const ByID = id => action =>
   RecipeAction(id, action);
 
 export const Restore = Database.Restore;
+const Restored = Database.Restored;
 export const Put = Database.Put;
+const Putted = Database.Putted;
+const Synced = Database.Synced;
 
 export const Open = TagModal(Modal.Open);
 export const Close = TagModal(Modal.Close);
@@ -90,7 +93,7 @@ export const init = () => {
     Effects.batch([
       recipesFormFx,
       Effects.receive(Restore),
-      Database.sync(DB, ORIGIN)
+      Database.sync(DB, ORIGIN).map(Synced)
     ])
   ];
 };
@@ -148,7 +151,7 @@ export const update = (model, action) =>
   action.type === 'NoOp' ?
   [model, Effects.none] :
   action.type === 'Put' ?
-  [model, Database.put(DB, action.value)] :
+  [model, Database.put(DB, action.value).map(Putted)] :
   action.type === 'Putted' ?
   (
     action.result.isOk ?
@@ -160,7 +163,7 @@ export const update = (model, action) =>
     [model, Effects.none]
   ) :
   action.type === 'Restore' ?
-  [model, Database.restore(DB)] :
+  [model, Database.restore(DB).map(Restored)] :
   action.type === 'Restored' ?
   (
     action.result.isOk ?

@@ -19,10 +19,10 @@ export const get = (db, id) =>
     db
       .get(id)
       .then(
-        compose(succeed, Got, Result.ok),
-        compose(succeed, Got, Result.error)
+        Result.ok,
+        Result.error
       )
-      .catch(compose(succeed, Got, Result.error));
+      .then(succeed);
   }));
 
 export const Put = value => ({
@@ -37,14 +37,15 @@ export const Putted = result => ({
 });
 
 export const put = (db, doc) =>
-  Effects.perform(new Task((succeed, fail) => {
+  Effects.perform(new Task(succeed => {
     const alwaysDoc = constant(doc);
     db
       .put(doc)
       .then(
-        compose(succeed, Putted, Result.ok, alwaysDoc),
-        compose(succeed, Putted, Result.error)
-      );
+        compose(Result.ok, alwaysDoc),
+        Result.error
+      )
+      .then(succeed);
   }));
 
 // Request a restore from database.
@@ -64,7 +65,7 @@ const readDocs = database => database.rows.map(readDocFromRow);
 // Request in-memory restore from DB
 // Returns an effect.
 export const restore = db =>
-  Effects.perform(new Task((succeed, fail) => {
+  Effects.perform(new Task(succeed => {
     db
       .allDocs({
         include_docs: true,
@@ -74,9 +75,10 @@ export const restore = db =>
         startkey: 'design_\uffff'
       })
       .then(
-        compose(succeed, Restored, Result.ok, readDocs),
-        compose(succeed, Restored, Result.error)
-      );
+        compose(Result.ok, readDocs),
+        Result.error
+      )
+      .then(succeed);
   }));
 
 // Sync actions and effects
@@ -94,19 +96,20 @@ export const Pushed = result => ({
 });
 
 export const push = (db, replica) =>
-  Effects.perform(new Task((succeed, fail) => {
+  Effects.perform(new Task(succeed => {
     // Pouch will throw an error from xhr if there is no internet connection.
     // @TODO find out why Pouch isn't catching these 404s within the promise.
     try {
       db
         .replicate.to(replica)
         .then(
-          compose(succeed, Pushed, Result.ok),
-          compose(succeed, Pushed, Result.error)
-        );
+          Result.ok,
+          Result.error
+        )
+        .then(succeed);
     }
     catch (error) {
-      succeed(Pushed(Result.error(error)));
+      succeed(Result.error(error));
     }
   }));
 
@@ -121,14 +124,14 @@ export const Pulled = result => ({
 });
 
 export const pull = (db, replica) =>
-  Effects.perform(new Task((succeed, fail) => {
+  Effects.perform(new Task(succeed => {
     db
       .replicate.from(replica)
       .then(
-        compose(succeed, Pulled, Result.ok),
-        compose(succeed, Pulled, Result.error)
+        Result.ok,
+        Result.error
       )
-      .catch(compose(succeed, Pulled, Result.error));
+      .then(succeed);
   }));
 
 // Request bi-directional sync
@@ -142,16 +145,17 @@ export const Synced = result => ({
 });
 
 export const sync = (db, replica) =>
-  Effects.perform(new Task((succeed, fail) => {
+  Effects.perform(new Task(succeed => {
     try {
       db
         .sync(replica)
         .then(
-          compose(succeed, Synced, Result.ok),
-          compose(succeed, Synced, Result.error)
-        );
+          Result.ok,
+          Result.error
+        )
+        .then(succeed);
     }
     catch (error) {
-      succeed(Synced(Result.error(error)));
+      succeed(Result.error(error));
     }
   }));
