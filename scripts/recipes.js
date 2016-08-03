@@ -90,7 +90,7 @@ export const init = () => {
     Effects.batch([
       recipesFormFx,
       Effects.receive(Restore),
-      Database.DoSync(DB, ORIGIN)
+      Database.sync(DB, ORIGIN)
     ])
   ];
 };
@@ -160,7 +160,7 @@ export const update = (model, action) =>
     [model, Effects.none]
   ) :
   action.type === 'Restore' ?
-  Database.restore(model, DB) :
+  [model, Database.restore(DB)] :
   action.type === 'Restored' ?
   (
     action.result.isOk ?
