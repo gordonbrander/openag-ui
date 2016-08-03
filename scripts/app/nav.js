@@ -15,7 +15,7 @@ export const ChangeRecipeTitle = value => ({
 
 export const init = () => [
   {
-    recipeTitle: 'Salinas Valley in Fall'
+    recipeTitle: null
   },
   Effects.none
 ];
@@ -28,8 +28,7 @@ export const update = (model, action) =>
 const readTitle = model =>
   typeof model.recipeTitle === 'string' ?
   model.recipeTitle :
-  // @TODO localize this
-  'Untitled';
+  localize('None');
 
 export const view = (model, address) =>
   html.div({
