@@ -121,9 +121,11 @@ const postRecipe = (model, environmentID, recipeID) => {
     api_url: Config.api_url,
     environment: environmentID
   });
-  return Request.post(model, url, {
-    data: recipeID
-  });
+
+  return [
+    model,
+    Request.post(url, {data: recipeID})
+  ];
 }
 
 export const update = (model, action) =>
