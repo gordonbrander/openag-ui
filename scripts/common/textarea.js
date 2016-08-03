@@ -10,6 +10,7 @@ import {html, forward, Effects} from 'reflex';
 import {compose} from '../lang/functional';
 import {tag, tagged, merge, always} from '../common/prelude';
 import {cursor} from "../common/cursor"
+import {toggle} from '../common/attr';
 import * as Unknown from '../common/unknown';
 import * as Focusable from '../common/focusable';
 import * as Control from '../common/control';
@@ -79,8 +80,6 @@ const decodeChange = compose(
   event => Change(event.target.value, decodeSelection(event))
 );
 
-const nil = void(0);
-
 export const view = (id, className) => (model, address) =>
   html.textarea({
     id,
@@ -88,7 +87,7 @@ export const view = (id, className) => (model, address) =>
     type: 'input',
     placeholder: model.placeholder,
     value: model.value,
-    disabled: (model.isDisabled ? true : nil),
+    disabled: toggle(model.isDisabled, true),
     onInput: event => address(decodeChange(event)),
   }, [
     model.value

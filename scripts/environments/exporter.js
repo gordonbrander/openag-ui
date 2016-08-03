@@ -2,7 +2,7 @@ import {html, forward, Effects, Task, thunk} from 'reflex';
 import * as Config from '../../openag-config.json';
 import * as Template from '../common/stache';
 import {merge, tag, tagged} from '../common/prelude';
-import * as ClassName from '../common/classname';
+import {classed, toggle} from '../common/attr';
 import * as Modal from '../common/modal';
 import {localize} from '../common/lang';
 import * as Unknown from '../common/unknown';
@@ -27,8 +27,6 @@ export const update = Modal.update;
 
 // View
 
-const nil = void(0);
-
 export const view = (model, address, environmentID) => {
   const variables = Config.chart.map(readVariable);
 
@@ -37,15 +35,15 @@ export const view = (model, address, environmentID) => {
   }, [
     html.div({
       className: 'modal-overlay',
-      hidden: !model.isOpen ? 'hidden' : nil,
+      hidden: toggle(!model.isOpen, 'hidden'),
       onClick: () => address(Close)
     }),
     html.dialog({
-      className: ClassName.create({
+      className: classed({
         'modal-main modal-main--menu': true,
         'modal-main--close': !model.isOpen
       }),
-      open: (model.isOpen ? 'open' : nil)
+      open: toggle(model.isOpen, 'open')
     }, [
       html.div({
         className: 'panels--main'

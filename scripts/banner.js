@@ -4,7 +4,7 @@ An error banner for notifying the user of edge-case conditions.
 import * as Lang from './common/lang';
 import {html, Effects, forward} from 'reflex';
 import {tag} from './common/prelude';
-import * as ClassName from './common/classname';
+import {classed} from './common/attr';
 import * as Unknown from './common/unknown';
 
 // Actions
@@ -52,7 +52,7 @@ export const update = (model, action) =>
 
 export const view = (model, address) =>
   html.div({
-    className: ClassName.create({
+    className: classed({
       'banner': true,
       // Hide banner if there is no message to show
       'banner--close': model.message === ''
@@ -64,7 +64,7 @@ export const view = (model, address) =>
       model.message
     ]),
     html.a({
-      className: ClassName.create({
+      className: classed({
         'banner--refresh': true,
         'banner--refresh-close': !model.isRefresh
       }),
