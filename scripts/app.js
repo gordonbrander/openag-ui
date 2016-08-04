@@ -5,13 +5,33 @@ import * as Unknown from './common/unknown';
 import {cursor} from './common/cursor';
 import * as Template from './common/stache';
 import * as Request from './common/request';
+import * as Persistence from './persistence';
 import * as AppNav from './app/nav';
 import * as Banner from './banner';
 import * as Environments from './environments';
 import * as Recipes from './recipes';
+import * as Settings from './first-time-use';
 import {compose} from './lang/functional';
 
 // Actions and tagging functions
+
+const Restore = value => ({
+  type: 'Restore',
+  value
+});
+
+const TagFirstTimeUse = tag('FirstTimeUse');
+
+const OpenFirstTimeUse = TagFirstTimeUse(Settings.Open);
+
+const TagPersistence = action =>
+  action.type === 'NotifyRestore' ?
+  Restore(action.value) :
+  action.type === 'NotifyFirstTimeUse' ?
+  OpenFirstTimeUse :
+  tagged('Persistence', action);
+
+const GetState = TagPersistence(Persistence.GetState);
 
 const RecipesAction = action =>
   action.type === 'Activated' ?
@@ -63,22 +83,38 @@ export const init = () => {
   const [recipes, recipesFx] = Recipes.init();
   const [appNav, appNavFx] = AppNav.init();
   const [banner, bannerFx] = Banner.init();
+  const [firstTimeUse, firstTimeUseFx] = Settings.init();
 
   return [
     {
       environments,
       recipes,
       appNav,
-      banner
+      banner,
+      firstTimeUse
     },
     Effects.batch([
+      Effects.receive(GetState),
       environmentsFx.map(EnvironmentsAction),
       recipesFx.map(RecipesAction),
       appNavFx.map(AppNavAction),
-      bannerFx.map(BannerAction)
+      bannerFx.map(BannerAction),
+      firstTimeUseFx.map(TagFirstTimeUse)
     ])
   ];
 }
+
+const updatePersistence = cursor({
+  update: Persistence.update,
+  tag: TagPersistence
+});
+
+const updateFirstTimeUse = cursor({
+  get: model => model.firstTimeUse,
+  set: (model, firstTimeUse) => merge(model, {firstTimeUse}),
+  update: Settings.update,
+  tag: TagFirstTimeUse
+});
 
 const updateAppNav = cursor({
   get: model => model.appNav,
@@ -137,6 +173,10 @@ export const update = (model, action) =>
   updateAppNav(model, action.source) :
   action.type === 'Banner' ?
   updateBanner(model, action.source) :
+  action.type === 'Persistence' ?
+  updatePersistence(model, action.source) :
+  action.type === 'FirstTimeUse' ?
+  updateFirstTimeUse(model, action.source) :
   // Specialized update functions
   action.type === 'RecipeActivated' ?
   recipeActivated(model, action.value) :
@@ -172,5 +212,11 @@ export const view = (model, address) => html.div({
     Recipes.view,
     model.recipes,
     forward(address, RecipesAction)
+  ),
+  thunk(
+    'first-time-use',
+    Settings.viewFTU,
+    model.firstTimeUse,
+    forward(address, TagFirstTimeUse)
   )
 ]);

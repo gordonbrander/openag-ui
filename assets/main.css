@@ -34,6 +34,16 @@ dialog {
   padding: 0;
 }
 
+/*
+Hide with opacity and pointer events instead of display:none. This lets us
+do animation transitions.
+*/
+*[hidden] {
+  display: block;
+  opacity: 0;
+  pointer-events: none;
+}
+
 /* Image replacement
 ----------------------------------------------------------------------------- */
 
@@ -99,6 +109,19 @@ dialog {
 .txt-textarea:focus {
   box-shadow: 0 2px 0 #00A5ED;
   outline: 0;
+}
+
+/* Scene -- cover the whole screen
+----------------------------------------------------------------------------- */
+
+.scene {
+  background-color: #fff;
+  height: 100%;
+  width: 100%;
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 11;
 }
 
 /* App nav
@@ -431,3 +454,7 @@ dialog {
   height: 224px;
   box-shadow: 0px 0px 2px 0px rgba(0,0,0,0.12), 0px 1px 2px 0px rgba(0,0,0,0.24);
 }
+
+/* FTU - First Time Use
+----------------------------------------------------------------------------- */
+

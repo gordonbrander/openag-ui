@@ -16,6 +16,11 @@
   "recipes_local": "recipes",
   "recipes_origin": "{{origin_url}}/recipes",
 
+  "app": {
+    "local": "openag",
+    "state_id": "state"
+  },
+
   "chart": [
     {
       "variable": "light_illuminance",

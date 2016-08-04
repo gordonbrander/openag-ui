@@ -186,6 +186,7 @@ export const update = (model, action) =>
 
 export const view = (model, address) =>
   html.div({
+    id: 'recipes-modal',
     className: 'modal'
   }, [
     html.div({

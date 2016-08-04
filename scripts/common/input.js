@@ -81,8 +81,6 @@ export const update =
   ? updateFocusable(model, action)
   : action.type === 'Blur'
   ? updateFocusable(model, action)
-  : action.type === 'Control'
-  ? updateControl(model, action.source)
   : Unknown.update(model, action)
   );
 
@@ -106,5 +104,7 @@ export const view = (className) => (model, address) =>
     placeholder: model.placeholder,
     value: model.value,
     disabled: toggle(model.isDisabled, true),
-    onInput: on(address, decodeChange),
+    onInput: event => address(decodeChange(event)),
+    onFocus: () => address(Focus),
+    onBlur: () => address(Blur)
   });
