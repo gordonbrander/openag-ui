@@ -141,11 +141,20 @@ do animation transitions.
 }
 
 .validator-error .validator-input {
+  background-color: #FFDDD9;
   box-shadow: 0 2px 0 #F05C48;
 }
 
 .validator-error .validator-message {
   color: #F05C48;
+}
+
+.validator-ok .validator-input {
+  box-shadow: 0 2px 0 #2DC500;
+}
+
+.validator-ok .validator-message {
+  color: #2DC500;
 }
 
 /* Scene -- cover the whole screen
