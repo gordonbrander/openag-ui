@@ -108,7 +108,44 @@ do animation transitions.
 }
 .txt-textarea:focus {
   box-shadow: 0 2px 0 #00A5ED;
-  outline: 0;
+  outline: none;
+}
+
+/* Inputs
+----------------------------------------------------------------------------- */
+
+.input {
+  background: transparent;
+  border: 0;
+  box-shadow: 0 1px 0 #d8d8d8;
+  box-sizing: border-box;
+  display: block;
+  width: 100%;
+  -webkit-appearance: none;
+  -moz-appearance: none; 
+}
+
+.input:focus {
+  box-shadow: 0 2px 0 #00A5ED;
+  outline: none;
+}
+
+/* Validated inputs
+----------------------------------------------------------------------------- */
+
+.validator-checking .validator-input {
+  background-image: url(loading.svg);
+  background-repeat: no-repeat;
+  background-position: right center;
+  background-size: 20px 20px;
+}
+
+.validator-error .validator-input {
+  box-shadow: 0 2px 0 #F05C48;
+}
+
+.validator-error .validator-message {
+  color: #F05C48;
 }
 
 /* Scene -- cover the whole screen
