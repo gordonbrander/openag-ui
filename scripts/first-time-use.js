@@ -9,13 +9,18 @@ information is stored in the browser's local storage via PouchDB.
 Includes settings (like IP address of app) and, in future, log-in creds.
 */
 import {html, Effects, forward} from 'reflex';
-import * as Input from './common/input';
+import * as Config from '../openag-config.json';
+import * as Validator from './common/validator';
 import * as Modal from './common/modal';
-import {tag, merge} from './common/prelude';
+import * as Template from './common/stache';
+import * as Request from './common/request';
+import * as Result from './common/result';
+import {tag, tagged, merge} from './common/prelude';
 import {classed, toggle} from './common/attr';
 import {cursor} from './common/cursor';
 import {localize} from './common/lang';
 import * as Unknown from './common/unknown';
+import {compose} from './lang/functional';
 
 // Actions
 
@@ -24,22 +29,41 @@ const TagModal = tag('Modal');
 export const Open = TagModal(Modal.Open);
 export const Close = TagModal(Modal.Close);
 
-const TagAddress = tag('Address');
+const TryHeartbeat = {
+  type: 'TryHeartbeat'
+};
+
+// Test connection to PFC
+const GetHeartbeat = url => ({
+  type: 'GetHeartbeat',
+  url
+});
+
+const GotHeartbeat = result => ({
+  type: 'GotHeartbeat',
+  result
+});
+
+const TagAddress = action =>
+  action.type === 'Check' ?
+  GetHeartbeat(action.value) :
+  tagged('Address', action);
+
+const AddressOk = TagAddress(Validator.Ok);
+const AddressError = compose(TagAddress, Validator.Error);
 
 // Model and update
 
 export const init = () => {
   const host = window.location.host;
-  const [address, addressFx] = Input.init(host, null, localize('Web or IP address...'));
+  const [address, addressFx] = Validator.init(host, null, localize('Web or IP address...'));
   
   return [
     {
       isOpen: false,
       address
     },
-    Effects.batch([
-      addressFx.map(TagAddress)
-    ])
+    addressFx.map(TagAddress)
   ];
 }
 
@@ -48,6 +72,12 @@ export const update = (model, action) =>
   updateModal(model, action.source) :
   action.type === 'Address' ?
   updateAddress(model, action.source) :
+  action.type === 'TryHeartbeat' ?
+  update(model, GetHeartbeat(model.address.value)) :
+  action.type === 'GetHeartbeat' ?
+  [model, Request.get(action.value).map(GotHeartbeat)] :
+  action.type === 'GotHeartbeat' ?
+  gotHeartbeat(model, action.result) :
   Unknown.update(model, action);
 
 const updateModal = cursor({
@@ -58,9 +88,20 @@ const updateModal = cursor({
 const updateAddress = cursor({
   get: model => model.address,
   set: (model, address) => merge(model, {address}),
-  update: Input.update,
+  update: Validator.update,
   tag: TagAddress
 });
+
+const gotHeartbeat = Result.updater(
+  (model, value) => {
+    const [next, fx] = update(model, AddressOk);
+    return [next, fx];
+  },
+  (model, error) => {
+    const [next, fx] = update(model, AddressError(error));
+    return [next, fx];
+  }
+);
 
 // View
 
@@ -69,7 +110,11 @@ export const viewFTU = (model, address) =>
     className: 'ftu scene',
     hidden: toggle(!model.isOpen, 'hidden')
   }, [
-    viewAddress(model.address, forward(address, TagAddress))
+    Validator.view(model.address, forward(address, TagAddress), 'ftu-address'),
   ]);
 
-const viewAddress = Input.view('input ftu-address');
+// Helpers
+
+const templateHeartbeatUrl = url => Template.render(Config.heartbeat_url, {
+  origin_url: url
+});
