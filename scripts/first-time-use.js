@@ -30,6 +30,11 @@ const TagModal = tag('Modal');
 export const Open = TagModal(Modal.Open);
 export const Close = TagModal(Modal.Close);
 
+const TryAddress = value => ({
+  type: 'TryAddress',
+  value
+});
+
 // Test connection to PFC
 const GetHeartbeat = url => ({
   type: 'GetHeartbeat',
@@ -43,7 +48,7 @@ const GotHeartbeat = result => ({
 
 const TagAddress = action =>
   action.type === 'Check' ?
-  GetHeartbeat(readUrl(action.value).href) :
+  TryAddress(action.value) :
   tagged('Address', action);
 
 const AddressOk = compose(TagAddress, Validator.Ok);
@@ -69,6 +74,8 @@ export const update = (model, action) =>
   updateModal(model, action.source) :
   action.type === 'Address' ?
   updateAddress(model, action.source) :
+  action.type === 'TryAddress' ?
+  tryAddress(model, action.value) :
   action.type === 'GetHeartbeat' ?
   [model, Request.get(action.url).map(GotHeartbeat)] :
   action.type === 'GotHeartbeat' ?
@@ -86,6 +93,20 @@ const updateAddress = cursor({
   update: Validator.update,
   tag: TagAddress
 });
+
+const tryAddress = (model, value) => {
+  try {
+    // Attempt to read a valid URL from user input. 
+    const url = readUrl(value).href;
+    // Send a heartbeat request if successful.
+    return update(model, GetHeartbeat(url));
+  }
+  catch (e) {
+    // Otherwise, send an address error.
+    const message = localize("Need a valid URL or IP address");
+    return update(model, AddressError(message));
+  }
+}
 
 const gotHeartbeat = Result.updater(
   (model, value) => {
