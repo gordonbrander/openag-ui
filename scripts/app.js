@@ -20,9 +20,18 @@ const Restore = value => ({
   value
 });
 
-const TagFirstTimeUse = tag('FirstTimeUse');
+const NotifyHeartbeat = url => ({
+  type: 'NotifyHeartbeat',
+  url
+});
+
+const TagFirstTimeUse = action =>
+  action.type === 'NotifyHeartbeat' ?
+  NotifyHeartbeat(action.url) :
+  tagged('FirstTimeUse', action);
 
 const OpenFirstTimeUse = TagFirstTimeUse(Settings.Open);
+const CloseFirstTimeUse = TagFirstTimeUse(Settings.Close);
 
 const TagPersistence = action =>
   action.type === 'NotifyRestore' ?
@@ -32,6 +41,7 @@ const TagPersistence = action =>
   tagged('Persistence', action);
 
 const GetState = TagPersistence(Persistence.GetState);
+const PutState = compose(TagPersistence, Persistence.PutState);
 
 const RecipesAction = action =>
   action.type === 'Activated' ?
@@ -164,6 +174,12 @@ const postRecipe = (model, environmentID, recipeID) => {
   ];
 }
 
+const notifyHeartbeat = (model, url) =>
+  batch(update, model, [
+    CloseFirstTimeUse,
+    PutState(model)
+  ]);
+
 export const update = (model, action) =>
   action.type === 'Environments' ?
   updateEnvironments(model, action.source) :
@@ -178,6 +194,8 @@ export const update = (model, action) =>
   action.type === 'FirstTimeUse' ?
   updateFirstTimeUse(model, action.source) :
   // Specialized update functions
+  action.type === 'NotifyHeartbeat' ?
+  notifyHeartbeat(model, action.url) :
   action.type === 'RecipeActivated' ?
   recipeActivated(model, action.value) :
   action.type === 'PostRecipe' ?

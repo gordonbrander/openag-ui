@@ -34,6 +34,11 @@ const GotState = result => ({
   result
 });
 
+export const PutState = value => ({
+  type: 'PutState',
+  value
+});
+
 const Migrate = value => ({
   type: 'Migrate',
   value
