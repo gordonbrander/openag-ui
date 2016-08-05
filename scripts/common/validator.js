@@ -17,6 +17,7 @@ const TagInput = action =>
 
 const Blur = {type: 'Blur'};
 
+const Empty = {type: 'Empty'};
 const Checking = {type: 'Checking'};
 
 export const Check = value => ({
@@ -36,7 +37,7 @@ export const Error = message => ({
 
 // Model
 
-const INITIAL = 'initial';
+const EMPTY = 'empty';
 const OK = 'ok';
 const ERROR = 'error';
 const CHECKING = 'checking';
@@ -51,7 +52,7 @@ export const init = (
 
   return [
     {
-      mode: INITIAL,
+      mode: EMPTY,
       message: '',
       input
     },
@@ -83,9 +84,18 @@ export const update = (model, action) =>
   action.type === 'Checking' ?
   [
     merge(model, {
-      mode: CHECKING
+      mode: CHECKING,
+      message: ''
     }),
     Effects.receive(Check(model.input.value))
+  ] :
+  action.type === 'Empty' ?
+  [
+    merge(model, {
+      mode: EMPTY,
+      message: ''
+    }),
+    Effects.none
   ] :
   Unknown.update(model, action);
 
@@ -99,12 +109,18 @@ const updateInput = cursor({
 const updateBlur = model => {
   const [next, fx] = updateInput(model, Input.Blur);
 
+  const modeAction = (
+    model.input.value === '' ?
+    Empty :
+    Checking
+  );
+
   return [
     next,
     Effects.batch([
       fx,
       // Request a check. This will put the validator into "checking" mode.
-      Effects.receive(Checking)
+      Effects.receive(modeAction)
     ])
   ];
 }
@@ -118,7 +134,7 @@ export const view = (model, address, className) =>
       'validator': true,
       'validator-ok': model.mode === OK,
       'validator-error': model.mode === ERROR,
-      'validator-initial': model.mode === INITIAL,
+      'validator-empty': model.mode === EMPTY,
       'validator-checking': model.mode === CHECKING
     })
   }, [
