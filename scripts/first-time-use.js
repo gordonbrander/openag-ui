@@ -46,6 +46,12 @@ const GotHeartbeat = result => ({
   result
 });
 
+// Let the parent know we had a successful heartbeat.
+const NotifyHeartbeat = url => ({
+  type: 'NotifyHeartbeat',
+  url
+});
+
 const TagAddress = action =>
   action.type === 'Check' ?
   TryAddress(action.value) :
@@ -110,9 +116,16 @@ const tryAddress = (model, value) => {
 
 const gotHeartbeat = Result.updater(
   (model, value) => {
-    const message = localize('Ok! Connected to Food Computer.');
+    const message = localize('Success! Connected to Food Computer.');
     const [next, fx] = update(model, AddressOk(message));
-    return [next, fx];
+
+    return [
+      next,
+      Effects.batch([
+        fx,
+        Effects.receive(NotifyHeartbeat(next.address.input.value))
+      ])
+    ];
   },
   (model, error) => {
     const [next, fx] = update(model, AddressError(error));
@@ -129,9 +142,3 @@ export const viewFTU = (model, address) =>
   }, [
     Validator.view(model.address, forward(address, TagAddress), 'ftu-address'),
   ]);
-
-// Helpers
-
-const templateHeartbeatUrl = url => Template.render(Config.heartbeat_url, {
-  origin_url: url
-});
