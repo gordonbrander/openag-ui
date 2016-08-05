@@ -15,6 +15,7 @@ import * as Modal from './common/modal';
 import * as Template from './common/stache';
 import * as Request from './common/request';
 import * as Result from './common/result';
+import {readUrl} from './common/url';
 import {tag, tagged, merge} from './common/prelude';
 import {classed, toggle} from './common/attr';
 import {cursor} from './common/cursor';
@@ -29,10 +30,6 @@ const TagModal = tag('Modal');
 export const Open = TagModal(Modal.Open);
 export const Close = TagModal(Modal.Close);
 
-const TryHeartbeat = {
-  type: 'TryHeartbeat'
-};
-
 // Test connection to PFC
 const GetHeartbeat = url => ({
   type: 'GetHeartbeat',
@@ -46,10 +43,10 @@ const GotHeartbeat = result => ({
 
 const TagAddress = action =>
   action.type === 'Check' ?
-  GetHeartbeat(action.value) :
+  GetHeartbeat(readUrl(action.value).href) :
   tagged('Address', action);
 
-const AddressOk = TagAddress(Validator.Ok);
+const AddressOk = compose(TagAddress, Validator.Ok);
 const AddressError = compose(TagAddress, Validator.Error);
 
 // Model and update
@@ -72,10 +69,8 @@ export const update = (model, action) =>
   updateModal(model, action.source) :
   action.type === 'Address' ?
   updateAddress(model, action.source) :
-  action.type === 'TryHeartbeat' ?
-  update(model, GetHeartbeat(model.address.value)) :
   action.type === 'GetHeartbeat' ?
-  [model, Request.get(action.value).map(GotHeartbeat)] :
+  [model, Request.get(action.url).map(GotHeartbeat)] :
   action.type === 'GotHeartbeat' ?
   gotHeartbeat(model, action.result) :
   Unknown.update(model, action);
@@ -94,7 +89,8 @@ const updateAddress = cursor({
 
 const gotHeartbeat = Result.updater(
   (model, value) => {
-    const [next, fx] = update(model, AddressOk);
+    const message = localize('Ok! Connected to Food Computer.');
+    const [next, fx] = update(model, AddressOk(message));
     return [next, fx];
   },
   (model, error) => {
