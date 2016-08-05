@@ -98,8 +98,9 @@ const decodeChange = compose(
   event => Change(event.target.value, decodeSelection(event))
 );
 
-export const view = (className) => (model, address) =>
+export const view = (model, address, className) =>
   html.input({
+    className,
     type: 'input',
     placeholder: model.placeholder,
     value: model.value,
