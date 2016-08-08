@@ -1,9 +1,11 @@
 import {html, forward, Effects, thunk} from 'reflex';
 import {merge, tagged, tag, batch} from './common/prelude';
+import {version} from '../package.json';
 import * as Config from '../openag-config.json';
 import * as Unknown from './common/unknown';
 import {cursor} from './common/cursor';
 import * as Template from './common/stache';
+import {readRootUrl} from './common/url';
 import * as Request from './common/request';
 import * as Persistence from './persistence';
 import * as AppNav from './app/nav';
@@ -13,6 +15,9 @@ import * as Recipes from './recipes';
 import * as Settings from './first-time-use';
 import {compose} from './lang/functional';
 
+// State ID is the id of the pouch record we use to persist state.
+const STATE_ID = Config.app.state_id;
+
 // Actions and tagging functions
 
 const Restore = value => ({
@@ -20,14 +25,20 @@ const Restore = value => ({
   value
 });
 
-const NotifyHeartbeat = url => ({
-  type: 'NotifyHeartbeat',
+const Heartbeat = url => ({
+  type: 'Heartbeat',
+  url
+});
+
+// Update address of Food Computer.
+const UpdateAddress = url => ({
+  type: 'UpdateAddress',
   url
 });
 
 const TagFirstTimeUse = action =>
   action.type === 'NotifyHeartbeat' ?
-  NotifyHeartbeat(action.url) :
+  Heartbeat(action.url) :
   tagged('FirstTimeUse', action);
 
 const OpenFirstTimeUse = TagFirstTimeUse(Settings.Open);
@@ -36,6 +47,9 @@ const CloseFirstTimeUse = TagFirstTimeUse(Settings.Close);
 const TagPersistence = action =>
   action.type === 'NotifyRestore' ?
   Restore(action.value) :
+  // If we were notified of any errors, forward them to the banner module.
+  action.type === 'NotifyBanner' ?
+  AlertBannerWithRefresh(action.message) :
   action.type === 'NotifyFirstTimeUse' ?
   OpenFirstTimeUse :
   tagged('Persistence', action);
@@ -97,6 +111,16 @@ export const init = () => {
 
   return [
     {
+      // Tag model with _id and _rev for PouchDB. Handled in persistence module
+      // update function.
+      _id: STATE_ID,
+      _rev: null,
+      api: null,
+      origin: null,
+      // Tag model with version from package.json. We use this with
+      // persistence module to make sure we're loading a state in a schema
+      // we understand.
+      version,
       environments,
       recipes,
       appNav,
@@ -113,6 +137,32 @@ export const init = () => {
     ])
   ];
 }
+
+export const update = (model, action) =>
+  action.type === 'Environments' ?
+  updateEnvironments(model, action.source) :
+  action.type === 'Recipes' ?
+  updateRecipes(model, action.source) :
+  action.type === 'AppNav' ?
+  updateAppNav(model, action.source) :
+  action.type === 'Banner' ?
+  updateBanner(model, action.source) :
+  action.type === 'Persistence' ?
+  updatePersistence(model, action.source) :
+  action.type === 'FirstTimeUse' ?
+  updateFirstTimeUse(model, action.source) :
+  // Specialized update functions
+  action.type === 'Restore' ?
+  restore(model, action.value) :
+  action.type === 'Heartbeat' ?
+  updateHeartbeat(model, action.url) :
+  action.type === 'RecipeActivated' ?
+  recipeActivated(model, action.value) :
+  action.type === 'PostRecipe' ?
+  postRecipe(model, action.environmentID, action.recipeID) :
+  action.type === 'Posted' ?
+  [model, Effects.none] :
+  Unknown.update(model, action);
 
 const updatePersistence = cursor({
   update: Persistence.update,
@@ -174,35 +224,42 @@ const postRecipe = (model, environmentID, recipeID) => {
   ];
 }
 
-const notifyHeartbeat = (model, url) =>
-  batch(update, model, [
-    CloseFirstTimeUse,
-    PutState(model)
-  ]);
+const updateHeartbeat = (model, url) => {
+  const rootUrl = readRootUrl(url);
 
-export const update = (model, action) =>
-  action.type === 'Environments' ?
-  updateEnvironments(model, action.source) :
-  action.type === 'Recipes' ?
-  updateRecipes(model, action.source) :
-  action.type === 'AppNav' ?
-  updateAppNav(model, action.source) :
-  action.type === 'Banner' ?
-  updateBanner(model, action.source) :
-  action.type === 'Persistence' ?
-  updatePersistence(model, action.source) :
-  action.type === 'FirstTimeUse' ?
-  updateFirstTimeUse(model, action.source) :
-  // Specialized update functions
-  action.type === 'NotifyHeartbeat' ?
-  notifyHeartbeat(model, action.url) :
-  action.type === 'RecipeActivated' ?
-  recipeActivated(model, action.value) :
-  action.type === 'PostRecipe' ?
-  postRecipe(model, action.environmentID, action.recipeID) :
-  action.type === 'Posted' ?
-  [model, Effects.none] :
-  Unknown.update(model, action);
+  // First, update the URL in the model
+  const next = merge(model, {
+    api: Template.render(Config.api, {
+      root_url: rootUrl
+    }),
+    origin: Template.render(Config.origin, {
+      root_url: rootUrl
+    })
+  });
+
+  return batch(update, next, [
+    CloseFirstTimeUse,
+    PutState(serialize(next))
+  ]);
+}
+
+// Serialize and deserialize data stored in persistence module.
+const serialize = model => ({
+  _id: model._id,
+  _rev: model._rev,
+  version: model.version,
+  api: model.api,
+  origin: model.origin
+});
+
+const deserialize = record => record;
+
+const restore = (model, record) => {
+  console.log('hit', record);
+  return [model, Effects.none];
+}
+
+// View
 
 export const view = (model, address) => html.div({
   className: 'app-main'
