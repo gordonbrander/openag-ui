@@ -252,11 +252,11 @@ const serialize = model => ({
   origin: model.origin
 });
 
-const deserialize = record => record;
-
 const restore = (model, record) => {
-  console.log('hit', record);
-  return [model, Effects.none];
+  // Restore serialized data from stored record.
+  // Merge into in-memory app model.
+  const next = merge(model, record);
+  return [next, Effects.none];
 }
 
 // View
