@@ -12,6 +12,7 @@ import PouchDB from 'pouchdb-browser';
 // app expects.
 import {version} from '../package.json';
 import * as Config from '../openag-config.json';
+import {merge} from './common/prelude.js';
 import * as Result from './common/result';
 import * as Database from './common/database';
 import * as Unknown from './common/unknown';
@@ -19,8 +20,6 @@ import * as Unknown from './common/unknown';
 // Database configuration
 // Create Databbase interface for database name listed in config.
 const DB = new PouchDB(Config.app.local);
-// State ID is the id of the pouch record we use to persist state.
-const STATE_ID = Config.app.state_id;
 
 // Actions
 
@@ -39,6 +38,11 @@ export const PutState = value => ({
   value
 });
 
+const PuttedState = result => ({
+  type: 'PuttedState',
+  result
+});
+
 const Migrate = value => ({
   type: 'Migrate',
   value
@@ -54,6 +58,11 @@ const NotifyRestore = value => ({
   value
 });
 
+const NotifyBanner = message => ({
+  type: 'NotifyBanner',
+  message
+});
+
 // Deals with migrating old record data structures to new record data structures.
 // We keep cycling from migrations (from one to the next) until we reach the
 // current version.
@@ -67,15 +76,11 @@ const migrateUnknown = record => {
   return null;
 }
 
-export const serialize = model => model;
-
-export const deserialize = record => record;
-
 // Model and update
 
 export const update = (model, action) =>
   action.type === 'GetState' ?
-  [model, Database.get(DB, STATE_ID).map(GotState)] :
+  [model, Database.get(DB, model._id).map(GotState)] :
   action.type === 'GotState' ?
   updateGotState(model, action.result) :
   action.type === 'FirstTimeUse' ?
@@ -85,13 +90,15 @@ export const update = (model, action) =>
   updateMigrate(model, action.value) :
   action.type === 'Restore' ?
   // Forward up the restore for parent to deal with.
-  [model, Effects.receive(NotifyRestore(deserialize(record)))] :
+  updateRestore(model, action.value) :
   action.type === 'PutState' ?
-  [model, Database.put(DB, serialize(action.value))] :
+  [model, Database.put(DB, action.value).map(PuttedState)] :
+  action.type === 'PuttedState' ?
+  updatePuttedState(model, action.result) :
   Unknown.update(model, action);
 
 // Handle results of fetching state from database.
-export const updateGotState = Result.updater(
+const updateGotState = Result.updater(
   (model, record) => (
     record.version !== version ?
     // If state was found,
@@ -110,7 +117,38 @@ export const updateGotState = Result.updater(
   (model, error) => update(model, FirstTimeUse)
 );
 
-export const updateMigrate = (model, record) => {
+//
+const updatePuttedState = Result.updater(
+  (model, record) => {
+    // Merge rev from successful put into model.
+    // See https://pouchdb.com/api.html#create_document for example response.
+    const next = merge(model, {_rev: record.rev});
+
+    return [
+      next,
+      Effects.none
+    ]
+  },
+  (model, error) => {
+    const message = localize("Couldn't save to settings database");
+    const action = NotifyBanner(message);
+
+    return [
+      model,
+      Effects.receive(action)
+    ];
+  }
+);
+
+const updateRestore = (model, record) => [
+  merge(model, {
+    _id: record._id,
+    _rev: record._rev
+  }),
+  Effects.receive(NotifyRestore(record))
+];
+
+const updateMigrate = (model, record) => {
   const migrated = migrate(record);
 
   const action = (
