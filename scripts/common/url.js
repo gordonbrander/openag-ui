@@ -14,9 +14,19 @@ export const isHttp = string => string.search(HTTP) > -1;
 // https://developer.mozilla.org/en-US/docs/Web/API/URL
 export const url = url => new URL(url);
 
-// Will graciously attempt to clean up a string and make it a valid url by
+// Will do its best to clean up a string and make it a valid url by
 // appending http if missing. Will it work? Who knows? You should always
 // wrap user input to this function in a try/catch.
 // Returns a url object.
 export const readUrl = string =>
   !isHttp(string) ? url('http://' + string) : url(string);
+
+// Read the root URL of a url-like string.
+export const readRootUrl = string => {
+  // Hostname is the url (without port number).
+  // Protocol is the protocol up until the ":" (`http:`).
+  // See https://developer.mozilla.org/en-US/docs/Web/API/URL
+  const {protocol, hostname} = readUrl(string);
+  const rootUrl = protocol + '//' + hostname;
+  return rootUrl;
+}
