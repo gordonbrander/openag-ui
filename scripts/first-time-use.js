@@ -15,7 +15,7 @@ import * as Modal from './common/modal';
 import * as Template from './common/stache';
 import * as Request from './common/request';
 import * as Result from './common/result';
-import {readUrl} from './common/url';
+import {readRootUrl} from './common/url';
 import {tag, tagged, merge} from './common/prelude';
 import {classed, toggle} from './common/attr';
 import {cursor} from './common/cursor';
@@ -83,7 +83,7 @@ export const update = (model, action) =>
   action.type === 'TryAddress' ?
   tryAddress(model, action.value) :
   action.type === 'GetHeartbeat' ?
-  [model, Request.get(action.url).map(GotHeartbeat)] :
+  getHeartbeat(model, action.url) :
   action.type === 'GotHeartbeat' ?
   gotHeartbeat(model, action.result) :
   Unknown.update(model, action);
@@ -103,7 +103,7 @@ const updateAddress = cursor({
 const tryAddress = (model, value) => {
   try {
     // Attempt to read a valid URL from user input. 
-    const url = readUrl(value).href;
+    const url = readRootUrl(value);
     // Send a heartbeat request if successful.
     return update(model, GetHeartbeat(url));
   }
@@ -114,16 +114,26 @@ const tryAddress = (model, value) => {
   }
 }
 
+const getHeartbeat = (model, url) => {
+  const heartbeatUrl = Template.render(Config.heartbeat, {
+    root_url: url
+  });
+
+  return [model, Request.get(heartbeatUrl).map(GotHeartbeat)];
+}
+
 const gotHeartbeat = Result.updater(
   (model, value) => {
     const message = localize('Success! Connected to Food Computer.');
     const [next, fx] = update(model, AddressOk(message));
 
+    const rootUrl = readRootUrl(next.address.input.value);
+
     return [
       next,
       Effects.batch([
         fx,
-        Effects.receive(NotifyHeartbeat(next.address.input.value))
+        Effects.receive(NotifyHeartbeat(rootUrl))
       ])
     ];
   },
