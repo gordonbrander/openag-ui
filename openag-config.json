@@ -3,6 +3,10 @@
   "origin_url": "http://18.85.55.67:5984",
   "heartbeat_url": "http://18.85.55.67:5984",
 
+  "api": "{{root_url}}:5000/api/0.0.1",
+  "origin": "{{root_url}}:5984",
+  "heartbeat": "{{root_url}}:5984",
+
   "active_environment": "environment_1",
   "start_recipe_url": "{{api_url}}/service/{{environment}}/start_recipe",
 
