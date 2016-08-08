@@ -143,6 +143,13 @@ const activateByID = (model, id) => [
 const activatePanel = (model, id) =>
   [merge(model, {activePanel: id}), Effects.none];
 
+const put = (model, recipe) => {
+  // Insert recipe into in-memory model.
+  const next = Indexed.add(model, recipe._id, recipe);
+  // Then attempt to store it in DB.
+  return [next, Database.put(DB, recipe).map(Putted)];
+}
+
 export const update = (model, action) =>
   action.type === 'RecipesForm' ?
   updateRecipesForm(model, action.source) :
@@ -151,15 +158,12 @@ export const update = (model, action) =>
   action.type === 'NoOp' ?
   [model, Effects.none] :
   action.type === 'Put' ?
-  [model, Database.put(DB, action.value).map(Putted)] :
+  put(model, action.value) :
   action.type === 'Putted' ?
   (
     action.result.isOk ?
-    [
-      Indexed.add(model, action.result.value._id, action.result.value),
-      Effects.none
-    ] :
-    // @TODO retry
+    [model, Effects.none] :
+    // @TODO retry or display a banner
     [model, Effects.none]
   ) :
   action.type === 'Restore' ?
@@ -183,6 +187,8 @@ export const update = (model, action) =>
   action.type === 'Recipe' ?
   updateByID(model, action.id, action.source) :
   Unknown.update(model, action);
+
+// View
 
 export const view = (model, address) =>
   html.div({
