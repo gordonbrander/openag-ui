@@ -29,6 +29,13 @@ export const EnvironmentAction = (id, action) =>
   AlertBanner(action.source) :
   EnvironmentByID(id, action);
 
+const ToActive = action => ({
+  type: 'ToActive',
+  source: action
+});
+
+export const Restore = compose(ToActive, Environment.RestoreExporter);
+
 // Tag actions by id
 // @TODO figure out how to generalize this.
 const ByID = id => action => EnvironmentAction(id, action);
@@ -51,6 +58,8 @@ export const init = () => {
 export const update = (model, action) =>
   action.type === 'Indexed' ?
   updateIndexed(model, action.source) :
+  action.type === 'ToActive' ?
+  toActive(model, action.source) :
   action.type === 'EnvironmentByID' ?
   updateEnvironmentByID(model, action.id, action.source) :
   action.type === 'CreateEnvironment' ?
@@ -63,6 +72,10 @@ const updateIndexed = cursor({
   update: Indexed.update,
   tag: IndexedAction
 });
+
+const toActive = (model, action) =>
+  // Forward to active model
+  update(model, EnvironmentByID(model.active, action));
 
 const createEnvironment = (model, id) => {
   const [environment, environmentFx] = Environment.init(id);

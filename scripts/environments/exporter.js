@@ -1,9 +1,10 @@
-import {html, forward, Effects, Task, thunk} from 'reflex';
+import {html, Effects} from 'reflex';
 import * as Config from '../../openag-config.json';
 import * as Template from '../common/stache';
-import {merge, tag, tagged} from '../common/prelude';
+import {merge, tag} from '../common/prelude';
 import {classed, toggle} from '../common/attr';
 import * as Modal from '../common/modal';
+import {cursor} from '../common/cursor';
 import {localize} from '../common/lang';
 import * as Unknown from '../common/unknown';
 
@@ -11,19 +12,44 @@ const MAX_DATAPOINTS = 5000;
 
 // Actions
 
-export const Open = Modal.Open;
-export const Close = Modal.Close;
+export const Restore = value => ({
+  type: 'Restore',
+  value
+});
+
+export const TagModal = tag('Modal');
+
+export const Open = TagModal(Modal.Open);
+export const Close = TagModal(Modal.Close);
 
 // Model init and update
 
 export const init = () => [
   {
-    isOpen: false
+    isOpen: false,
+    origin: null
   },
   Effects.none
 ];
 
-export const update = Modal.update;
+export const update = (model, action) =>
+  action.type === 'Modal' ?
+  updateModal(model, action.source) :
+  action.type === 'Restore' ?
+  restore(model, action.value) :
+  Unknown.update(model, action);
+
+const restore = (model, record) => [
+  merge(model, {
+    origin: record.origin
+  }),
+  Effects.none
+];
+
+const updateModal = cursor({
+  update: Modal.update,
+  tag: TagModal
+});
 
 // View
 
@@ -92,9 +118,9 @@ const renderExport = (environmentID, variable, title) =>
     ])
   ]);
 
-const templateCsvUrl = (environmentID, variable) =>
+const templateCsvUrl = (origin, environmentID, variable) =>
   Template.render(Config.environmental_data_point.origin_by_variable_csv, {
-    origin_url: Config.origin_url,
+    origin_url: origin,
     startkey: JSON.stringify([environmentID, variable, 'measured', {}]),
     endkey: JSON.stringify([environmentID, variable, 'measured']),
     limit: MAX_DATAPOINTS,

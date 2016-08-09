@@ -31,6 +31,7 @@ const NoOp = {
 
 const TagExporter = tag('Exporter');
 const OpenExporter = TagExporter(Exporter.Open);
+export const RestoreExporter = compose(TagExporter, Exporter.Restore);
 
 const TagToolbox = action =>
   action.type === 'OpenExporter' ?

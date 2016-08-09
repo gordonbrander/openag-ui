@@ -69,6 +69,8 @@ const EnvironmentsAction = action =>
   SuppressBanner :
   tagged('Environments', action);
 
+const RestoreEnvironments = compose(EnvironmentsAction, Environments.Restore);
+
 const OpenRecipes = RecipesAction(Recipes.Open);
 const CloseRecipes = RecipesAction(Recipes.Close);
 
@@ -113,7 +115,9 @@ export const init = () => {
     {
       // Tag model with _id and _rev for PouchDB. Handled in persistence module
       // update function.
+      // _id is used to retreive the app state record.
       _id: STATE_ID,
+      // These fields are restored from the local PouchDB settings database.
       _rev: null,
       api: null,
       origin: null,
@@ -121,6 +125,8 @@ export const init = () => {
       // persistence module to make sure we're loading a state in a schema
       // we understand.
       version,
+
+      // Store submodule states.
       environments,
       recipes,
       appNav,
@@ -214,7 +220,7 @@ const recipeActivated = (model, recipe) =>
 
 const postRecipe = (model, environmentID, recipeID) => {
   const url = Template.render(Config.start_recipe_url, {
-    api_url: Config.api_url,
+    api_url: model.api,
     environment: environmentID
   });
 
@@ -256,7 +262,10 @@ const restore = (model, record) => {
   // Restore serialized data from stored record.
   // Merge into in-memory app model.
   const next = merge(model, record);
-  return [next, Effects.none];
+
+  return batch(update, next, [
+    RestoreEnvironments(record)
+  ]);
 }
 
 // View
