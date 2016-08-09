@@ -95,8 +95,7 @@ export const init = id => {
     Effects.batch([
       chartFx.map(TagChart),
       pollFx.map(TagPoll),
-      exporterFx.map(TagExporter),
-      Effects.receive(GetBacklog)
+      exporterFx.map(TagExporter)
     ])
   ];
 };
@@ -111,7 +110,7 @@ export const update = (model, action) =>
   action.type === 'Chart' ?
   updateChart(model, action.source) :
   action.type === 'FetchLatest' ?
-  [model, Request.get(templateLatestUrl(model.id)).map(Latest)] :
+  [model, Request.get(templateLatestUrl(model)).map(Latest)] :
   action.type === 'Latest' ?
   updateLatest(model, action.source) :
   action.type === 'GetBacklog' ?
@@ -191,7 +190,13 @@ const updateBacklog = Result.updater(
 
 const restore = (model, record) => {
   const next = merge(model, {origin: record.origin});
-  return updater(next, RestoreExporter(record));
+
+  return batch(update, next, [
+    // Forward restore down to exporter module
+    RestoreExporter(record),
+    // Now that we have the origin, get the backlog.
+    GetBacklog
+  ]);
 }
 
 const updateChart = cursor({
@@ -257,18 +262,18 @@ const readData = record => {
 
 // Create a url string that allows you to GET latest environmental datapoints
 // from an environmen via CouchDB.
-const templateLatestUrl = (environmentID) =>
+const templateLatestUrl = model =>
   Template.render(Config.environmental_data_point.origin_latest, {
-    origin_url: Config.origin_url,
-    startkey: JSON.stringify([environmentID]),
-    endkey: JSON.stringify([environmentID, {}])
+    origin_url: model.origin,
+    startkey: JSON.stringify([model.id]),
+    endkey: JSON.stringify([model.id, {}])
   });
 
-const templateRecentUrl = (environmentID) =>
+const templateRecentUrl = model =>
   Template.render(Config.environmental_data_point.origin_range, {
-    origin_url: Config.origin_url,
-    startkey: JSON.stringify([environmentID, {}]),
-    endkey: JSON.stringify([environmentID]),
+    origin_url: model.origin,
+    startkey: JSON.stringify([model.id, {}]),
+    endkey: JSON.stringify([model.id]),
     limit: MAX_DATAPOINTS,
     descending: true
   });
