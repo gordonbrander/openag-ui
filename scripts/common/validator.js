@@ -146,3 +146,13 @@ export const view = (model, address, className) =>
       model.message
     ])
   ]);
+
+// Helpers
+
+// Determine if the validator is currently "ok" (valid).
+// Returns a boolean.
+export const isOk = model => model.mode === OK;
+
+// Read current value of input.
+// Returns a string.
+export const readValue = model => model.input.value;
