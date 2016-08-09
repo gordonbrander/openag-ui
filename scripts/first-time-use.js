@@ -60,11 +60,13 @@ const TagAddress = action =>
 const AddressOk = compose(TagAddress, Validator.Ok);
 const AddressError = compose(TagAddress, Validator.Error);
 
+const Submit = {type: 'Submit'};
+
 // Model and update
 
 export const init = () => {
   const host = window.location.host;
-  const [address, addressFx] = Validator.init(host, null, localize('Web or IP address...'));
+  const [address, addressFx] = Validator.init(host, null, localize('Food computer web address...'));
   
   return [
     {
@@ -80,6 +82,8 @@ export const update = (model, action) =>
   updateModal(model, action.source) :
   action.type === 'Address' ?
   updateAddress(model, action.source) :
+  action.type === 'Submit' ?
+  submit(model) :
   action.type === 'TryAddress' ?
   tryAddress(model, action.value) :
   action.type === 'GetHeartbeat' ?
@@ -99,6 +103,17 @@ const updateAddress = cursor({
   update: Validator.update,
   tag: TagAddress
 });
+
+const submit = model => {
+  if (Validator.isOk(model.address)) {
+    const value = Validator.readValue(model.address);
+    const rooturl = readRootUrl(value);
+    return [model, Effects.receive(NotifyHeartbeat(rooturl))];
+  }
+  else {
+    return [model, Effects.none];
+  }
+}
 
 const tryAddress = (model, value) => {
   try {
@@ -125,21 +140,10 @@ const getHeartbeat = (model, url) => {
 const gotHeartbeat = Result.updater(
   (model, value) => {
     const message = localize('Success! Connected to Food Computer.');
-    const [next, fx] = update(model, AddressOk(message));
-
-    const rootUrl = readRootUrl(next.address.input.value);
-
-    return [
-      next,
-      Effects.batch([
-        fx,
-        Effects.receive(NotifyHeartbeat(rootUrl))
-      ])
-    ];
+    return update(model, AddressOk(message));
   },
   (model, error) => {
-    const [next, fx] = update(model, AddressError(error));
-    return [next, fx];
+    return update(model, AddressError(error));
   }
 );
 
@@ -147,8 +151,53 @@ const gotHeartbeat = Result.updater(
 
 export const viewFTU = (model, address) =>
   html.div({
-    className: 'ftu scene',
-    hidden: toggle(!model.isOpen, 'hidden')
+    className: 'ftu'
   }, [
-    Validator.view(model.address, forward(address, TagAddress), 'ftu-address'),
+    html.dialog({
+      className: classed({
+        'ftu-window': true,
+        'ftu-window--close': !model.isOpen
+      }),
+      open: toggle(model.isOpen, 'open')
+    }, [
+      html.div({
+        className: 'panels--main'
+      }, [
+        html.div({
+          className: 'panel--main panel--lv0'
+        }, [
+          html.header({
+            className: 'panel--header'
+          }, [
+            html.h1({
+              className: 'panel--title'
+            }, [
+              localize('Welcome')
+            ]),
+            html.div({
+              className: 'panel--nav-right'
+            }, [
+              html.button({
+                className: 'btn-panel',
+                type: 'submit',
+                onClick: (event) => {
+                  event.preventDefault();
+                  address(Submit);
+                }
+              }, [
+                localize('Save')
+              ])
+            ])
+          ]),
+          html.div({
+            className: 'panel--content-in'
+          }, [
+            html.p({}, [
+              localize("Congratulations! You're now the proud owner of a Food Computer. We just need a couple of things to get started.")
+            ]),
+            Validator.view(model.address, forward(address, TagAddress), 'ftu-address')
+          ])
+        ])
+      ])
+    ])
   ]);
