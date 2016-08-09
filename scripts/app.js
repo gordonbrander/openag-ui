@@ -245,9 +245,14 @@ const updateHeartbeat = (model, url) => {
     })
   });
 
+  const record = serialize(next);
+
   return batch(update, next, [
     CloseFirstTimeUse,
-    PutState(serialize(next))
+    // Send the settings info to in-memory model
+    Restore(record),
+    // Save settings info to local database
+    PutState(record)
   ]);
 }
 
@@ -273,37 +278,49 @@ const restore = (model, record) => {
 
 // View
 
-export const view = (model, address) => html.div({
-  className: 'app-main'
-}, [
-  thunk(
-    'app-nav',
-    AppNav.view,
-    model.appNav,
-    forward(address, TagAppNav)
-  ),
-  thunk(
-    'banner',
-    Banner.view,
-    model.banner,
-    forward(address, TagBanner)
-  ),
-  thunk(
-    'environments',
-    Environments.view,
-    model.environments,
-    forward(address, TagEnvironments)
-  ),
-  thunk(
-    'recipes',
-    Recipes.view,
-    model.recipes,
-    forward(address, TagRecipes)
-  ),
-  thunk(
-    'first-time-use',
-    Settings.viewFTU,
-    model.firstTimeUse,
-    forward(address, TagFirstTimeUse)
-  )
-]);
+export const view = (model, address) =>
+  model.origin ?
+  viewConfigured(model, address) :
+  viewFTU(model, address);
+
+const viewFTU = (model, address) =>
+  html.div({
+    className: 'app-main'
+  }, [
+    thunk(
+      'first-time-use',
+      Settings.viewFTU,
+      model.firstTimeUse,
+      forward(address, TagFirstTimeUse)
+    )
+  ]);
+
+const viewConfigured = (model, address) =>
+  html.div({
+    className: 'app-main'
+  }, [
+    thunk(
+      'app-nav',
+      AppNav.view,
+      model.appNav,
+      forward(address, TagAppNav)
+    ),
+    thunk(
+      'banner',
+      Banner.view,
+      model.banner,
+      forward(address, TagBanner)
+    ),
+    thunk(
+      'environments',
+      Environments.view,
+      model.environments,
+      forward(address, TagEnvironments)
+    ),
+    thunk(
+      'recipes',
+      Recipes.view,
+      model.recipes,
+      forward(address, TagRecipes)
+    )
+  ]);
