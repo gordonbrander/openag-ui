@@ -94,6 +94,7 @@ export const view = (model, address, environmentID) => {
                 className: 'menu-list'
               },
               Config.chart.map(config => renderExport(
+                model.origin,
                 environmentID,
                 config.variable,
                 config.title
@@ -106,13 +107,13 @@ export const view = (model, address, environmentID) => {
   ])
 }
 
-const renderExport = (environmentID, variable, title) =>
+const renderExport = (origin, environmentID, variable, title) =>
   html.li({
 
   }, [
     html.a({
       target: '_blank',
-      href: templateCsvUrl(environmentID, variable)
+      href: templateCsvUrl(origin, environmentID, variable)
     }, [
       title
     ])

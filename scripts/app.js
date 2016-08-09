@@ -57,32 +57,34 @@ const TagPersistence = action =>
 const GetState = TagPersistence(Persistence.GetState);
 const PutState = compose(TagPersistence, Persistence.PutState);
 
-const RecipesAction = action =>
+const TagRecipes = action =>
   action.type === 'Activated' ?
   RecipeActivated(action.value) :
   tagged('Recipes', action);
 
-const EnvironmentsAction = action =>
+const RestoreRecipes = compose(TagRecipes, Recipes.Restore);
+
+const TagEnvironments = action =>
   action.type === 'AlertBanner' ?
   AlertBannerWithRefresh(action.source) :
   action.type === 'SuppressBanner' ?
   SuppressBanner :
   tagged('Environments', action);
 
-const RestoreEnvironments = compose(EnvironmentsAction, Environments.Restore);
+const RestoreEnvironments = compose(TagEnvironments, Environments.Restore);
 
-const OpenRecipes = RecipesAction(Recipes.Open);
-const CloseRecipes = RecipesAction(Recipes.Close);
+const OpenRecipes = TagRecipes(Recipes.Open);
+const CloseRecipes = TagRecipes(Recipes.Close);
 
-const AppNavAction = action =>
+const TagAppNav = action =>
   action.type === 'RequestRecipes' ?
   OpenRecipes :
   tagged('AppNav', action);
 
-const BannerAction = tag('Banner');
-const AlertBanner = compose(BannerAction, Banner.Alert);
-const AlertBannerWithRefresh = compose(BannerAction, Banner.AlertWithRefresh);
-const SuppressBanner = BannerAction(Banner.Suppress);
+const TagBanner = tag('Banner');
+const AlertBanner = compose(TagBanner, Banner.Alert);
+const AlertBannerWithRefresh = compose(TagBanner, Banner.AlertWithRefresh);
+const SuppressBanner = TagBanner(Banner.Suppress);
 
 const RecipeActivated = value => ({
   type: 'RecipeActivated',
@@ -100,7 +102,7 @@ const PostRecipe = (environmentID, recipeID) => ({
   environmentID
 });
 
-const ChangeAppNavRecipeTitle = compose(AppNavAction, AppNav.ChangeRecipeTitle);
+const ChangeAppNavRecipeTitle = compose(TagAppNav, AppNav.ChangeRecipeTitle);
 
 // Init and update
 
@@ -135,10 +137,10 @@ export const init = () => {
     },
     Effects.batch([
       Effects.receive(GetState),
-      environmentsFx.map(EnvironmentsAction),
-      recipesFx.map(RecipesAction),
-      appNavFx.map(AppNavAction),
-      bannerFx.map(BannerAction),
+      environmentsFx.map(TagEnvironments),
+      recipesFx.map(TagRecipes),
+      appNavFx.map(TagAppNav),
+      bannerFx.map(TagBanner),
       firstTimeUseFx.map(TagFirstTimeUse)
     ])
   ];
@@ -186,28 +188,28 @@ const updateAppNav = cursor({
   get: model => model.appNav,
   set: (model, appNav) => merge(model, {appNav}),
   update: AppNav.update,
-  tag: AppNavAction
+  tag: TagAppNav
 });
 
 const updateBanner = cursor({
   get: model => model.banner,
   set: (model, banner) => merge(model, {banner}),
   update: Banner.update,
-  tag: BannerAction
+  tag: TagBanner
 });
 
 const updateRecipes = cursor({
   get: model => model.recipes,
   set: (model, recipes) => merge(model, {recipes}),
   update: Recipes.update,
-  tag: RecipesAction
+  tag: TagRecipes
 });
 
 const updateEnvironments = cursor({
   get: model => model.environments,
   set: (model, environments) => merge(model, {environments}),
   update: Environments.update,
-  tag: EnvironmentsAction
+  tag: TagEnvironments
 });
 
 const recipeActivated = (model, recipe) =>
@@ -264,7 +266,8 @@ const restore = (model, record) => {
   const next = merge(model, record);
 
   return batch(update, next, [
-    RestoreEnvironments(record)
+    RestoreEnvironments(record),
+    RestoreRecipes(record)
   ]);
 }
 
@@ -277,25 +280,25 @@ export const view = (model, address) => html.div({
     'app-nav',
     AppNav.view,
     model.appNav,
-    forward(address, AppNavAction)
+    forward(address, TagAppNav)
   ),
   thunk(
     'banner',
     Banner.view,
     model.banner,
-    forward(address, BannerAction)
+    forward(address, TagBanner)
   ),
   thunk(
     'environments',
     Environments.view,
     model.environments,
-    forward(address, EnvironmentsAction)
+    forward(address, TagEnvironments)
   ),
   thunk(
     'recipes',
     Recipes.view,
     model.recipes,
-    forward(address, RecipesAction)
+    forward(address, TagRecipes)
   ),
   thunk(
     'first-time-use',

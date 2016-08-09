@@ -110,16 +110,27 @@ export const update = (model, action) =>
   action.type === 'Chart' ?
   updateChart(model, action.source) :
   action.type === 'FetchLatest' ?
-  [model, Request.get(templateLatestUrl(model)).map(Latest)] :
+  fetchLatest(model) :
   action.type === 'Latest' ?
   updateLatest(model, action.source) :
   action.type === 'GetBacklog' ?
-  [model, Request.get(templateRecentUrl(model.id)).map(GotBacklog)] :
+  getBacklog(model) :
   action.type === 'GotBacklog' ?
   updateBacklog(model, action.result) :
   action.type === 'Restore' ?
   restore(model, action.value) :
   Unknown.update(model, action);
+
+const fetchLatest = model => {
+  if (model.origin) {
+    const url = templateLatestUrl(model.origin, model.id);
+    return [model, Request.get(url).map(Latest)];
+  }
+  else {
+    console.warn('FetchLatest was called before origin was restored on model');
+    return [model, Effects.none];
+  }
+}
 
 const updateLatest = Result.updater(
   (model, record) => {
@@ -154,6 +165,17 @@ const updateLatest = Result.updater(
     ];
   }
 );
+
+const getBacklog = model => {
+  if (model.origin) {
+    const url = templateRecentUrl(model.origin, model.id);
+    return [model, Request.get(url).map(GotBacklog)];
+  }
+  else {
+    console.warn('GetBacklog was requested before origin was restored in model');
+    return [model, Effects.none];
+  }
+}
 
 // Update chart backlog from result of fetch.
 const updateBacklog = Result.updater(
@@ -262,18 +284,18 @@ const readData = record => {
 
 // Create a url string that allows you to GET latest environmental datapoints
 // from an environmen via CouchDB.
-const templateLatestUrl = model =>
+const templateLatestUrl = (origin, id) =>
   Template.render(Config.environmental_data_point.origin_latest, {
-    origin_url: model.origin,
-    startkey: JSON.stringify([model.id]),
-    endkey: JSON.stringify([model.id, {}])
+    origin_url: origin,
+    startkey: JSON.stringify([id]),
+    endkey: JSON.stringify([id, {}])
   });
 
-const templateRecentUrl = model =>
+const templateRecentUrl = (origin, id) =>
   Template.render(Config.environmental_data_point.origin_range, {
-    origin_url: model.origin,
-    startkey: JSON.stringify([model.id, {}]),
-    endkey: JSON.stringify([model.id]),
+    origin_url: origin,
+    startkey: JSON.stringify([id, {}]),
+    endkey: JSON.stringify([id]),
     limit: MAX_DATAPOINTS,
     descending: true
   });

@@ -64,11 +64,13 @@ export const submit = (model, recipeJSON) => {
     return [
       model,
       Effects.batch([
+        // Send Submitted action up to parent
         Effects.receive(Submitted(recipe)),
         Effects.receive(Clear)
       ])
     ];
   } catch (e) {
+    // @TODO throw up a banner for this case.
     return [model, Effects.receive(FailRecipeParse)];
   }
 }
