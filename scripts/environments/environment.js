@@ -29,9 +29,15 @@ const NoOp = {
   type: 'NoOp'
 };
 
+// Restore state action received from parent.
+export const Restore = value => ({
+  type: 'Restore',
+  value
+});
+
 const TagExporter = tag('Exporter');
 const OpenExporter = TagExporter(Exporter.Open);
-export const RestoreExporter = compose(TagExporter, Exporter.Restore);
+const RestoreExporter = compose(TagExporter, Exporter.Restore);
 
 const TagToolbox = action =>
   action.type === 'OpenExporter' ?
@@ -46,8 +52,14 @@ const TagPoll = action =>
 const FetchLatest = {type: 'FetchLatest'};
 const Latest = tag('Latest');
 
-const FetchRestore = tag('FetchRestore');
-const Restore = tag('Restore');
+// Action for fetching chart backlog.
+const GetBacklog = {type: 'GetBacklog'};
+
+// Action for the result of fetching chart backlog.
+const GotBacklog = result => ({
+  type: 'GotBacklog',
+  result
+});
 
 const PongPoll = TagPoll(Poll.Pong);
 const MissPoll = TagPoll(Poll.Miss);
@@ -84,7 +96,7 @@ export const init = id => {
       chartFx.map(TagChart),
       pollFx.map(TagPoll),
       exporterFx.map(TagExporter),
-      Effects.receive(FetchRestore(id))
+      Effects.receive(GetBacklog)
     ])
   ];
 };
@@ -100,12 +112,14 @@ export const update = (model, action) =>
   updateChart(model, action.source) :
   action.type === 'FetchLatest' ?
   [model, Request.get(templateLatestUrl(model.id)).map(Latest)] :
-  action.type === 'FetchRestore' ?
-  [model, Request.get(templateRecentUrl(model.id)).map(Restore)] :
-  action.type === 'Restore' ?
-  restore(model, action.source) :
   action.type === 'Latest' ?
   updateLatest(model, action.source) :
+  action.type === 'GetBacklog' ?
+  [model, Request.get(templateRecentUrl(model.id)).map(GotBacklog)] :
+  action.type === 'GotBacklog' ?
+  updateBacklog(model, action.result) :
+  action.type === 'Restore' ?
+  restore(model, action.value) :
   Unknown.update(model, action);
 
 const updateLatest = Result.updater(
@@ -142,7 +156,8 @@ const updateLatest = Result.updater(
   }
 );
 
-const restore = Result.updater(
+// Update chart backlog from result of fetch.
+const updateBacklog = Result.updater(
   (model, record) => {
     const [next, fx] = batch(update, model, [
       AddChartData(readData(record)),
@@ -154,6 +169,8 @@ const restore = Result.updater(
       Effects.batch([
         fx,
         // Suppress any banners.
+        // @TODO in future we may want to store a flag on the model indicating
+        // if we sent up any banners and only suppress if we have sent a banner.
         Effects.receive(SuppressBanner)
       ])
     ];
@@ -164,13 +181,18 @@ const restore = Result.updater(
     return [
       model,
       Effects.batch([
-        // Wait for a second, then try to restore again.
-        Effects.perform(Task.sleep(RETRY_TIMEOUT)).map(FetchRestore),
+        // Wait for a second, then try to get backlog again.
+        Effects.perform(Task.sleep(RETRY_TIMEOUT)).map(constant(GetBacklog)),
         Effects.receive(action)
       ])
     ];
   }
 );
+
+const restore = (model, record) => {
+  const next = merge(model, {origin: record.origin});
+  return updater(next, RestoreExporter(record));
+}
 
 const updateChart = cursor({
   get: model => model.chart,
