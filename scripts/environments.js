@@ -34,7 +34,7 @@ const ToActive = action => ({
   source: action
 });
 
-export const Restore = compose(ToActive, Environment.RestoreExporter);
+export const Restore = compose(ToActive, Environment.Restore);
 
 // Tag actions by id
 // @TODO figure out how to generalize this.
