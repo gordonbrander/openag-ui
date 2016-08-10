@@ -32,7 +32,7 @@ export const Open = TagModal(Modal.Open);
 export const Close = TagModal(Modal.Close);
 
 const TagName = action =>
-  action.type === 'Check' ?
+  action.type === 'Validate' ?
   TryName(action.value) :
   tagged('Name', action);
 
@@ -67,12 +67,16 @@ const NotifyHeartbeat = url => ({
 });
 
 const TagAddress = action =>
-  action.type === 'Check' ?
+  action.type === 'Validate' ?
   TryAddress(action.value) :
+  action.type === 'Rest' ?
+  RestAddress :
   tagged('Address', action);
 
 const AddressOk = compose(TagAddress, Validator.Ok);
 const AddressError = compose(TagAddress, Validator.Error);
+
+const RestAddress = {type: 'RestAddress'};
 
 const Submit = {type: 'Submit'};
 
@@ -139,6 +143,8 @@ export const update = (model, action) =>
   tryName(model, action.value) :
   action.type === 'TryAddress' ?
   tryAddress(model, action.value) :
+  action.type === 'RestAddress' ?
+  restAddress(model) :
   action.type === 'GetHeartbeat' ?
   getHeartbeat(model, action.url) :
   action.type === 'GotHeartbeat' ?
@@ -193,6 +199,19 @@ const tryAddress = (model, value) => {
     const message = localize("Need a valid URL or IP address");
     return update(model, AddressError(message));
   }
+}
+
+const restAddress = model => {
+  const [one, oneFx] = updateAddress(model, Validator.Rest);
+  const [two, twoFx] = updateSubmitter(one, Button.Disable);
+
+  return [
+    two,
+    Effects.batch([
+      oneFx,
+      twoFx
+    ])
+  ];
 }
 
 const getHeartbeat = (model, url) => {
@@ -322,8 +341,9 @@ const NAME_MESSAGES = [
   localize('Good name!'),
   localize('Good one!'),
   localize('You picked a good one!'),
-  localize('One in a million!'),
-  localize("That's my name, don't wear it out.")
+  localize("It's a good name."),
+  localize("That's a nice name."),
+  localize('One in a million!')
 ];
 
 const chooseRandom = array => {

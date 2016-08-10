@@ -15,10 +15,10 @@ import * as Focus from '../common/focusable';
 import * as Edit from '../common/editable';
 import * as Control from '../common/control';
 
-const EMPTY = 'empty';
+const RESTING = 'resting';
 const OK = 'ok';
 const ERROR = 'error';
-const CHECKING = 'checking';
+const VALIDATING = 'validating';
 
 export class Model {
   constructor(
@@ -42,11 +42,12 @@ export class Model {
 
 const Blur = {type: 'Blur'};
 
-const Empty = {type: 'Empty'};
-const Checking = {type: 'Checking'};
+export const Rest = {type: 'Rest'};
 
-export const Check = value => ({
-  type: 'Check',
+const Validating = {type: 'Validating'};
+
+export const Validate = value => ({
+  type: 'Validate',
   value
 });
 
@@ -60,10 +61,13 @@ export const Error = message => ({
   message
 });
 
-const EditAction = (action) => ({
-  type: "Edit",
-  edit: action
-});
+const EditAction = (action) =>
+  action.type === 'Change' ?
+  Change(action.change) :
+  ({
+    type: "Edit",
+    edit: action
+  });
 
 const FocusAction = (action) => ({
   type: "Focus",
@@ -75,7 +79,12 @@ const ControlAction = action => ({
   control: action
 });
 
-export const Change = (value, selection) => EditAction(Edit.Change(Edit.readChange(value, selection)));
+const Change = change => ({
+  type: 'EditChange',
+  change
+});
+
+const EditChange = (change) => EditAction(Edit.Change(change));
 export const Activate = FocusAction(Focus.Focus);
 export const Deactivate = FocusAction(Focus.Blur);
 export const Enable = ControlAction(Control.Enable);
@@ -96,7 +105,7 @@ export const init = (
     label,
     '',
     placeholder,
-    EMPTY,
+    RESTING,
     edit,
     focus,
     control
@@ -121,14 +130,16 @@ export const update = (model, action) => {
       return delegateControlUpdate(model, action.control)
     case 'Blur':
       return updateBlur(model)
+    case 'EditChange':
+      return updateChange(model, action.change)
     case 'Ok':
       return nofx(changeMode(model, OK, action.message))
     case 'Error':
       return nofx(changeMode(model, ERROR, action.message))
-    case 'Empty':
-      return nofx(changeMode(model, EMPTY, ''))
-    case 'Checking':
-      return check(model)
+    case 'Rest':
+      return nofx(changeMode(model, RESTING, ''))
+    case 'Validating':
+      return sendValidate(model)
     default:
       return Unknown.update(model, action)
   }
@@ -171,11 +182,14 @@ const swapControl = (model, [control, fx]) => [
 ];
 
 const changeMode = (model, mode, message) =>
-  new Model(model.label, message, model.placeholder, mode, model.edit, model.focus, model.control);
+  model.mode !== mode || model.message !== message ?
+  new Model(model.label, message, model.placeholder, mode, model.edit, model.focus, model.control)
+  : model;
 
-const check = model => [
-  changeMode(model, CHECKING, ''),
-  Effects.receive(Check(readValue(model)))
+// Transition to validating mode and send up a "Validate" action.
+const sendValidate = model => [
+  changeMode(model, VALIDATING, ''),
+  Effects.receive(Validate(readValue(model)))
 ];
 
 const updateBlur = model => {
@@ -183,16 +197,27 @@ const updateBlur = model => {
 
   const modeAction = (
     model.edit.value === '' ?
-    Empty :
-    Checking
+    Rest :
+    Validating
   );
 
   return [
     next,
     Effects.batch([
       fx,
-      // Request a check. This will put the validator into "checking" mode.
       Effects.receive(modeAction)
+    ])
+  ];
+}
+
+const updateChange = (model, change) => {
+  const [changed, changedFx] = delegateEditUpdate(model, Edit.Change(change));
+  const [rested, restedFx] = update(changed, Rest);
+  return [
+    rested,
+    Effects.batch([
+      changedFx,
+      Effects.receive(Rest)
     ])
   ];
 }
@@ -204,8 +229,7 @@ export const view = (model, address, className) =>
       'validator': true,
       'validator-ok': model.mode === OK,
       'validator-error': model.mode === ERROR,
-      'validator-empty': model.mode === EMPTY,
-      'validator-checking': model.mode === CHECKING
+      'validator-validating': model.mode === VALIDATING
     })
   }, [
     html.input({
