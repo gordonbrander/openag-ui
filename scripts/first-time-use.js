@@ -77,6 +77,8 @@ const AddressError = compose(TagAddress, Validator.Error);
 const Submit = {type: 'Submit'};
 
 const TagSubmitter = action =>
+  action.type === 'Click' ?
+  Submit :
   tagged('Submitter', action);
 
 const EnableSubmitter = TagSubmitter(Button.Enable);
@@ -261,13 +263,24 @@ export const viewFTU = (model, address) =>
             ])
           ]),
           html.div({
-            className: 'panel--content-in'
+            className: 'panel--content'
           }, [
-            html.p({}, [
-              localize("Congrats! You're the proud owner of a Food Computer. It's almost time to get planting! We just need a couple of things to get started.")
-            ]),
-            Validator.view(model.name, forward(address, TagName), 'ftu-validator'),
-            Validator.view(model.address, forward(address, TagAddress), 'ftu-validator')
+            html.div({
+              className: 'panel--in'
+            }, [
+              html.p({}, [
+                localize("Congrats! You're the proud owner of a Food Computer. It's almost time to get planting! We just need a couple things to get started.")
+              ]),
+              Validator.view(model.name, forward(address, TagName), 'ftu-validator'),
+              Validator.view(model.address, forward(address, TagAddress), 'ftu-validator'),
+              html.p({
+                className: 'tip'
+              }, [
+                html.b({}, ['Tip:']),
+                ' ',
+                localize("don't know how to find the IP address of your Food Computer? Try using Adafruit's Raspberry Pi Finder.")
+              ])
+            ])
           ])
         ])
       ])
