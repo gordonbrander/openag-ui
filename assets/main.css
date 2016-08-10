@@ -92,8 +92,12 @@ do animation transitions.
   -moz-appearance: none;
 }
 
+.btn-panel[disabled] {
+  color: #989898;
+}
+
 .btn-panel:focus {
-  outline: 0;
+  outline: none;
 }
 
 .txt-textarea {
@@ -133,6 +137,11 @@ do animation transitions.
 /* Validated inputs
 ----------------------------------------------------------------------------- */
 
+.validator-message {
+  padding-bottom: 4px;
+  padding-top: 4px;
+}
+
 .validator-checking .validator-input {
   background-image: url(loading.svg);
   background-repeat: no-repeat;
@@ -143,6 +152,22 @@ do animation transitions.
 .validator-error .validator-input {
   background-color: #FFDDD9;
   box-shadow: 0 2px 0 #F05C48;
+}
+
+.validator-error .validator-input::-webkit-input-placeholder {
+  color: #F05C48;
+}
+
+.validator-error .validator-input::-moz-input-placeholder {
+  color: #F05C48;
+}
+
+.validator-error .validator-input::-ms-input-placeholder {
+  color: #F05C48;
+}
+
+.validator-error .validator-input::placeholder {
+  color: #F05C48;
 }
 
 .validator-error .validator-message {
@@ -430,6 +455,12 @@ do animation transitions.
   overflow: auto;
 }
 
+.panel--content-in {
+  height: calc(100% - (56px + (16px * 2)));
+  overflow: auto;
+  padding: 16px;
+}
+
 /* Recipe form
 ----------------------------------------------------------------------------- */
 
@@ -504,3 +535,33 @@ do animation transitions.
 /* FTU - First Time Use
 ----------------------------------------------------------------------------- */
 
+.ftu-window {
+  background: #fff;
+  border-radius: 3px;
+  box-shadow: 0 5px 50px rgba(0,0,0,0.25);
+  left: 50%;
+  position: fixed;
+  top: 50%;
+  height: 80vh;
+  width: 768px;
+  overflow: hidden;
+  transform: translate(-50%, -50%);
+  transition:
+    opacity 200ms ease-out,
+    margin-top 500ms cubic-bezier(0.165, 0.840, 0.440, 1.000);
+  display: block;
+  opacity: 1;
+  pointer-events: all;
+  z-index: 10;
+}
+
+.ftu-window--close {
+  display: block;
+  opacity: 0;
+  margin-top: 10vh;
+  pointer-events: none;
+}
+
+.ftu-address .validator-input {
+  font-size: 24px;
+}
