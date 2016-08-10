@@ -34,16 +34,6 @@ dialog {
   padding: 0;
 }
 
-/*
-Hide with opacity and pointer events instead of display:none. This lets us
-do animation transitions.
-*/
-*[hidden] {
-  display: block;
-  opacity: 0;
-  pointer-events: none;
-}
-
 /* Image replacement
 ----------------------------------------------------------------------------- */
 
@@ -136,6 +126,10 @@ do animation transitions.
 
 /* Validated inputs
 ----------------------------------------------------------------------------- */
+
+.validator {
+  margin-bottom: 12px;
+}
 
 .validator-message {
   color: #989898;
@@ -279,10 +273,10 @@ do animation transitions.
   height: 80vh;
   width: 768px;
   overflow: hidden;
-  transform: translate(-50%, -50%);
+  transform: translate(-50%, -50%) scale(1);
   transition:
     opacity 200ms ease-out,
-    margin-top 500ms cubic-bezier(0.165, 0.840, 0.440, 1.000);
+    transform 500ms cubic-bezier(0.165, 0.840, 0.440, 1.000);
   display: block;
   opacity: 1;
   pointer-events: all;
@@ -299,7 +293,7 @@ do animation transitions.
 .modal-main--close {
   display: block;
   opacity: 0;
-  margin-top: 10vh;
+  transform: translate(-50%, 0) scale(0.9);
   pointer-events: none;
 }
 
@@ -444,9 +438,9 @@ do animation transitions.
 }
 
 .panel--content-in {
-  height: calc(100% - (56px + (16px * 2)));
+  height: calc(100% - (56px + (72px * 2)));
   overflow: auto;
-  padding: 16px;
+  padding: 72px;
 }
 
 /* Recipe form
@@ -533,10 +527,10 @@ do animation transitions.
   height: 80vh;
   width: 768px;
   overflow: hidden;
-  transform: translate(-50%, -50%);
+  transform: translate(-50%, -50%) scale(1);
   transition:
     opacity 200ms ease-out,
-    margin-top 500ms cubic-bezier(0.165, 0.840, 0.440, 1.000);
+    transform 500ms cubic-bezier(0.165, 0.840, 0.440, 1.000);
   display: block;
   opacity: 1;
   pointer-events: all;
@@ -546,7 +540,7 @@ do animation transitions.
 .ftu-window--close {
   display: block;
   opacity: 0;
-  margin-top: 10vh;
+  transform: translate(-50%, 0) scale(0.9);
   pointer-events: none;
 }
 
