@@ -2,7 +2,7 @@
 
 import {Effects, Task} from 'reflex';
 import * as Result from '../common/result';
-import {compose, constant} from '../lang/functional';
+import {compose} from '../lang/functional';
 
 export const Get = id => ({
   type: 'Get',
@@ -38,13 +38,9 @@ export const Putted = result => ({
 
 export const put = (db, doc) =>
   Effects.perform(new Task(succeed => {
-    const alwaysDoc = constant(doc);
     db
       .put(doc)
-      .then(
-        compose(Result.ok, alwaysDoc),
-        Result.error
-      )
+      .then(Result.ok, Result.error)
       .then(succeed);
   }));
 

@@ -1,6 +1,8 @@
 {
-  "api_url": "http://18.85.55.67:5000/api/0.0.1",
-  "origin_url": "http://18.85.55.67:5984",
+  "api": "{{root_url}}:5000/api/0.0.1",
+  "origin": "{{root_url}}:5984",
+  "heartbeat": "{{root_url}}:5984",
+
   "active_environment": "environment_1",
   "start_recipe_url": "{{api_url}}/service/{{environment}}/start_recipe",
 
@@ -13,8 +15,15 @@
     "origin_by_variable_csv": "{{origin_url}}/environmental_data_point/_design/openag/_list/csv/by_variable?group_level={{group_level}}&startkey={{startkey}}&endkey={{endkey}}&limit={{limit}}&descending={{descending}}"
   },
 
-  "recipes_local": "recipes",
-  "recipes_origin": "{{origin_url}}/recipes",
+  "recipes": {
+    "local": "recipes",
+    "origin": "{{origin_url}}/recipes"
+  },
+
+  "app": {
+    "local": "openag",
+    "state_id": "state"
+  },
 
   "chart": [
     {

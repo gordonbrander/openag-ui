@@ -34,6 +34,19 @@ dialog {
   padding: 0;
 }
 
+p {
+  margin: 24px 0;
+}
+
+/* Helpers
+----------------------------------------------------------------------------- */
+
+.tip {
+  color: #989898;
+  font-size: 14px;
+  line-height: 24px;
+}
+
 /* Image replacement
 ----------------------------------------------------------------------------- */
 
@@ -82,8 +95,12 @@ dialog {
   -moz-appearance: none;
 }
 
+.btn-panel[disabled] {
+  color: #989898;
+}
+
 .btn-panel:focus {
-  outline: 0;
+  outline: none;
 }
 
 .txt-textarea {
@@ -98,7 +115,83 @@ dialog {
 }
 .txt-textarea:focus {
   box-shadow: 0 2px 0 #00A5ED;
-  outline: 0;
+  outline: none;
+}
+
+/* Inputs
+----------------------------------------------------------------------------- */
+
+.input {
+  background: transparent;
+  border: 0;
+  box-shadow: 0 1px 0 #d8d8d8;
+  box-sizing: border-box;
+  display: block;
+  width: 100%;
+  -webkit-appearance: none;
+  -moz-appearance: none; 
+}
+
+.input:focus {
+  box-shadow: 0 2px 0 #00A5ED;
+  outline: none;
+}
+
+/* Validated inputs
+----------------------------------------------------------------------------- */
+
+.validator {
+  margin-bottom: 12px;
+}
+
+.validator-message {
+  color: #00A5ED;
+  font-size: 13px;
+  line-height: 24px;
+  min-height: 24px;
+  padding-bottom: 4px;
+  padding-top: 4px;
+}
+
+.validator-validating .validator-input {
+  background-image: url(loading.svg);
+  background-repeat: no-repeat;
+  background-position: right center;
+  background-size: 20px 20px;
+}
+
+.validator-error .validator-input {
+  /*background-color: #FFDDD9;*/
+  box-shadow: 0 2px 0 #F05C48;
+}
+
+.validator-error .validator-message {
+  color: #F05C48;
+}
+
+.validator-ok .validator-input {
+  box-shadow: 0 2px 0 #2DC500;
+}
+
+.validator-ok .validator-message {
+  color: #2DC500;
+}
+
+/* App
+----------------------------------------------------------------------------- */
+
+@keyframes fade {
+  0% {
+    opacity: 0;
+  }
+
+  100% {
+    opacity: 1;
+  }
+}
+
+.app-main--ready {
+  animation: 500ms ease-out 0ms 1 both fade;
 }
 
 /* App nav
@@ -169,20 +262,32 @@ dialog {
 /* Modal
 ----------------------------------------------------------------------------- */
 
+.modal {
+  position: fixed;
+  width: 100vw;
+  height: 100vh;
+  top: 0;
+  left: 0;
+  z-index: 9;
+}
+
+.modal[hidden] {
+  display: block;
+  pointer-events: none;
+}
+
 .modal-overlay {
   background: rgba(0, 0, 0, 0.2);
   height: 100vh;
-  position: fixed;
+  position: absolute;
   width: 100vw;
   top: 0;
   left: 0;
   opacity: 1;
-  transition: opacity 200ms ease-out;
-  z-index: 9;
+  transition: opacity 500ms cubic-bezier(0.165, 0.840, 0.440, 1.000);
 }
 
-.modal-overlay[hidden] {
-  display: block;
+.modal[hidden] .modal-overlay {
   opacity: 0;
   pointer-events: none;
 }
@@ -190,21 +295,20 @@ dialog {
 .modal-main {
   background: #fff;
   border-radius: 3px;
-  box-shadow: 0 5px 50px rgba(0,0,0,0.25);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.20);
   left: 50%;
-  position: fixed;
+  position: absolute;
   top: 50%;
   height: 80vh;
   width: 768px;
   overflow: hidden;
-  transform: translate(-50%, -50%);
+  transform: translate(-50%, -50%) scale(1);
   transition:
     opacity 200ms ease-out,
-    margin-top 500ms cubic-bezier(0.165, 0.840, 0.440, 1.000);
+    transform 500ms cubic-bezier(0.165, 0.840, 0.440, 1.000);
   display: block;
   opacity: 1;
   pointer-events: all;
-  z-index: 10;
 }
 
 /* Smaller modal */
@@ -214,10 +318,10 @@ dialog {
   width: 400px;
 }
 
-.modal-main--close {
+.modal[hidden] > .modal-main {
   display: block;
   opacity: 0;
-  margin-top: 10vh;
+  transform: translate(-50%, -35%) scale(0.95);
   pointer-events: none;
 }
 
@@ -361,6 +465,11 @@ dialog {
   overflow: auto;
 }
 
+/* Inset for panel content */
+.panel--in {
+  margin: 84px;
+}
+
 /* Recipe form
 ----------------------------------------------------------------------------- */
 
@@ -430,4 +539,38 @@ dialog {
   width: 336px;
   height: 224px;
   box-shadow: 0px 0px 2px 0px rgba(0,0,0,0.12), 0px 1px 2px 0px rgba(0,0,0,0.24);
+}
+
+/* FTU - First Time Use
+----------------------------------------------------------------------------- */
+
+.ftu-window {
+  background: #fff;
+  border-radius: 3px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.20);
+  left: 50%;
+  position: fixed;
+  top: 50%;
+  height: 80vh;
+  width: 768px;
+  overflow: hidden;
+  transform: translate(-50%, -50%) scale(1);
+  transition:
+    opacity 400ms ease-out,
+    transform 800ms cubic-bezier(0.165, 0.840, 0.440, 1.000);
+  display: block;
+  opacity: 1;
+  pointer-events: all;
+  z-index: 10;
+}
+
+.ftu-window--close {
+  display: block;
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(0.95);
+  pointer-events: none;
+}
+
+.ftu-validator .validator-input {
+  font-size: 24px;
 }

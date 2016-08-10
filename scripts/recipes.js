@@ -5,7 +5,8 @@ import * as Template from './common/stache';
 import * as Database from './common/database';
 import * as Indexed from './common/indexed';
 import * as Unknown from './common/unknown';
-import {merge, tag, tagged} from './common/prelude';
+import * as Result from './common/result';
+import {merge, tag, tagged, batch} from './common/prelude';
 import * as Modal from './common/modal';
 import {cursor} from './common/cursor';
 import {classed, toggle} from './common/attr';
@@ -14,13 +15,9 @@ import {compose, constant} from './lang/functional';
 import * as RecipesForm from './recipes/form';
 import * as Recipe from './recipe';
 
-const DB = new PouchDB(Config.recipes_local);
+const DB = new PouchDB(Config.recipes.local);
 // Export for debugging
 window.RecipesDB = DB;
-
-const ORIGIN = Template.render(Config.recipes_origin, {
-  origin_url: Config.origin_url
-});
 
 const getPouchID = Indexed.getter('_id');
 
@@ -44,14 +41,32 @@ const RecipeAction = (id, action) =>
     source: action
   });
 
-// @TODO figure out how to generalize this.
 const ByID = id => action =>
   RecipeAction(id, action);
 
-export const Restore = Database.Restore;
-const Restored = Database.Restored;
-export const Put = Database.Put;
+
+// "Restore from above". This action handles information restored from the
+// parent.
+export const Restore = value => ({
+  type: 'Restore',
+  value
+});
+
+// Restore recipes in-memory from PouchDB
+const RestoreRecipes = {type: 'RestoreRecipes'};
+
+// Response from recipe restore
+const RestoredRecipes = result => ({
+  type: 'RestoredRecipes',
+  result
+});
+
+const Put = Database.Put;
 const Putted = Database.Putted;
+
+// Request database sync
+const Sync = {type: 'Sync'};
+// Confirm sync.
 const Synced = Database.Synced;
 
 export const Open = TagModal(Modal.Open);
@@ -83,18 +98,16 @@ export const init = () => {
     {
       active: null,
       activePanel: null,
-      recipesForm,
       isOpen: false,
+      // Origin url
+      origin: null,
       // Build an array of ordered recipe IDs
       order: [],
       // Index all recipes by ID
-      entries: {}
+      entries: {},
+      recipesForm
     },
-    Effects.batch([
-      recipesFormFx,
-      Effects.receive(Restore),
-      Database.sync(DB, ORIGIN).map(Synced)
-    ])
+    recipesFormFx.map(RecipesFormAction)
   ];
 };
 
@@ -113,26 +126,38 @@ const updateRecipesForm = cursor({
 const updateByID = (model, id, action) =>
   Indexed.updateWithID(Recipe.update, byID(id), model, id, action);
 
+const sync = model => {
+  if (model.origin) {
+    const origin = templateRecipesDatabase(model.origin);
+    return [model, Database.sync(DB, origin).map(Synced)];
+  }
+  else {
+    // @TODO perhaps we want to notify the user something went wrong?
+    console.warn('Recipe database sync attempted before origin was added to model');
+    return [model, Effects.none];
+  }
+}
+
 const syncedOk = model =>
-  update(model, Restore);
+  update(model, RestoreRecipes);
 
 // @TODO do something with sync errors.
 const syncedError = model =>
   update(model, NoOp);
 
-// Restore recipes in model from recipes array
-const restoredOk = (model, recipes) => [
-  merge(model, {
-    // Build an array of ordered recipe IDs
-    order: recipes.map(getPouchID),
-    // Index all recipes by ID
-    entries: Indexed.indexWith(recipes, getPouchID)
-  }),
-  Effects.none
-];
-
-// @TODO handle error case
-const restoredError = (model) => [model, Effects.none];
+const restoredRecipes = Result.updater(
+  (model, recipes) => [
+    merge(model, {
+      // Build an array of ordered recipe IDs
+      order: recipes.map(getPouchID),
+      // Index all recipes by ID
+      entries: Indexed.indexWith(recipes, getPouchID)
+    }),
+    Effects.none
+  ],
+  // @TODO handle error case with an error banner or something.
+  (model, error) => [model, Effects.none]
+);
 
 // Activate recipe by id
 const activateByID = (model, id) => [
@@ -143,6 +168,22 @@ const activateByID = (model, id) => [
 const activatePanel = (model, id) =>
   [merge(model, {activePanel: id}), Effects.none];
 
+const put = (model, recipe) => {
+  // Insert recipe into in-memory model.
+  const next = Indexed.add(model, recipe._id, recipe);
+  // Then attempt to store it in DB.
+  return [next, Database.put(DB, recipe).map(Putted)];
+}
+
+const restore = (model, record) => {
+  const next = merge(model, {origin: record.origin});
+
+  return batch(update, next, [
+    RestoreRecipes,
+    Sync
+  ]);
+}
+
 export const update = (model, action) =>
   action.type === 'RecipesForm' ?
   updateRecipesForm(model, action.source) :
@@ -151,29 +192,24 @@ export const update = (model, action) =>
   action.type === 'NoOp' ?
   [model, Effects.none] :
   action.type === 'Put' ?
-  [model, Database.put(DB, action.value).map(Putted)] :
+  put(model, action.value) :
   action.type === 'Putted' ?
   (
     action.result.isOk ?
-    [
-      Indexed.add(model, action.result.value._id, action.result.value),
-      Effects.none
-    ] :
-    // @TODO retry
+    [model, Effects.none] :
+    // @TODO retry or display a banner
     [model, Effects.none]
   ) :
-  action.type === 'Restore' ?
-  [model, Database.restore(DB).map(Restored)] :
-  action.type === 'Restored' ?
-  (
-    action.result.isOk ?
-    restoredOk(model, action.result.value) :
-    restoredError(model, action.result.error)
-  ) :
+  action.type === 'RestoreRecipes' ?
+  [model, Database.restore(DB).map(RestoredRecipes)] :
+  action.type === 'RestoredRecipes' ?
+  restoredRecipes(model, action.result) :
   action.type === 'ActivateByID' ?
   activateByID(model, action.id) :
   action.type === 'ActivatePanel' ?
   activatePanel(model, action.id) :
+  action.type === 'Sync' ?
+  sync(model) :
   action.type === 'Synced' ?
   (
     action.result.isOk ?
@@ -182,21 +218,25 @@ export const update = (model, action) =>
   ) :
   action.type === 'Recipe' ?
   updateByID(model, action.id, action.source) :
+  action.type === 'Restore' ?
+  restore(model, action.value) :
   Unknown.update(model, action);
+
+// View
 
 export const view = (model, address) =>
   html.div({
-    className: 'modal'
+    id: 'recipes-modal',
+    className: 'modal',
+    hidden: toggle(!model.isOpen, 'hidden')
   }, [
     html.div({
       className: 'modal-overlay',
-      hidden: toggle(!model.isOpen, 'hidden'),
       onClick: () => address(Close)
     }),
     html.dialog({
       className: classed({
-        'modal-main': true,
-        'modal-main--close': !model.isOpen
+        'modal-main': true
       }),
       open: toggle(model.isOpen, 'open')
     }, [
@@ -252,3 +292,10 @@ export const view = (model, address) =>
       ])
     ])
   ]);
+
+// Helpers
+
+const templateRecipesDatabase = origin =>
+  Template.render(Config.recipes.origin, {
+    origin_url: origin
+  });

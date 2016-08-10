@@ -6,7 +6,7 @@
 Commonly used functions. Original source can be found here.
 https://github.com/browserhtml/browserhtml/blob/master/src/common/prelude.js
 */
-import {Effects} from 'reflex';
+import {Effects, forward} from 'reflex';
 
 export const merge = /*::<model:{}>*/
   ( model/*:model*/
@@ -78,3 +78,11 @@ export const tag = /*::<tag:string, kind>*/
   value =>
   ({ type: tag, source: value });
 
+// Return a model with no Effects.
+export const nofx = (model) => [model, Effects.none];
+
+// Create a forwarding function. Used by submodules to export pre-forwarded
+// address functions.
+export const port = (decoder) => (address) => forward(address, decoder);
+
+export const annotate = (port, tag) => (address) => port(forward(address, tag));
