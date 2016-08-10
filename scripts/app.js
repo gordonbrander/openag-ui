@@ -297,7 +297,7 @@ const viewFTU = (model, address) =>
 
 const viewConfigured = (model, address) =>
   html.div({
-    className: 'app-main'
+    className: 'app-main app-main--ready'
   }, [
     thunk(
       'app-nav',
