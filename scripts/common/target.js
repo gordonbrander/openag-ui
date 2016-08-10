@@ -1,26 +1,53 @@
-/* @flow */
-
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-
-import {Effects} from "reflex";
-import {merge} from "../common/prelude";
-import * as Unknown from "../common/unknown";
-
-/*::
-import type {Action, Model} from "./target"
+/* Adapted from
+https://github.com/browserhtml/browserhtml/blob/4be9d07a98dc4a2f7764be1f8576ad9485c5079b/src/common/target.js
 */
 
-export const Over/*:Action*/ = {type: "Over"};
-export const Out/*:Action*/ = {type: "Out"};
+import {Effects, forward} from "reflex";
+import {always, port} from "../common/prelude";
+import {constant} from "../lang/functional";
+import * as Unknown from "../common/unknown";
 
-export const update = /*::<model:Model>*/
-  (model/*:model*/, action/*:Action*/)/*:[model, Effects<Action>]*/ =>
-  ( action.type == "Over"
-  ? [merge(model, {isPointerOver: true}), Effects.none]
-  : action.type == "Out"
-  ? [merge(model, {isPointerOver: false}), Effects.none]
-  : Unknown.update(model, action)
-  );
+export class Model {
+  constructor(isPointerOver) {
+    this.isPointerOver = isPointerOver
+  }
+}
+
+Model.over = new Model(true);
+Model.out = new Model(false);
+
+export const Over = {type: "Over"};
+export const Out = {type: "Out"};
+
+export const init = (isPointerOver = false) => [
+  (isPointerOver ? Model.over : Model.out),
+  Effects.none
+];
+
+export const update = (model, action) => {
+  switch (action.type) {
+    case "Over":
+      return over(model);
+    case "Out":
+      return out(model);
+    default:
+      return Unknown.update(model, action);
+  }
+}
+
+export const over = (model) => [
+  Model.over,
+  Effects.none
+];
+
+export const out = (model) => [
+  Model.out,
+  Effects.none
+];
+
+export const onMouseOver = port(constant(Over));
+export const onMouseOut = port(constant(Out));

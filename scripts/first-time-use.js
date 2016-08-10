@@ -8,9 +8,10 @@ information is stored in the browser's local storage via PouchDB.
 
 Includes settings (like IP address of app) and, in future, log-in creds.
 */
-import {html, Effects, forward} from 'reflex';
+import {html, Effects, forward, thunk} from 'reflex';
 import * as Config from '../openag-config.json';
 import * as Validator from './common/validator';
+import * as Button from './common/button';
 import * as Modal from './common/modal';
 import * as Template from './common/stache';
 import * as Request from './common/request';
@@ -62,18 +63,32 @@ const AddressError = compose(TagAddress, Validator.Error);
 
 const Submit = {type: 'Submit'};
 
+const TagSubmit = action =>
+  tagged('Submit', action);
+
 // Model and update
 
 export const init = () => {
   const host = window.location.host;
-  const [address, addressFx] = Validator.init(host, null, localize('Food computer web address...'));
+  const [address, addressFx] = Validator.init(
+    host,
+    null,
+    localize('Food computer web address...'),
+    false,
+    false
+  );
+  const [submit, submitFx] = Button.init(localize('Save'), false, false, false);
   
   return [
     {
       isOpen: false,
-      address
+      address,
+      submit
     },
-    addressFx.map(TagAddress)
+    Effects.batch([
+      addressFx.map(TagAddress),
+      submitFx.map(TagSubmit)
+    ])
   ];
 }
 
@@ -177,16 +192,7 @@ export const viewFTU = (model, address) =>
             html.div({
               className: 'panel--nav-right'
             }, [
-              html.button({
-                className: 'btn-panel',
-                type: 'submit',
-                onClick: (event) => {
-                  event.preventDefault();
-                  address(Submit);
-                }
-              }, [
-                localize('Save')
-              ])
+              thunk('submit', Button.view, model.submit, forward(address, TagSubmit), 'btn-panel'),
             ])
           ]),
           html.div({

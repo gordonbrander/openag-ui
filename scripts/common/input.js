@@ -2,110 +2,144 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-/* Adapted from MPL code that can be found here:
+/* Adapted from
 https://github.com/browserhtml/browserhtml/blob/master/src/common/text-input.js
 */
 
 import {html, forward, Effects} from 'reflex';
 import {compose} from '../lang/functional';
-import {tag, tagged, merge, always} from '../common/prelude';
-import {cursor} from "../common/cursor"
-import {toggle} from '../common/attr';
+import {tag, tagged, annotate} from '../common/prelude';
 import * as Unknown from '../common/unknown';
-import * as Focusable from '../common/focusable';
-import * as Editable from '../common/editable';
+import * as Focus from '../common/focusable';
+import * as Edit from '../common/editable';
+import * as Control from '../common/control';
 
-const EditableAction = tag("Editable");
-const FocusableAction =
-  (action/*:Focusable.Action*/)/*:Action*/ =>
-  ( action.type === "Focus"
-  ? Focus
-  : action.type === "Blur"
-  ? Blur
-  : tagged("Focusable", action)
-  );
+export class Model {
+  constructor(
+    edit,
+    focus,
+    control,
+    placeholder
+  ) {
+    this.edit = edit
+    this.focus = focus
+    this.control = control
+    this.placeholder = placeholder
+  }
+}
 
-export const Change = Editable.Change;
-export const Focus/*:Action*/ = { type: "Focus" };
-export const Blur/*:Action*/ = { type: "Blur" };
-
-
-export const init =
-  ( value/*:string*/=''
-  , selection/*:?Editable.Selection*/=null
-  , placeholder/*:string*/=''
-  , isDisabled/*:boolean*/=false
-  )/*:[Model, Effects<Action>]*/ =>
-  [ { value
-    , placeholder
-    , selection
-    , isDisabled
-    , isFocused: false
-    }
-  , Effects.none
-  ];
-
-const enable =
-  model =>
-  [ merge(model, {isDisabled: false})
-  , Effects.none
-  ];
-
-const disable =
-  model =>
-  [ merge(model, {isDisabled: true})
-  , Effects.none
-  ];
-
-const updateEditable = cursor
-  ( { tag: EditableAction
-    , update: Editable.update
-    }
-  );
-
-const updateFocusable = cursor
-  ( { tag: FocusableAction
-    , update: Focusable.update
-    }
-  );
-
-export const update =
-  (model/*:Model*/, action/*:Action*/)/*:[Model, Effects<Action>]*/ =>
-  ( action.type === 'Change'
-  ? updateEditable(model, action)
-  : action.type === 'Editable'
-  ? updateEditable(model, action.source)
-  : action.type === 'Focusable'
-  ? updateFocusable(model, action.source)
-  : action.type === 'Focus'
-  ? updateFocusable(model, action)
-  : action.type === 'Blur'
-  ? updateFocusable(model, action)
-  : Unknown.update(model, action)
-  );
-
-const decodeSelection = ({target}) => ({
-  start: target.selectionStart,
-  end: target.selectionEnd,
-  direction: target.selectionDirection
+const EditAction = (action) => ({
+  type: "Edit",
+  edit: action
 });
 
-const decodeSelect =
-  compose(EditableAction, Editable.Select, decodeSelection);
+const FocusAction = (action) => ({
+  type: "Focus",
+  focus: action
+});
 
-const decodeChange = compose(
-  EditableAction,
-  event => Change(event.target.value, decodeSelection(event))
-);
+const ControlAction = action => ({
+  type: "Control",
+  control: action
+});
+
+export const Change = (value, selection) => EditAction(Edit.Change(Edit.readChange(value, selection)));
+export const Activate = FocusAction(Focus.Focus);
+export const Deactivate = FocusAction(Focus.Blur);
+export const Enable = ControlAction(Control.Enable);
+export const Disable = ControlAction(Control.Disable);
+
+export const init = (
+  value = '',
+  selection = null,
+  placeholder = '',
+  isDisabled,
+  isFocused = false
+) => {
+  const [edit, editFx] = Edit.init(value, selection);
+  const [control, controlFx] = Control.init(isDisabled);
+  const [focus, focusFx] = Focus.init(isFocused);
+  const model = new Model(
+    edit,
+    focus,
+    control,
+    placeholder
+  );
+
+  const fx = Effects.batch([
+    editFx.map(EditAction),
+    focusFx.map(FocusAction),
+    controlFx.map(ControlAction)
+  ]);
+
+  return [model, fx];
+}
+
+export const update = (model, action) => {
+  switch (action.type) {
+    case 'Edit':
+      return delegateEditUpdate(model, action.edit)
+    case 'Focus':
+      return delegateFocusUpdate(model, action.focus)
+    case 'Control':
+      return delegateControlUpdate(model, action.control)
+    default:
+      return Unknown.update(model, action)
+  }
+};
+
+export const enable = (model) =>
+  delegateControlUpdate(model, Control.Enable);
+
+export const disable = (model) =>
+  delegateControlUpdate(model, Control.Disable);
+
+export const edit = (model, value, selection) =>
+  swapEdit(model, Edit.change(model.edit, value, selection));
+
+const delegateEditUpdate = (model, action) =>
+  swapEdit(model, Edit.update(model.edit, action));
+
+const delegateFocusUpdate = (model, action) =>
+  swapFocus(model, Focus.update(model.focus, action));
+
+const delegateControlUpdate = (model, action) =>
+  swapControl(model, Control.update(model.control, action));
+
+const swapEdit = (model, [edit, fx]) => [
+  new Model(edit, model.focus, model.control, model.placeholder),
+  fx.map(EditAction)
+];
+
+const swapFocus = (model, [focus, fx]) => [
+  new Model(model.edit, focus, model.control, model.placeholder),
+  fx.map(FocusAction)
+];
+
+const swapControl = (model, [control, fx]) => [
+  new Model(model.edit, model.focus, control, model.placeholder),
+  fx.map(ControlAction)
+];
 
 export const view = (model, address, className) =>
   html.input({
     className,
     type: 'input',
     placeholder: model.placeholder,
-    value: model.value,
-    disabled: toggle(model.isDisabled, true),
-    onInput: event => address(decodeChange(event)),
-    onFocus: () => address(Focus),
-    onBlur: () => address(Blur)
+    value: model.edit.value,
+    disabled:
+      ( model.control.isDisabled
+      ? true
+      : void(0)
+      ),
+    onInput: onChange(address),
+    onKeyUp: onSelect(address),
+    onSelect: onSelect(address),
+    onFocus: onFocus(address),
+    onBlur: onBlur(address)
   });
+
+export const onChange = annotate(Edit.onChange, EditAction);
+export const onSelect = annotate(Edit.onSelect, EditAction);
+export const onFocus = annotate(Focus.onFocus, FocusAction);
+export const onBlur = annotate(Focus.onBlur, FocusAction);

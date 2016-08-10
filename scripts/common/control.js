@@ -1,46 +1,57 @@
-/* @flow */
-
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-
-import {merge, always} from "../common/prelude"
-import {cursor} from "../common/cursor"
-import * as Unknown from "../common/unknown"
-import * as Target from "../common/target"
-import * as Focusable from "../common/focusable"
-import {html, Effects, forward} from "reflex"
-
-/*::
-import type {Model, Action} from "./control"
+/*
+Adapted from
+https://github.com/browserhtml/browserhtml/blob/4be9d07a98dc4a2f7764be1f8576ad9485c5079b/src/common/control.js
 */
 
-export const Disable/*:Action*/ =
-  { type: "Disable"
-  };
+import {always} from "../common/prelude";
+import * as Unknown from "../common/unknown";
+import {html, Effects, forward} from "reflex";
 
-export const Enable/*:Action*/ =
-  { type: "Enable"
-  };
+export class Model {
+  constructor(isDisabled) {
+    this.isDisabled = isDisabled
+  }
+}
 
-const enable = /*::<model:Model>*/
-  (model/*:model*/)/*:[model, Effects<Action>]*/ =>
-  [ merge(model, {isDisabled: false})
-  , Effects.none
-  ];
+Model.enabled = new Model(false);
+Model.disabled = new Model(true);
 
-const disable = /*::<model:Model>*/
-  (model/*:model*/)/*:[model, Effects<Action>]*/ =>
-  [ merge(model, {isDisabled: true})
-  , Effects.none
-  ];
+export const Disable = {type: "Disable"};
+export const Enable = {type: "Enable"};
 
-export const update = /*::<model:Model>*/
-  (model/*:model*/, action/*:Action*/)/*:[model, Effects<Action>]*/ =>
-  ( action.type === "Enable"
-  ? enable(model)
-  : action.type === "Disable"
-  ? disable(model)
-  : Unknown.update(model, action)
-  );
+export const init = (isDisabled = false) => [
+  (isDisabled ? Model.disabled : Model.enabled),
+  Effects.none
+];
+
+export const update = (model, action) => {
+  switch (action.type) {
+    case "Enable":
+      return enable(model)
+    case "Disable":
+      return disable(model)
+    case "Toggle":
+      return toggle(model)
+    default:
+      return Unknown.update(model, action)
+  }
+}
+
+export const enable = (model) => [
+  Model.enabled,
+  Effects.none
+];
+
+export const disable = (model) => [
+  Model.disabled,
+  Effects.none
+];
+
+export const toggle = (model) => [
+  (model.isDisabled ? Model.enabled : Model.disabled),
+  Effects.none
+];
