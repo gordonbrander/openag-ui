@@ -31,6 +31,19 @@ const TagModal = tag('Modal');
 export const Open = TagModal(Modal.Open);
 export const Close = TagModal(Modal.Close);
 
+const TagName = action =>
+  action.type === 'Check' ?
+  TryName(action.value) :
+  tagged('Name', action);
+
+const NameOk = compose(TagName, Validator.Ok);
+const NameError = compose(TagName, Validator.Error);
+
+const TryName = value => ({
+  type: 'TryName',
+  value
+});
+
 const TryAddress = value => ({
   type: 'TryAddress',
   value
@@ -67,28 +80,43 @@ const TagSubmitter = action =>
   tagged('Submitter', action);
 
 const EnableSubmitter = TagSubmitter(Button.Enable);
+const DisableSubmitter = TagSubmitter(Button.Disable);
 
 // Model and update
 
 export const init = () => {
   const host = window.location.host;
-  const [address, addressFx] = Validator.init(
-    host,
+
+  const [name, nameFx] = Validator.init(
+    '',
+    localize('Give your Food Computer a name'),
+    localize('Alice'),
     null,
-    localize('Food computer web address...'),
     false,
     false
   );
+
+  const [address, addressFx] = Validator.init(
+    host,
+    localize('A web or IP address to connect to'),
+    localize('0.0.0.0'),
+    null,
+    false,
+    false
+  );
+
   const [submitter, submitterFx] = Button.init(localize('Save'), false, true, false, false);
   
   return [
     {
       isOpen: false,
+      name,
       address,
       submitter
     },
     Effects.batch([
       addressFx.map(TagAddress),
+      nameFx.map(TagName),
       submitterFx.map(TagSubmitter)
     ])
   ];
@@ -101,8 +129,12 @@ export const update = (model, action) =>
   updateAddress(model, action.source) :
   action.type === 'Submitter' ?
   updateSubmitter(model, action.source) :
+  action.type === 'Name' ?
+  updateName(model, action.source) :
   action.type === 'Submit' ?
   submit(model) :
+  action.type === 'TryName' ?
+  tryName(model, action.value) :
   action.type === 'TryAddress' ?
   tryAddress(model, action.value) :
   action.type === 'GetHeartbeat' ?
@@ -121,6 +153,13 @@ const updateAddress = cursor({
   set: (model, address) => merge(model, {address}),
   update: Validator.update,
   tag: TagAddress
+});
+
+const updateName = cursor({
+  get: model => model.name,
+  set: (model, name) => merge(model, {name}),
+  update: Validator.update,
+  tag: TagName
 });
 
 const updateSubmitter = cursor({
@@ -145,7 +184,6 @@ const tryAddress = (model, value) => {
   try {
     // Attempt to read a valid URL from user input. 
     const url = readRootUrl(value);
-    // Send a heartbeat request if successful.
     return update(model, GetHeartbeat(url));
   }
   catch (e) {
@@ -176,6 +214,12 @@ const gotHeartbeat = Result.updater(
     return update(model, AddressError(error));
   }
 );
+
+
+const tryName = (model, value) => {
+  const message = chooseRandom(NAME_MESSAGES);
+  return update(model, NameOk(message));
+}
 
 // View
 
@@ -222,9 +266,24 @@ export const viewFTU = (model, address) =>
             html.p({}, [
               localize("Congratulations! You're now the proud owner of a Food Computer. We just need a couple of things to get started.")
             ]),
-            Validator.view(model.address, forward(address, TagAddress), 'ftu-address')
+            Validator.view(model.name, forward(address, TagName), 'ftu-validator'),
+            Validator.view(model.address, forward(address, TagAddress), 'ftu-validator')
           ])
         ])
       ])
     ])
   ]);
+
+// Helpers
+
+const NAME_MESSAGES = [
+  localize('Good choice!'),
+  localize('Good one!'),
+  localize('You picked a good one!'),
+  localize('One in a million!')
+];
+
+const chooseRandom = array => {
+  const i = Math.floor(Math.random() * array.length);
+  return array[i];
+}

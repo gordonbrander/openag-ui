@@ -22,18 +22,20 @@ const CHECKING = 'checking';
 
 export class Model {
   constructor(
-    edit,
-    focus,
-    control,
+    label,
+    message,
     placeholder,
     mode,
-    message
+    edit,
+    focus,
+    control
   ) {
     this.edit = edit;
     this.focus = focus;
     this.control = control;
     this.placeholder = placeholder;
     this.mode = mode;
+    this.label = label;
     this.message = message;
   }
 }
@@ -81,8 +83,9 @@ export const Disable = ControlAction(Control.Disable);
 
 export const init = (
   value = '',
-  selection = null,
+  label,
   placeholder = '',
+  selection = null,
   isDisabled = false,
   isFocused = false
 ) => {
@@ -90,12 +93,13 @@ export const init = (
   const [control, controlFx] = Control.init(isDisabled);
   const [focus, focusFx] = Focus.init(isFocused);
   const model = new Model(
-    edit,
-    focus,
-    control,
+    label,
+    '',
     placeholder,
     EMPTY,
-    ''
+    edit,
+    focus,
+    control
   );
 
   const fx = Effects.batch([
@@ -152,22 +156,22 @@ const delegateControlUpdate = (model, action) =>
   swapControl(model, Control.update(model.control, action));
 
 const swapEdit = (model, [edit, fx]) => [
-  new Model(edit, model.focus, model.control, model.placeholder, model.mode, model.message),
+  new Model(model.label, model.message, model.placeholder, model.mode, edit, model.focus, model.control),
   fx.map(EditAction)
 ];
 
 const swapFocus = (model, [focus, fx]) => [
-  new Model(model.edit, focus, model.control, model.placeholder, model.mode, model.message),
+  new Model(model.label, model.message, model.placeholder, model.mode, model.edit, focus, model.control),
   fx.map(FocusAction)
 ];
 
 const swapControl = (model, [control, fx]) => [
-  new Model(model.edit, model.focus, control, model.placeholder, model.mode, model.message),
+  new Model(model.label, model.message, model.placeholder, model.mode, model.edit, model.focus, control),
   fx.map(ControlAction)
 ];
 
 const changeMode = (model, mode, message) =>
-  new Model(model.edit, model.focus, model.control, model.placeholder, mode, message);
+  new Model(model.label, message, model.placeholder, mode, model.edit, model.focus, model.control);
 
 const check = model => [
   changeMode(model, CHECKING, ''),
@@ -221,10 +225,9 @@ export const view = (model, address, className) =>
       onBlur: () => address(Blur)
     }),
     html.div({
-      className: 'validator-message',
-      hidden: toggle('hidden', model.message === '')
+      className: 'validator-message'
     }, [
-      model.message
+      model.message || model.label
     ])
   ]);
 

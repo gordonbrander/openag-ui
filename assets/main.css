@@ -138,6 +138,10 @@ do animation transitions.
 ----------------------------------------------------------------------------- */
 
 .validator-message {
+  color: #989898;
+  font-size: 13px;
+  line-height: 24px;
+  min-height: 24px;
   padding-bottom: 4px;
   padding-top: 4px;
 }
@@ -150,24 +154,8 @@ do animation transitions.
 }
 
 .validator-error .validator-input {
-  background-color: #FFDDD9;
+  /*background-color: #FFDDD9;*/
   box-shadow: 0 2px 0 #F05C48;
-}
-
-.validator-error .validator-input::-webkit-input-placeholder {
-  color: #F05C48;
-}
-
-.validator-error .validator-input::-moz-input-placeholder {
-  color: #F05C48;
-}
-
-.validator-error .validator-input::-ms-input-placeholder {
-  color: #F05C48;
-}
-
-.validator-error .validator-input::placeholder {
-  color: #F05C48;
 }
 
 .validator-error .validator-message {
@@ -562,6 +550,6 @@ do animation transitions.
   pointer-events: none;
 }
 
-.ftu-address .validator-input {
+.ftu-validator .validator-input {
   font-size: 24px;
 }
