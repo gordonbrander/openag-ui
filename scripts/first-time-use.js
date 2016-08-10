@@ -17,7 +17,7 @@ import * as Template from './common/stache';
 import * as Request from './common/request';
 import * as Result from './common/result';
 import {readRootUrl} from './common/url';
-import {tag, tagged, merge} from './common/prelude';
+import {tag, tagged, merge, batch} from './common/prelude';
 import {classed, toggle} from './common/attr';
 import {cursor} from './common/cursor';
 import {localize} from './common/lang';
@@ -63,8 +63,10 @@ const AddressError = compose(TagAddress, Validator.Error);
 
 const Submit = {type: 'Submit'};
 
-const TagSubmit = action =>
-  tagged('Submit', action);
+const TagSubmitter = action =>
+  tagged('Submitter', action);
+
+const EnableSubmitter = TagSubmitter(Button.Enable);
 
 // Model and update
 
@@ -77,17 +79,17 @@ export const init = () => {
     false,
     false
   );
-  const [submit, submitFx] = Button.init(localize('Save'), false, false, false);
+  const [submitter, submitterFx] = Button.init(localize('Save'), false, true, false, false);
   
   return [
     {
       isOpen: false,
       address,
-      submit
+      submitter
     },
     Effects.batch([
       addressFx.map(TagAddress),
-      submitFx.map(TagSubmit)
+      submitterFx.map(TagSubmitter)
     ])
   ];
 }
@@ -97,6 +99,8 @@ export const update = (model, action) =>
   updateModal(model, action.source) :
   action.type === 'Address' ?
   updateAddress(model, action.source) :
+  action.type === 'Submitter' ?
+  updateSubmitter(model, action.source) :
   action.type === 'Submit' ?
   submit(model) :
   action.type === 'TryAddress' ?
@@ -117,6 +121,13 @@ const updateAddress = cursor({
   set: (model, address) => merge(model, {address}),
   update: Validator.update,
   tag: TagAddress
+});
+
+const updateSubmitter = cursor({
+  get: model => model.submitter,
+  set: (model, submitter) => merge(model, {submitter}),
+  update: Button.update,
+  tag: TagSubmitter
 });
 
 const submit = model => {
@@ -155,7 +166,11 @@ const getHeartbeat = (model, url) => {
 const gotHeartbeat = Result.updater(
   (model, value) => {
     const message = localize('Success! Connected to Food Computer.');
-    return update(model, AddressOk(message));
+
+    return batch(update, model, [
+      AddressOk(message),
+      EnableSubmitter
+    ]);
   },
   (model, error) => {
     return update(model, AddressError(error));
@@ -192,7 +207,13 @@ export const viewFTU = (model, address) =>
             html.div({
               className: 'panel--nav-right'
             }, [
-              thunk('submit', Button.view, model.submit, forward(address, TagSubmit), 'btn-panel'),
+              thunk(
+                'submit',
+                Button.view,
+                model.submitter,
+                forward(address, TagSubmitter),
+                'btn-panel'
+              ),
             ])
           ]),
           html.div({
