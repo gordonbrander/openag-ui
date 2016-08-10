@@ -89,8 +89,8 @@ export const init = () => {
 
   const [name, nameFx] = Validator.init(
     '',
-    localize('Give your Food Computer a name'),
-    localize('Alice'),
+    localize('Name your Food Computer'),
+    chooseRandom(NAMES),
     null,
     false,
     false
@@ -98,7 +98,7 @@ export const init = () => {
 
   const [address, addressFx] = Validator.init(
     host,
-    localize('A web or IP address to connect to'),
+    localize('The web or IP address of your Food Computer'),
     localize('0.0.0.0'),
     null,
     false,
@@ -264,7 +264,7 @@ export const viewFTU = (model, address) =>
             className: 'panel--content-in'
           }, [
             html.p({}, [
-              localize("Congratulations! You're now the proud owner of a Food Computer. We just need a couple of things to get started.")
+              localize("Congrats! You're the proud owner of a Food Computer. It's almost time to get planting! We just need a couple of things to get started.")
             ]),
             Validator.view(model.name, forward(address, TagName), 'ftu-validator'),
             Validator.view(model.address, forward(address, TagAddress), 'ftu-validator')
@@ -276,11 +276,41 @@ export const viewFTU = (model, address) =>
 
 // Helpers
 
+const NAMES = [
+  'Bert',
+  'Alice',
+  'Bob',
+  'Foody McFoodface',
+  'Planty McPlantface',
+  'Audrey II',
+  'Hal 9000',
+  'Bender',
+  'Calculon',
+  'Optimus Prime',
+  'T-1000',
+  'Bill Murray',
+  'Eve',
+  'Wall-E',
+  'Marvin',
+  'Rosie',
+  'Tom Servo',
+  'Ultron',
+  'K-9',
+  'Dalek',
+  'Baymax',
+  'GLaDOS',
+  'Astro Boy',
+  'Voltron',
+  'Megatron'
+];
+
 const NAME_MESSAGES = [
   localize('Good choice!'),
+  localize('Good name!'),
   localize('Good one!'),
   localize('You picked a good one!'),
-  localize('One in a million!')
+  localize('One in a million!'),
+  localize("That's my name, don't wear it out.")
 ];
 
 const chooseRandom = array => {
