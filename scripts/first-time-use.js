@@ -288,7 +288,7 @@ export const viewFTU = (model, address) =>
               className: 'panel--in'
             }, [
               html.p({}, [
-                localize("Congrats! You're the proud owner of a Food Computer. It's almost time to get planting! We just need a couple things to get started.")
+                localize("Congrats! It's almost time to start planting! We just need a couple things to get your Food Computer up and running.")
               ]),
               Validator.view(model.name, forward(address, TagName), 'ftu-validator'),
               Validator.view(model.address, forward(address, TagAddress), 'ftu-validator'),
@@ -327,7 +327,6 @@ const NAMES = [
   'Rosie',
   'Tom Servo',
   'Ultron',
-  'K-9',
   'Dalek',
   'Baymax',
   'GLaDOS',
