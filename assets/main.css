@@ -321,7 +321,7 @@ p {
 .modal[hidden] > .modal-main {
   display: block;
   opacity: 0;
-  transform: translate(-50%, 0) scale(0.9);
+  transform: translate(-50%, -35%) scale(0.95);
   pointer-events: none;
 }
 
