@@ -262,20 +262,32 @@ p {
 /* Modal
 ----------------------------------------------------------------------------- */
 
+.modal {
+  position: fixed;
+  width: 100vw;
+  height: 100vh;
+  top: 0;
+  left: 0;
+  z-index: 9;
+}
+
+.modal[hidden] {
+  display: block;
+  pointer-events: none;
+}
+
 .modal-overlay {
   background: rgba(0, 0, 0, 0.2);
   height: 100vh;
-  position: fixed;
+  position: absolute;
   width: 100vw;
   top: 0;
   left: 0;
   opacity: 1;
-  transition: opacity 200ms ease-out;
-  z-index: 9;
+  transition: opacity 500ms cubic-bezier(0.165, 0.840, 0.440, 1.000);
 }
 
-.modal-overlay[hidden] {
-  display: block;
+.modal[hidden] .modal-overlay {
   opacity: 0;
   pointer-events: none;
 }
@@ -285,7 +297,7 @@ p {
   border-radius: 3px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.20);
   left: 50%;
-  position: fixed;
+  position: absolute;
   top: 50%;
   height: 80vh;
   width: 768px;
@@ -297,7 +309,6 @@ p {
   display: block;
   opacity: 1;
   pointer-events: all;
-  z-index: 10;
 }
 
 /* Smaller modal */
@@ -307,7 +318,7 @@ p {
   width: 400px;
 }
 
-.modal-main--close {
+.modal[hidden] > .modal-main {
   display: block;
   opacity: 0;
   transform: translate(-50%, 0) scale(0.9);

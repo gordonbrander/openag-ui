@@ -57,18 +57,15 @@ export const view = (model, address, environmentID) => {
   const variables = Config.chart.map(readVariable);
 
   return html.div({
-    className: 'modal'
+    className: 'modal',
+    hidden: toggle(!model.isOpen, 'hidden')
   }, [
     html.div({
       className: 'modal-overlay',
-      hidden: toggle(!model.isOpen, 'hidden'),
       onClick: () => address(Close)
     }),
     html.dialog({
-      className: classed({
-        'modal-main modal-main--menu': true,
-        'modal-main--close': !model.isOpen
-      }),
+      className: 'modal-main modal-main--menu',
       open: toggle(model.isOpen, 'open')
     }, [
       html.div({

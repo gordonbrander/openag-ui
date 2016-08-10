@@ -227,17 +227,16 @@ export const update = (model, action) =>
 export const view = (model, address) =>
   html.div({
     id: 'recipes-modal',
-    className: 'modal'
+    className: 'modal',
+    hidden: toggle(!model.isOpen, 'hidden')
   }, [
     html.div({
       className: 'modal-overlay',
-      hidden: toggle(!model.isOpen, 'hidden'),
       onClick: () => address(Close)
     }),
     html.dialog({
       className: classed({
-        'modal-main': true,
-        'modal-main--close': !model.isOpen
+        'modal-main': true
       }),
       open: toggle(model.isOpen, 'open')
     }, [
