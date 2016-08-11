@@ -1,4 +1,4 @@
-import {extent, bisector} from 'd3-array';
+import {extent, max, bisector} from 'd3-array';
 import {scaleLinear, scaleTime} from 'd3-scale';
 import {line} from 'd3-shape';
 import {timeHour} from 'd3-time';
@@ -34,6 +34,8 @@ const RATIO_DOMAIN = [0, 1.0];
 
 const RECIPE_START = 'recipe_start';
 const RECIPE_END = 'recipe_end';
+
+const MAX_DATAPOINTS = 5000;
 
 // Actions
 
@@ -92,8 +94,6 @@ export const Model = (
   xhairAt,
   isLoading
 });
-
-export const Variables = (data) => data.slice().sort(comparator(readX));
 
 // Construct a group from a config object
 const readGroupFromConfig = ({
@@ -155,7 +155,7 @@ const insertDataPoint = (index, dataPoint) => {
 
 export const init = () => [
   Model(
-    Variables([]),
+    [],
     CHART_CONFIG,
     null,
     null,
@@ -184,7 +184,7 @@ export const update = (model, action) =>
   Unknown.update(model, action);
 
 const addData = (model, data) => {
-  const variables = concatMonotonic(model.variables, data, readX);
+  const variables = concatMonotonic(model.variables, data, MAX_DATAPOINTS, readX);
 
   // If variables model actually updated, then create new chart model.
   if (model.variables !== variables) {
@@ -660,24 +660,55 @@ const calcRelativeMousePos = (node, clientX, clientY) => {
 
 const getVariable = x => x.variable;
 
-const concatMonotonic = (list, additions, readX) => {
-  // If the list is empty, take the fast path out.
-  if (list.length === 0) {
-    return additions;
+// Advance buffer by one item, removing item to stay under limit.
+const advanceBuffer = (buffer, item, limit) => {
+  if (buffer.length < limit) {
+    buffer.push(item);
   }
   else {
-    // Get the last timestamp (use 0 as a fallback).
-    // `list` is assumed to be monotonic.
-    const timestamp = maybeMap(readX, last(list), 0);
-    // Filter the additions to just those that occur after timestamp.
-    // Sort the result.
-    const after = filterAbove(additions, readX, timestamp);
-    if (after.length > 0) {
-      const sorted = after.sort(comparator(readX));
-      return list.concat(sorted);
+    buffer.shift();
+    buffer.push(item);
+  }
+  return buffer;
+}
+
+const advanceThresholdBuffer = (buffer, item, limit, threshold, read) => {
+  const score = read(item);
+  return (
+    score > threshold ?
+    advanceBuffer(buffer, item, limit) :
+    buffer
+  );
+}
+
+// Append n items to end of buffer, removing items from beginning of buffer
+// to stay under limit.
+const appendThresholdBuffer = (buffer, items, limit, threshold, read) => {
+  const length = items.length;
+  for (var i = 0; i < length; i++) {
+    advanceThresholdBuffer(buffer, items[i], limit, threshold, read);
+  }
+  return buffer;
+}
+
+const concatMonotonic = (buffer, items, limit, readX) => {
+  // If the buffer is empty, take the fast path out.
+  if (buffer.length === 0) {
+    return items;
+  }
+  else if (items.length === 0) {
+    return buffer;
+  }
+  else {
+    // Find the last largest timestamp.
+    const bufferHighScore = max(buffer, readX) || 0;
+    const itemsHighScore = max(items, readX);
+    if (itemsHighScore > bufferHighScore) {
+      const next = buffer.slice();
+      return appendThresholdBuffer(next, items, limit, bufferHighScore, readX);
     }
     else {
-      return list;
+      return buffer;
     }
   }
 }
@@ -692,17 +723,17 @@ const isMonotonic = (array, item, readX) => {
 
 // Create a comparator for sorting from a read function.
 // Returns a comparator function.
-const comparator = (read) => (a, b) => {
+const descending = (read) => (a, b) => {
   const fa = read(a);
   const fb = read(b);
   return (
-    a > b ? 1 :
-    a < b ? -1 :
+    fa > fb ? 1 :
+    fa < fb ? -1 :
     0
   );
 }
 
-const filterAbove = (array, read, value) =>
+const filterAbove = (array, value, read) =>
   array.filter(item => read(item) > value);
 
 const last = array => array.length > 0 ? array[array.length - 1] : null;
