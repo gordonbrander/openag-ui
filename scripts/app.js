@@ -7,9 +7,9 @@ import {cursor} from './common/cursor';
 import * as Template from './common/stache';
 import {readRootUrl} from './common/url';
 import * as Request from './common/request';
+import * as Banner from './common/banner';
 import * as Persistence from './persistence';
 import * as AppNav from './app/nav';
-import * as Banner from './banner';
 import * as Environments from './environments';
 import * as Recipes from './recipes';
 import * as Settings from './first-time-use';
@@ -49,7 +49,7 @@ const TagPersistence = action =>
   Restore(action.value) :
   // If we were notified of any errors, forward them to the banner module.
   action.type === 'NotifyBanner' ?
-  AlertBannerWithRefresh(action.message) :
+  AlertRefreshableBanner(action.message) :
   action.type === 'NotifyFirstTimeUse' ?
   OpenFirstTimeUse :
   tagged('Persistence', action);
@@ -66,7 +66,7 @@ const RestoreRecipes = compose(TagRecipes, Recipes.Restore);
 
 const TagEnvironments = action =>
   action.type === 'AlertBanner' ?
-  AlertBannerWithRefresh(action.source) :
+  AlertRefreshableBanner(action.source) :
   action.type === 'SuppressBanner' ?
   SuppressBanner :
   tagged('Environments', action);
@@ -83,7 +83,7 @@ const TagAppNav = action =>
 
 const TagBanner = tag('Banner');
 const AlertBanner = compose(TagBanner, Banner.Alert);
-const AlertBannerWithRefresh = compose(TagBanner, Banner.AlertWithRefresh);
+const AlertRefreshableBanner = compose(TagBanner, Banner.AlertRefreshable);
 const SuppressBanner = TagBanner(Banner.Suppress);
 
 const RecipeActivated = value => ({
@@ -309,7 +309,8 @@ const viewConfigured = (model, address) =>
       'banner',
       Banner.view,
       model.banner,
-      forward(address, TagBanner)
+      forward(address, TagBanner),
+      'global-banner'
     ),
     thunk(
       'environments',

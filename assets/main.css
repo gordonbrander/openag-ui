@@ -382,7 +382,7 @@ p {
   padding-right: 250px;
 }
 
-.banner--refresh {
+.banner-action {
   cursor: pointer;
   position: absolute;
   text-decoration: underline;
@@ -390,7 +390,7 @@ p {
   right: 24px;
 }
 
-.banner--refresh-close {
+.banner-action--close {
   display: none;
 }
 

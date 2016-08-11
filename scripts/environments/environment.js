@@ -269,6 +269,8 @@ const readRecord = record => record.rows.map(readRow);
 const compareByTimestamp = (a, b) =>
   a.timestamp > b.timestamp ? 1 : -1;
 
+// @TODO we should distinguish between datapoint types so we know what values
+// to parse to.
 const readDataPoint = ({variable, is_desired, timestamp, value}) => ({
   variable,
   timestamp,
