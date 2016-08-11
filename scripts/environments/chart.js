@@ -35,6 +35,8 @@ const RATIO_DOMAIN = [0, 1.0];
 const RECIPE_START = 'recipe_start';
 const RECIPE_END = 'recipe_end';
 
+const MAX_DATAPOINTS = 5000;
+
 // Actions
 
 export const Resize = (width, height) => ({
@@ -182,7 +184,7 @@ export const update = (model, action) =>
   Unknown.update(model, action);
 
 const addData = (model, data) => {
-  const variables = concatMonotonic(model.variables, data, readX);
+  const variables = concatMonotonic(model.variables, data, MAX_DATAPOINTS, readX);
 
   // If variables model actually updated, then create new chart model.
   if (model.variables !== variables) {
@@ -658,20 +660,52 @@ const calcRelativeMousePos = (node, clientX, clientY) => {
 
 const getVariable = x => x.variable;
 
-const concatMonotonic = (buffer, items, readX) => {
+// Advance buffer by one item, removing item to stay under limit.
+const advanceBuffer = (buffer, item, limit) => {
+  if (buffer.length < limit) {
+    buffer.push(item);
+  }
+  else {
+    buffer.shift();
+    buffer.push(item);
+  }
+  return buffer;
+}
+
+const advanceThresholdBuffer = (buffer, item, limit, threshold, read) => {
+  const score = read(item);
+  return (
+    score > threshold ?
+    advanceBuffer(buffer, item, limit) :
+    buffer
+  );
+}
+
+// Append n items to end of buffer, removing items from beginning of buffer
+// to stay under limit.
+const appendThresholdBuffer = (buffer, items, limit, threshold, read) => {
+  const length = items.length;
+  for (var i = 0; i < length; i++) {
+    advanceThresholdBuffer(buffer, items[i], limit, threshold, read);
+  }
+  return buffer;
+}
+
+const concatMonotonic = (buffer, items, limit, readX) => {
   // If the buffer is empty, take the fast path out.
   if (buffer.length === 0) {
-    return items.slice().sort(descending(readX));
+    return items;
+  }
+  else if (items.length === 0) {
+    return buffer;
   }
   else {
     // Find the last largest timestamp.
-    const timestamp = max(buffer, readX) || 0;
-    // Filter the additions to just those that occur after timestamp.
-    // Sort the result.
-    const after = filterAbove(items, timestamp, readX);
-    if (after.length > 0) {
-      const sorted = after.sort(descending(readX));
-      return buffer.concat(sorted);
+    const bufferHighScore = max(buffer, readX) || 0;
+    const itemsHighScore = max(items, readX);
+    if (itemsHighScore > bufferHighScore) {
+      const next = buffer.slice();
+      return appendThresholdBuffer(next, items, limit, bufferHighScore, readX);
     }
     else {
       return buffer;
