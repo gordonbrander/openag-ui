@@ -7,7 +7,7 @@ import {localize} from '../common/lang';
 import {merge, tag, batch} from '../common/prelude';
 import {cursor} from '../common/cursor';
 import {classed} from '../common/attr';
-import * as Textarea from '../common/textarea';
+import * as Input from '../common/input';
 import * as Recipes from '../recipes';
 
 // Action tagging functions
@@ -40,13 +40,13 @@ export const Cancel = {
   type: 'Cancel'
 };
 
-export const Clear = TextareaAction(Textarea.Clear);
+export const Clear = TextareaAction(Input.Clear);
 
 // Init and update functions
 
 export const init = () => {
   const placeholder = localize('Paste recipe JSON...');
-  const [textarea, textareaFx] = Textarea.init('', null, placeholder);
+  const [textarea, textareaFx] = Input.init('', null, placeholder);
   return [
     {
       isOpen: false,
@@ -79,7 +79,7 @@ const updateTextarea = cursor({
   get: model => model.textarea,
   set: (model, textarea) => merge(model, {textarea}),
   tag: TextareaAction,
-  update: Textarea.update
+  update: Input.update
 });
 
 export const update = (model, action) =>
@@ -88,8 +88,6 @@ export const update = (model, action) =>
   action.type === 'Submit' ?
   submit(model, action.recipe) :
   Unknown.update(model, action);
-
-const viewTextArea = Textarea.view('rform-textarea', 'rform-textarea txt-textarea');
 
 export const view = (model, address, isActive) =>
   html.div({
@@ -147,9 +145,11 @@ export const view = (model, address, isActive) =>
         }, [
           thunk(
             'textarea',
-            viewTextArea,
+            Input.viewTextarea,
             model.textarea,
-            forward(address, TextareaAction)
+            forward(address, TextareaAction),
+            'rform-textarea',
+            'rform-textarea txt-textarea'
           ),
         ])
       ])
