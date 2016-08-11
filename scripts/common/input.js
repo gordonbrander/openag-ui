@@ -44,6 +44,7 @@ const ControlAction = action => ({
 });
 
 export const Change = (value, selection) => EditAction(Edit.Change(Edit.readChange(value, selection)));
+export const Clear = EditAction(Edit.Change(Edit.readChange('', null)));
 export const Activate = FocusAction(Focus.Focus);
 export const Deactivate = FocusAction(Focus.Blur);
 export const Enable = ControlAction(Control.Enable);
@@ -53,7 +54,7 @@ export const init = (
   value = '',
   selection = null,
   placeholder = '',
-  isDisabled,
+  isDisabled = false,
   isFocused = false
 ) => {
   const [edit, editFx] = Edit.init(value, selection);
@@ -138,6 +139,25 @@ export const view = (model, address, className) =>
     onFocus: onFocus(address),
     onBlur: onBlur(address)
   });
+
+export const viewTextarea = (model, address, id, className) =>
+  html.textarea({
+    id,
+    className,
+    placeholder: model.placeholder,
+    disabled:
+      ( model.control.isDisabled
+      ? true
+      : void(0)
+      ),
+    onInput: onChange(address),
+    onKeyUp: onSelect(address),
+    onSelect: onSelect(address),
+    onFocus: onFocus(address),
+    onBlur: onBlur(address)
+  }, [
+    model.edit.value
+  ]);
 
 export const onChange = annotate(Edit.onChange, EditAction);
 export const onSelect = annotate(Edit.onSelect, EditAction);
