@@ -1,4 +1,4 @@
-import {extent, bisector} from 'd3-array';
+import {extent, max, bisector} from 'd3-array';
 import {scaleLinear, scaleTime} from 'd3-scale';
 import {line} from 'd3-shape';
 import {timeHour} from 'd3-time';
@@ -93,8 +93,6 @@ export const Model = (
   isLoading
 });
 
-export const Variables = (data) => data.slice().sort(comparator(readX));
-
 // Construct a group from a config object
 const readGroupFromConfig = ({
   variable,
@@ -155,7 +153,7 @@ const insertDataPoint = (index, dataPoint) => {
 
 export const init = () => [
   Model(
-    Variables([]),
+    [],
     CHART_CONFIG,
     null,
     null,
@@ -660,24 +658,23 @@ const calcRelativeMousePos = (node, clientX, clientY) => {
 
 const getVariable = x => x.variable;
 
-const concatMonotonic = (list, additions, readX) => {
-  // If the list is empty, take the fast path out.
-  if (list.length === 0) {
-    return additions;
+const concatMonotonic = (buffer, items, readX) => {
+  // If the buffer is empty, take the fast path out.
+  if (buffer.length === 0) {
+    return items.slice().sort(descending(readX));
   }
   else {
-    // Get the last timestamp (use 0 as a fallback).
-    // `list` is assumed to be monotonic.
-    const timestamp = maybeMap(readX, last(list), 0);
+    // Find the last largest timestamp.
+    const timestamp = max(buffer, readX) || 0;
     // Filter the additions to just those that occur after timestamp.
     // Sort the result.
-    const after = filterAbove(additions, readX, timestamp);
+    const after = filterAbove(items, timestamp, readX);
     if (after.length > 0) {
-      const sorted = after.sort(comparator(readX));
-      return list.concat(sorted);
+      const sorted = after.sort(descending(readX));
+      return buffer.concat(sorted);
     }
     else {
-      return list;
+      return buffer;
     }
   }
 }
@@ -692,17 +689,17 @@ const isMonotonic = (array, item, readX) => {
 
 // Create a comparator for sorting from a read function.
 // Returns a comparator function.
-const comparator = (read) => (a, b) => {
+const descending = (read) => (a, b) => {
   const fa = read(a);
   const fb = read(b);
   return (
-    a > b ? 1 :
-    a < b ? -1 :
+    fa > fb ? 1 :
+    fa < fb ? -1 :
     0
   );
 }
 
-const filterAbove = (array, read, value) =>
+const filterAbove = (array, value, read) =>
   array.filter(item => read(item) > value);
 
 const last = array => array.length > 0 ? array[array.length - 1] : null;
