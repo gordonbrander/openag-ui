@@ -694,15 +694,16 @@ const appendThresholdBuffer = (buffer, items, limit, threshold, read) => {
 const concatMonotonic = (buffer, items, limit, readX) => {
   // If the buffer is empty, take the fast path out.
   if (buffer.length === 0) {
-    return items;
+    return items.slice().sort(descending(readX));
   }
   else if (items.length === 0) {
     return buffer;
   }
   else {
     // Find the last largest timestamp.
-    const bufferHighScore = max(buffer, readX) || 0;
-    const itemsHighScore = max(items, readX);
+    const bufferHighScore = readX(last(buffer));
+    const sorted = items.slice().sort(descending(readX));
+    const itemsHighScore = readX(last(sorted));
     if (itemsHighScore > bufferHighScore) {
       const next = buffer.slice();
       return appendThresholdBuffer(next, items, limit, bufferHighScore, readX);
