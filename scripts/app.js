@@ -68,8 +68,6 @@ const RestoreRecipes = compose(TagRecipes, Recipes.Restore);
 const TagEnvironments = action =>
   action.type === 'AlertBanner' ?
   AlertRefreshableBanner(action.source) :
-  action.type === 'SuppressBanner' ?
-  SuppressBanner :
   tagged('Environments', action);
 
 const RestoreEnvironments = compose(TagEnvironments, Environments.Restore);
@@ -86,7 +84,6 @@ const TagBanner = tag('Banner');
 const AlertBanner = compose(TagBanner, Banner.Alert);
 const AlertRefreshableBanner = compose(TagBanner, Banner.AlertRefreshable);
 const AlertDismissableBanner = compose(TagBanner, Banner.AlertRefreshable);
-const SuppressBanner = TagBanner(Banner.Suppress);
 
 const RecipeActivated = value => ({
   type: 'RecipeActivated',

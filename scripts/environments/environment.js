@@ -70,8 +70,6 @@ const ChartLoading = compose(TagChart, Chart.Loading);
 
 // Send an alert. We use this to send up problems to be displayed in banner.
 const AlertBanner = tag('AlertBanner');
-// Suppress a previously sent alert.
-const SuppressBanner = {type: 'SuppressBanner'};
 
 // Map an incoming datapoint into an action
 const DataPointAction = dataPoint => {
@@ -133,21 +131,10 @@ const fetchLatest = model => {
 }
 
 const updateLatest = Result.updater(
-  (model, record) => {
-    const [next, fx] = batch(update, model, [
-      AddChartData(readData(record)),
-      PongPoll
-    ]);
-
-    return [
-      next,
-      Effects.batch([
-        fx,
-        // Suppress any banners.
-        Effects.receive(SuppressBanner)
-      ])
-    ];
-  },
+  (model, record) => batch(update, model, [
+    AddChartData(readData(record)),
+    PongPoll
+  ]),
   (model, error) => {
     // Send miss poll
     const [next, fx] = update(model, MissPoll);
@@ -179,23 +166,10 @@ const getBacklog = model => {
 
 // Update chart backlog from result of fetch.
 const updateBacklog = Result.updater(
-  (model, record) => {
-    const [next, fx] = batch(update, model, [
-      AddChartData(readData(record)),
-      FetchLatest
-    ]);
-
-    return [
-      next,
-      Effects.batch([
-        fx,
-        // Suppress any banners.
-        // @TODO in future we may want to store a flag on the model indicating
-        // if we sent up any banners and only suppress if we have sent a banner.
-        Effects.receive(SuppressBanner)
-      ])
-    ];
-  },
+  (model, record) => batch(update, model, [
+    AddChartData(readData(record)),
+    FetchLatest
+  ]),
   (model, error) => {
     const action = AlertBanner(error);
 
