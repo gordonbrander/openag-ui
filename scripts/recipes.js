@@ -6,6 +6,7 @@ import * as Database from './common/database';
 import * as Indexed from './common/indexed';
 import * as Unknown from './common/unknown';
 import * as Result from './common/result';
+import * as Banner from './common/banner';
 import {merge, tag, tagged, batch} from './common/prelude';
 import * as Modal from './common/modal';
 import {cursor} from './common/cursor';
@@ -24,6 +25,13 @@ const getPouchID = Indexed.getter('_id');
 // Actions and tagging functions
 
 const TagModal = tag('Modal');
+
+const TagBanner = source => ({
+  type: 'Banner',
+  source
+});
+
+const FailRecipeStart = TagBanner(Banner.AlertDismissable("Blarg! Couldn't start recipe"));
 
 const RecipesFormAction = action =>
   action.type === 'Back' ?
@@ -94,6 +102,8 @@ const NoOp = Indexed.NoOp;
 
 export const init = () => {
   const [recipesForm, recipesFormFx] = RecipesForm.init();
+  const [banner, bannerFx] = Banner.init();
+
   return [
     {
       active: null,
@@ -105,9 +115,13 @@ export const init = () => {
       order: [],
       // Index all recipes by ID
       entries: {},
-      recipesForm
+      recipesForm,
+      banner
     },
-    recipesFormFx.map(RecipesFormAction)
+    Effects.batch([
+      recipesFormFx.map(RecipesFormAction),
+      bannerFx.map(TagBanner)
+    ])
   ];
 };
 
@@ -115,6 +129,13 @@ const updateModal = cursor({
   update: Modal.update,
   tag: TagModal
 });
+
+const updateBanner = cursor({
+  get: model => model.banner,
+  set: (model, banner) => merge(model, {banner}),
+  update: Banner.update,
+  tag: TagBanner
+})
 
 const updateRecipesForm = cursor({
   get: model => model.recipesForm,
@@ -170,10 +191,17 @@ const activatePanel = (model, id) =>
 
 const put = (model, recipe) => {
   // Insert recipe into in-memory model.
+  // @TODO perhaps we should do this after succesful put.
   const next = Indexed.add(model, recipe._id, recipe);
   // Then attempt to store it in DB.
   return [next, Database.put(DB, recipe).map(Putted)];
 }
+
+const putted = (model, result) =>
+  result.isOk ?
+  [model, Effects.none] :
+  // @TODO retry or display a banner
+  update(model, FailRecipeStart);
 
 const restore = (model, record) => {
   const next = merge(model, {origin: record.origin});
@@ -185,6 +213,8 @@ const restore = (model, record) => {
 }
 
 export const update = (model, action) =>
+  action.type === 'Banner' ?
+  updateBanner(model, action.source) :
   action.type === 'RecipesForm' ?
   updateRecipesForm(model, action.source) :
   action.type === 'Modal' ?
@@ -194,12 +224,7 @@ export const update = (model, action) =>
   action.type === 'Put' ?
   put(model, action.value) :
   action.type === 'Putted' ?
-  (
-    action.result.isOk ?
-    [model, Effects.none] :
-    // @TODO retry or display a banner
-    [model, Effects.none]
-  ) :
+  putted(model, action.result) :
   action.type === 'RestoreRecipes' ?
   [model, Database.restore(DB).map(RestoredRecipes)] :
   action.type === 'RestoredRecipes' ?
@@ -266,6 +291,13 @@ export const view = (model, address) =>
               })
             ])
           ]),
+          thunk(
+            'recipes-banner',
+            Banner.view,
+            model.banner,
+            forward(address, TagBanner),
+            'panel--banner recipes--banner'
+          ),
           html.div({
             className: 'panel--content'
           }, [
