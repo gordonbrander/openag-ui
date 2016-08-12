@@ -178,7 +178,7 @@ const syncedOk = model =>
 
 // @TODO do something with sync errors.
 const syncedError = model => {
-  const message = localize("Hmm, couldn't connect with browser database. There is probably something wrong with your browser.");
+  const message = localize("Hmm, couldn't sync with your browser's database.");
   return update(model, AlertRefreshable(message));
 }
 
@@ -193,7 +193,10 @@ const restoredRecipes = Result.updater(
     Effects.none
   ],
   // @TODO handle error case with an error banner or something.
-  (model, error) => [model, Effects.none]
+  (model, error) => {
+    const message = localize("Hmm, couldn't read from your browser's database.");
+    return update(model, AlertRefreshable(message));
+  }
 );
 
 // Activate recipe by id
