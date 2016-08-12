@@ -501,6 +501,23 @@ p {
   position: relative;
 }
 
+.environment-main--has-sidebar {
+  padding-left: 256px;
+}
+
+/* Summary sidebar
+----------------------------------------------------------------------------- */
+
+.sidebar-summary {
+  background-color: #fff;
+  /* Full height minus the app header */
+  height: calc(100vh - 72px);
+  width: 256px;
+  position: absolute;
+  left: 0;
+  top: 0;
+}
+
 /* Recipes library
 ----------------------------------------------------------------------------- */
 

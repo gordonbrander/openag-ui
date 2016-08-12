@@ -12,6 +12,7 @@ import {compose, constant} from '../lang/functional';
 import * as Chart from '../environments/chart';
 import * as Toolbox from '../environments/toolbox';
 import * as Exporter from '../environments/exporter';
+import * as Sidebar from '../environments/sidebar';
 
 const S_MS = 1000;
 const MIN_MS = S_MS * 60;
@@ -38,6 +39,11 @@ export const Restore = value => ({
 const TagExporter = tag('Exporter');
 const OpenExporter = TagExporter(Exporter.Open);
 const RestoreExporter = compose(TagExporter, Exporter.Restore);
+
+const TagSidebar = soruce => ({
+  type: 'Sidebar',
+  source
+});
 
 const TagToolbox = action =>
   action.type === 'OpenExporter' ?
@@ -82,18 +88,21 @@ export const init = id => {
   const [poll, pollFx] = Poll.init(POLL_TIMEOUT);
   const [chart, chartFx] = Chart.init();
   const [exporter, exporterFx] = Exporter.init();
+  const [sidebar, sidebarFx] = Sidebar.init();
 
   return [
     {
       id,
       chart,
       poll,
-      exporter
+      exporter,
+      sidebar
     },
     Effects.batch([
       chartFx.map(TagChart),
       pollFx.map(TagPoll),
-      exporterFx.map(TagExporter)
+      exporterFx.map(TagExporter),
+      sidebarFx.map(TagSidebar)
     ])
   ];
 };
@@ -107,6 +116,8 @@ export const update = (model, action) =>
   updateExporter(model, action.source) :
   action.type === 'Chart' ?
   updateChart(model, action.source) :
+  action.type === 'Sidebar' ?
+  updateSidebar(model, action.source) :
   action.type === 'FetchLatest' ?
   fetchLatest(model) :
   action.type === 'Latest' ?
@@ -195,6 +206,13 @@ const restore = (model, record) => {
   ]);
 }
 
+const updateSidebar = cursor({
+  get: model => model.sidebar,
+  set: (model, sidebar) => merge(model, {sidebar}),
+  update: Sidebar.update,
+  tag: TagSidebar
+});
+
 const updateChart = cursor({
   get: model => model.chart,
   set: (model, chart) => merge(model, {chart}),
@@ -220,9 +238,15 @@ const updatePoll = cursor({
 
 export const view = (model, address) =>
   html.div({
-    className: 'environment-main'
+    className: 'environment-main environment-main--has-sidebar'
   }, [
     thunk('chart', Chart.view, model.chart, forward(address, TagChart)),
+    thunk(
+      'sidebar',
+      Sidebar.view,
+      model.sidebar,
+      forward(address, TagSidebar)
+    ),
     thunk('chart-toolbox', Toolbox.view, model, forward(address, TagToolbox)),
     thunk(
       'chart-export',
