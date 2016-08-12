@@ -167,7 +167,8 @@ const sync = model => {
     return [model, Database.sync(DB, origin).map(Synced)];
   }
   else {
-    // @TODO perhaps we want to notify the user something went wrong?
+    // @TODO this case should never happen, but perhaps we want to notify the
+    // user something went wrong?
     console.warn('Recipe database sync attempted before origin was added to model');
     return [model, Effects.none];
   }
@@ -176,7 +177,6 @@ const sync = model => {
 const syncedOk = model =>
   update(model, RestoreRecipes);
 
-// @TODO do something with sync errors.
 const syncedError = model => {
   const message = localize("Hmm, couldn't sync with your browser's database.");
   return update(model, AlertRefreshable(message));
@@ -192,7 +192,6 @@ const restoredRecipes = Result.updater(
     }),
     Effects.none
   ],
-  // @TODO handle error case with an error banner or something.
   (model, error) => {
     const message = localize("Hmm, couldn't read from your browser's database.");
     return update(model, AlertRefreshable(message));
