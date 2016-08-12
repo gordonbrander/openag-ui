@@ -2,6 +2,7 @@ import {html, forward, Effects, thunk} from 'reflex';
 import {merge, tagged, tag, batch} from './common/prelude';
 import {version} from '../package.json';
 import * as Config from '../openag-config.json';
+import {localize} from './common/lang';
 import * as Unknown from './common/unknown';
 import {cursor} from './common/cursor';
 import * as Template from './common/stache';
@@ -84,6 +85,7 @@ const TagAppNav = action =>
 const TagBanner = tag('Banner');
 const AlertBanner = compose(TagBanner, Banner.Alert);
 const AlertRefreshableBanner = compose(TagBanner, Banner.AlertRefreshable);
+const AlertDismissableBanner = compose(TagBanner, Banner.AlertRefreshable);
 const SuppressBanner = TagBanner(Banner.Suppress);
 
 const RecipeActivated = value => ({
@@ -100,6 +102,11 @@ const PostRecipe = (environmentID, recipeID) => ({
   type: 'PostRecipe',
   recipeID,
   environmentID
+});
+
+const RecipePosted = (result) => ({
+  type: 'RecipePosted',
+  result
 });
 
 const ChangeAppNavRecipeTitle = compose(TagAppNav, AppNav.ChangeRecipeTitle);
@@ -168,8 +175,12 @@ export const update = (model, action) =>
   recipeActivated(model, action.value) :
   action.type === 'PostRecipe' ?
   postRecipe(model, action.environmentID, action.recipeID) :
-  action.type === 'Posted' ?
-  [model, Effects.none] :
+  action.type === 'RecipePosted' ?
+  (
+    action.result.isOk ?
+    recipePostedOk(model, action.result.value) :
+    recipePostedError(model, action.result.error)
+  ) :
   Unknown.update(model, action);
 
 const updatePersistence = cursor({
@@ -228,8 +239,17 @@ const postRecipe = (model, environmentID, recipeID) => {
 
   return [
     model,
-    Request.post(url, {data: recipeID})
+    Request.post(url, {data: recipeID}).map(RecipePosted)
   ];
+}
+
+// We do nothing for successful recipe posts. This may change in future.
+const recipePostedOk = (model, value) =>
+  [model, Effects.none];
+
+const recipePostedError = (model, error) => {
+  const message = localize('Food computer failed to start recipe');
+  return update(model, AlertRefreshableBanner(message));
 }
 
 const updateHeartbeat = (model, url) => {
