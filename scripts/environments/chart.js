@@ -25,6 +25,7 @@ const MIN_MS = S_MS * 60;
 const HR_MS = MIN_MS * 60;
 const DAY_MS = HR_MS * 24;
 
+const SIDEBAR_WIDTH = 256;
 const HEADER_HEIGHT = 72;
 const SCRUBBER_HEIGHT = 40;
 const TOOLTIP_SPACE = 30;
@@ -159,8 +160,8 @@ export const init = () => [
     CHART_CONFIG,
     null,
     null,
-    window.innerWidth,
-    (window.innerHeight - HEADER_HEIGHT),
+    calcChartWidth(window.innerWidth),
+    calcChartHeight(window.innerHeight),
     1.0,
     0.5,
     true
@@ -241,7 +242,10 @@ const viewLoading = (model, address) => {
       height: px(height)
     },
     onResize: onWindow(address, () => {
-      return Resize(window.innerWidth, (window.innerHeight - HEADER_HEIGHT));
+      return Resize(
+        calcChartWidth(window.innerWidth),
+        calcChartHeight(window.innerHeight)
+      );
     })
   }, [
     html.img({
@@ -262,7 +266,10 @@ const viewEmpty = (model, address) => {
       height: px(height)
     },
     onResize: onWindow(address, () => {
-      return Resize(window.innerWidth, (window.innerHeight - HEADER_HEIGHT));
+      return Resize(
+        calcChartWidth(window.innerWidth),
+        calcChartHeight(window.innerHeight)
+      );
     })
   }, [
     html.div({
@@ -383,7 +390,10 @@ const viewData = (model, address) => {
       address(MoveScrubber(scrubberAt));
     },
     onResize: onWindow(address, () => {
-      return Resize(window.innerWidth, (window.innerHeight - HEADER_HEIGHT));
+      return Resize(
+        calcChartWidth(window.innerWidth),
+        calcChartHeight(window.innerHeight)
+      );
     }),
     style: {
       width: px(width),
@@ -591,6 +601,12 @@ const round2x = float => Math.round(float * 100) / 100;
 
 // Given 2 extents, test to see whether they are the same range.
 const isSameExtent = (a, b) => (a[0] === b[0]) && (a[1] === b[1]);
+
+const calcChartWidth = (width) =>
+  width - SIDEBAR_WIDTH;
+
+const calcChartHeight = (height) =>
+  height - HEADER_HEIGHT;
 
 const calcPlotWidth = (extent, interval, width) => {
   const durationMs = extent[1] - extent[0];
