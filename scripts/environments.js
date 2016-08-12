@@ -13,7 +13,6 @@ const IndexedAction = tag('Indexed');
 const ActivateIndexed = compose(IndexedAction, Indexed.Activate);
 
 const AlertBanner = tag('AlertBanner');
-const SuppressBanner = {type: 'SuppressBanner'};
 
 // Address a specific environment by id.
 export const EnvironmentByID = (id, source) => ({
@@ -23,8 +22,6 @@ export const EnvironmentByID = (id, source) => ({
 });
 
 export const EnvironmentAction = (id, action) =>
-  action.type === 'SuppressBanner' ?
-  SuppressBanner :
   action.type === 'AlertBanner' ?
   AlertBanner(action.source) :
   EnvironmentByID(id, action);

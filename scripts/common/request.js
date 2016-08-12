@@ -5,6 +5,30 @@ import * as Result from '../common/result';
 import {compose} from '../lang/functional';
 import {tag} from '../common/prelude';
 
+// Actions
+
+export const Get = url => ({
+  type: 'Get',
+  url
+});
+
+export const Got = result => ({
+  type: 'Got',
+  result
+});
+
+export const Post = url => ({
+  type: 'Post',
+  url
+});
+
+export const Posted = result => ({
+  type: 'Posted',
+  result
+});
+
+// Effects
+
 // Read a Response object to JSON.
 // https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API/Using_Fetch
 const readResponseJSON = response =>
@@ -46,31 +70,16 @@ const postFetch = (url, body) => {
   return fetch(request).then(readResponseJSON, readFailure);
 }
 
-export const Get = url => ({
-  type: 'Get',
-  url
-});
-
-export const Got = tag('Got');
-
 // Returns a get effect
-export const get = url => Effects.perform(new Task((succeed, fail) => {
+// You'll want to use the `.map()` method on the return value to map this
+// into an action.
+export const get = url => Effects.perform(new Task(succeed => {
   getFetch(url).then(succeed);
 }));
 
-export const Post = url => ({
-  type: 'Post',
-  url
-});
-
-export const Posted = result => ({
-  type: 'Posted',
-  result
-});
-
 // Returns post effect
-export const post = (url, body) =>
-  Effects.perform(new Task((succeed, fail) => {
-    const posted = compose(succeed, Posted);
-    postFetch(url, body).then(posted, posted);
-  }));
+// You'll want to use the `.map()` method on the return value to map this
+// into an action.
+export const post = (url, body) => Effects.perform(new Task(succeed => {
+  postFetch(url, body).then(succeed);
+}));

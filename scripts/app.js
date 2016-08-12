@@ -2,14 +2,15 @@ import {html, forward, Effects, thunk} from 'reflex';
 import {merge, tagged, tag, batch} from './common/prelude';
 import {version} from '../package.json';
 import * as Config from '../openag-config.json';
+import {localize} from './common/lang';
 import * as Unknown from './common/unknown';
 import {cursor} from './common/cursor';
 import * as Template from './common/stache';
 import {readRootUrl} from './common/url';
 import * as Request from './common/request';
+import * as Banner from './common/banner';
 import * as Persistence from './persistence';
 import * as AppNav from './app/nav';
-import * as Banner from './banner';
 import * as Environments from './environments';
 import * as Recipes from './recipes';
 import * as Settings from './first-time-use';
@@ -49,7 +50,7 @@ const TagPersistence = action =>
   Restore(action.value) :
   // If we were notified of any errors, forward them to the banner module.
   action.type === 'NotifyBanner' ?
-  AlertBannerWithRefresh(action.message) :
+  AlertRefreshableBanner(action.message) :
   action.type === 'NotifyFirstTimeUse' ?
   OpenFirstTimeUse :
   tagged('Persistence', action);
@@ -66,9 +67,7 @@ const RestoreRecipes = compose(TagRecipes, Recipes.Restore);
 
 const TagEnvironments = action =>
   action.type === 'AlertBanner' ?
-  AlertBannerWithRefresh(action.source) :
-  action.type === 'SuppressBanner' ?
-  SuppressBanner :
+  AlertRefreshableBanner(action.source) :
   tagged('Environments', action);
 
 const RestoreEnvironments = compose(TagEnvironments, Environments.Restore);
@@ -83,8 +82,8 @@ const TagAppNav = action =>
 
 const TagBanner = tag('Banner');
 const AlertBanner = compose(TagBanner, Banner.Alert);
-const AlertBannerWithRefresh = compose(TagBanner, Banner.AlertWithRefresh);
-const SuppressBanner = TagBanner(Banner.Suppress);
+const AlertRefreshableBanner = compose(TagBanner, Banner.AlertRefreshable);
+const AlertDismissableBanner = compose(TagBanner, Banner.AlertRefreshable);
 
 const RecipeActivated = value => ({
   type: 'RecipeActivated',
@@ -100,6 +99,11 @@ const PostRecipe = (environmentID, recipeID) => ({
   type: 'PostRecipe',
   recipeID,
   environmentID
+});
+
+const RecipePosted = (result) => ({
+  type: 'RecipePosted',
+  result
 });
 
 const ChangeAppNavRecipeTitle = compose(TagAppNav, AppNav.ChangeRecipeTitle);
@@ -168,8 +172,12 @@ export const update = (model, action) =>
   recipeActivated(model, action.value) :
   action.type === 'PostRecipe' ?
   postRecipe(model, action.environmentID, action.recipeID) :
-  action.type === 'Posted' ?
-  [model, Effects.none] :
+  action.type === 'RecipePosted' ?
+  (
+    action.result.isOk ?
+    recipePostedOk(model, action.result.value) :
+    recipePostedError(model, action.result.error)
+  ) :
   Unknown.update(model, action);
 
 const updatePersistence = cursor({
@@ -228,8 +236,17 @@ const postRecipe = (model, environmentID, recipeID) => {
 
   return [
     model,
-    Request.post(url, {data: recipeID})
+    Request.post(url, {data: recipeID}).map(RecipePosted)
   ];
+}
+
+// We do nothing for successful recipe posts. This may change in future.
+const recipePostedOk = (model, value) =>
+  [model, Effects.none];
+
+const recipePostedError = (model, error) => {
+  const message = localize('Food computer failed to start recipe');
+  return update(model, AlertRefreshableBanner(message));
 }
 
 const updateHeartbeat = (model, url) => {
@@ -309,7 +326,8 @@ const viewConfigured = (model, address) =>
       'banner',
       Banner.view,
       model.banner,
-      forward(address, TagBanner)
+      forward(address, TagBanner),
+      'global-banner'
     ),
     thunk(
       'environments',

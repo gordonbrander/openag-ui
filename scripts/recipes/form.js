@@ -2,6 +2,7 @@
 // hand is a pain.
 
 import {html, forward, Effects, thunk} from 'reflex';
+import * as Banner from '../common/banner';
 import * as Unknown from '../common/unknown';
 import {localize} from '../common/lang';
 import {merge, tag, batch} from '../common/prelude';
@@ -31,34 +32,48 @@ export const Submitted = recipe => ({
   recipe
 });
 
-// Sent in the case that parsing the JSON for the recipe fails.
-export const FailRecipeParse = {
-  type: 'FailRecipeParse'
-};
-
 export const Cancel = {
   type: 'Cancel'
 };
 
 export const Clear = TextareaAction(Input.Clear);
 
+const TagBanner = source => ({
+  type: 'Banner',
+  source
+});
+
+const FailRecipeParse = TagBanner(Banner.AlertDismissable("Uh-oh! Invalid JSON."));
+
 // Init and update functions
 
 export const init = () => {
   const placeholder = localize('Paste recipe JSON...');
   const [textarea, textareaFx] = Input.init('', null, placeholder);
+  const [banner, bannerFx] = Banner.init();
   return [
     {
       isOpen: false,
-      textarea
+      textarea,
+      banner
     },
-    textareaFx.map(TextareaAction)
+    textareaFx.map(TextareaAction),
+    bannerFx.map(TagBanner)
   ];
 };
 
 // Update functions
 
-export const submit = (model, recipeJSON) => {
+export const update = (model, action) =>
+  action.type === 'Banner' ?
+  updateBanner(model, action.source) :
+  action.type === 'Textarea' ?
+  updateTextarea(model, action.source) :
+  action.type === 'Submit' ?
+  submit(model, action.recipe) :
+  Unknown.update(model, action);
+
+const submit = (model, recipeJSON) => {
   try {
     const recipe = JSON.parse(recipeJSON);
     return [
@@ -82,12 +97,14 @@ const updateTextarea = cursor({
   update: Input.update
 });
 
-export const update = (model, action) =>
-  action.type === 'Textarea' ?
-  updateTextarea(model, action.source) :
-  action.type === 'Submit' ?
-  submit(model, action.recipe) :
-  Unknown.update(model, action);
+const updateBanner = cursor({
+  get: model => model.banner,
+  set: (model, banner) => merge(model, {banner}),
+  tag: TagBanner,
+  update: Banner.update
+});
+
+// View
 
 export const view = (model, address, isActive) =>
   html.div({
@@ -134,6 +151,13 @@ export const view = (model, address, isActive) =>
         ])
       ])
     ]),
+    thunk(
+      'recipe-form-banner',
+      Banner.view,
+      model.banner,
+      forward(address, TagBanner),
+      'rform-banner'
+    ),
     html.div({
       className: 'panel--content'
     }, [
@@ -150,7 +174,7 @@ export const view = (model, address, isActive) =>
             forward(address, TextareaAction),
             'rform-textarea',
             'rform-textarea txt-textarea'
-          ),
+          )
         ])
       ])
     ])
