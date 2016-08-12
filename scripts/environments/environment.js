@@ -6,6 +6,7 @@ import * as Template from '../common/stache';
 import * as Request from '../common/request';
 import * as Result from '../common/result';
 import * as Unknown from '../common/unknown';
+import {map as mapMaybe} from '../common/maybe';
 import {cursor} from '../common/cursor';
 import {localize} from '../common/lang';
 import {compose, constant} from '../lang/functional';
@@ -151,7 +152,7 @@ const fetchLatest = model => {
 const updateLatest = Result.updater(
   (model, record) => {
     const data = readData(record);
-    const airTemperature = findRight(data, isAirTemperature);
+    const airTemperature = findAirTemperature(data);
 
     return batch(update, model, [
       AddChartData(data),
@@ -192,7 +193,7 @@ const getBacklog = model => {
 const updateBacklog = Result.updater(
   (model, record) => {
     const data = readData(record);
-    const airTemperature = findRight(data, isAirTemperature);
+    const airTemperature = findAirTemperature(data);
 
     return batch(update, model, [
       AddChartData(data),
@@ -320,3 +321,8 @@ const templateRecentUrl = (origin, id) =>
   });
 
 const isAirTemperature = dataPoint => dataPoint.variable === AIR_TEMPERATURE;
+
+const getValue = dataPoint => dataPoint.value;
+
+const findAirTemperature = data =>
+  mapMaybe(findRight(data, isAirTemperature), getValue);

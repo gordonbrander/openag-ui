@@ -4,10 +4,9 @@ import {line} from 'd3-shape';
 import {timeHour} from 'd3-time';
 import {timeFormat} from 'd3-time-format';
 import {html, forward, Effects, thunk} from 'reflex';
-
 import * as Config from '../../openag-config.json';
-
 import {localize} from '../common/lang';
+import {mapOr} from '../common/maybe';
 import {merge, tag} from '../common/prelude';
 import {cursor} from '../common/cursor';
 import * as Draggable from '../common/draggable';
@@ -189,8 +188,8 @@ const addData = (model, data) => {
 
   // If variables model actually updated, then create new chart model.
   if (model.variables !== variables) {
-    const recipeStart = maybeMap(readRecipeTimeValue, find(variables, isRecipeStart), model.recipeStart);
-    const recipeEnd = maybeMap(readRecipeTimeValue, find(variables, isRecipeEnd), model.recipeEnd);
+    const recipeStart = mapOr(find(variables, isRecipeStart), readRecipeTimeValue, model.recipeStart);
+    const recipeEnd = mapOr(find(variables, isRecipeEnd), readRecipeTimeValue, model.recipeEnd);
 
     const next = merge(model, {
       // Create new variables model for data.
@@ -734,7 +733,7 @@ const concatMonotonic = (buffer, items, limit, readX) => {
 // defined by value returned from `readX`.
 const isMonotonic = (array, item, readX) => {
   // If there is no last item in the array, then use 0 as the timestamp.
-  const timestamp = maybeMap(readX, last(array), 0);
+  const timestamp = mapOr(last(array), readX, 0);
   return readX(item) > timestamp;
 }
 
@@ -754,9 +753,6 @@ const filterAbove = (array, value, read) =>
   array.filter(item => read(item) > value);
 
 const last = array => array.length > 0 ? array[array.length - 1] : null;
-
-// Map a value with function if value is not null. Otherwise return null.
-const maybeMap = (a2b, v, fallback) => v != null ? a2b(v) : fallback;
 
 const isRecipeStart = x => x.variable === RECIPE_START;
 const isRecipeEnd = x => x.variable === RECIPE_END;

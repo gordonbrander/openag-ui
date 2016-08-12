@@ -61,5 +61,5 @@ const viewAirTemperature = airTemperature => {
   }
 }
 
-const readTemperature = airTemperature =>
-  (Math.round(airTemperature.value) + '');
+const readTemperature = value =>
+  (Math.round(value) + '');
