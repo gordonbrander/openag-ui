@@ -24,6 +24,13 @@ const getPouchID = Indexed.getter('_id');
 
 // Actions and tagging functions
 
+const TagIndexed = source => ({
+  type: 'Indexed',
+  source
+});
+
+const Activate = compose(TagIndexed, Indexed.Activate);
+
 const TagModal = tag('Modal');
 
 const TagBanner = source => ({
@@ -42,7 +49,7 @@ const RecipesFormAction = action =>
 
 const RecipeAction = (id, action) =>
   action.type === 'Activate' ?
-  ActivateByID(id) :
+  StartByID(id) :
   ({
     type: 'Recipe',
     id,
@@ -80,8 +87,8 @@ const Synced = Database.Synced;
 export const Open = TagModal(Modal.Open);
 export const Close = TagModal(Modal.Close);
 
-export const ActivateByID = id => ({
-  type: 'ActivateByID',
+export const StartByID = id => ({
+  type: 'StartByID',
   id
 });
 
@@ -125,6 +132,11 @@ export const init = () => {
   ];
 };
 
+const updateIndexed = cursor({
+  update: Indexed.update,
+  tag: TagIndexed
+});
+
 const updateModal = cursor({
   update: Modal.update,
   tag: TagModal
@@ -145,7 +157,7 @@ const updateRecipesForm = cursor({
 });
 
 const updateByID = (model, id, action) =>
-  Indexed.updateWithID(Recipe.update, byID(id), model, id, action);
+  Indexed.updateWithID(Recipe.update, ByID(id), model, id, action);
 
 const sync = model => {
   if (model.origin) {
@@ -181,10 +193,17 @@ const restoredRecipes = Result.updater(
 );
 
 // Activate recipe by id
-const activateByID = (model, id) => [
-  merge(model, {active: id}),
-  Effects.receive(Activated(merge({}, model.entries[id])))
-];
+const startByID = (model, id) => {
+  const [next, fx] = update(model, Activate(id));
+
+  return [
+    next,
+    Effects.batch([
+      fx,
+      Effects.receive(Activated(merge({}, model.entries[id])))
+    ])
+  ];
+}
 
 const activatePanel = (model, id) =>
   [merge(model, {activePanel: id}), Effects.none];
@@ -200,8 +219,7 @@ const put = (model, recipe) => {
 const putted = (model, result) =>
   result.isOk ?
   [model, Effects.none] :
-  // @TODO retry or display a banner
-  update(model, FailRecipeStart);
+  [model, Effects.none];
 
 const restore = (model, record) => {
   const next = merge(model, {origin: record.origin});
@@ -213,6 +231,8 @@ const restore = (model, record) => {
 }
 
 export const update = (model, action) =>
+  action.type === 'Indexed' ?
+  updateIndexed(model, action.source) :
   action.type === 'Banner' ?
   updateBanner(model, action.source) :
   action.type === 'RecipesForm' ?
@@ -229,8 +249,8 @@ export const update = (model, action) =>
   [model, Database.restore(DB).map(RestoredRecipes)] :
   action.type === 'RestoredRecipes' ?
   restoredRecipes(model, action.result) :
-  action.type === 'ActivateByID' ?
-  activateByID(model, action.id) :
+  action.type === 'StartByID' ?
+  startByID(model, action.id) :
   action.type === 'ActivatePanel' ?
   activatePanel(model, action.id) :
   action.type === 'Sync' ?
