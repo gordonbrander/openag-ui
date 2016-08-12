@@ -518,6 +518,10 @@ p {
   top: 0;
 }
 
+.sidebar-summary--in {
+  margin: 24px;
+}
+
 /* Recipes library
 ----------------------------------------------------------------------------- */
 
@@ -590,4 +594,23 @@ p {
 
 .ftu-validator .validator-input {
   font-size: 24px;
+}
+
+/* Environment icons
+----------------------------------------------------------------------------- */
+
+.env-temperature--large {
+  background-image: url(env.png);
+  background-position: 0 0;
+  background-size: 108px auto;
+  font-size: 48px;
+  font-weight: bold;
+  text-align: center;
+  line-height: 108px;
+  height: 108px;
+  width: 108px;
+}
+
+.env-temperature--unit {
+  margin-right: -0.3em;
 }

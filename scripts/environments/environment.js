@@ -9,19 +9,24 @@ import * as Unknown from '../common/unknown';
 import {cursor} from '../common/cursor';
 import {localize} from '../common/lang';
 import {compose, constant} from '../lang/functional';
+import {findRight} from '../lang/find';
 import * as Chart from '../environments/chart';
 import * as Toolbox from '../environments/toolbox';
 import * as Exporter from '../environments/exporter';
 import * as Sidebar from '../environments/sidebar';
 
+// Variable key for environmental data point that represents temperature.
+const AIR_TEMPERATURE = 'air_temperature';
+
+// Time constants in ms
 const S_MS = 1000;
 const MIN_MS = S_MS * 60;
 const HR_MS = MIN_MS * 60;
 const DAY_MS = HR_MS * 24;
-
 const POLL_TIMEOUT = 4 * S_MS;
 const RETRY_TIMEOUT = 4 * S_MS;
 
+// Limit to the number of datapoints that will be rendered in chart.
 const MAX_DATAPOINTS = 5000;
 
 // Actions
@@ -40,10 +45,12 @@ const TagExporter = tag('Exporter');
 const OpenExporter = TagExporter(Exporter.Open);
 const RestoreExporter = compose(TagExporter, Exporter.Restore);
 
-const TagSidebar = soruce => ({
+const TagSidebar = source => ({
   type: 'Sidebar',
   source
 });
+
+const SetSidebarAirTemperature = compose(TagSidebar, Sidebar.SetAirTemperature);
 
 const TagToolbox = action =>
   action.type === 'OpenExporter' ?
@@ -142,10 +149,16 @@ const fetchLatest = model => {
 }
 
 const updateLatest = Result.updater(
-  (model, record) => batch(update, model, [
-    AddChartData(readData(record)),
-    PongPoll
-  ]),
+  (model, record) => {
+    const data = readData(record);
+    const airTemperature = findRight(data, isAirTemperature);
+
+    return batch(update, model, [
+      AddChartData(data),
+      SetSidebarAirTemperature(airTemperature),
+      PongPoll
+    ]);
+  },
   (model, error) => {
     // Send miss poll
     const [next, fx] = update(model, MissPoll);
@@ -177,10 +190,16 @@ const getBacklog = model => {
 
 // Update chart backlog from result of fetch.
 const updateBacklog = Result.updater(
-  (model, record) => batch(update, model, [
-    AddChartData(readData(record)),
-    FetchLatest
-  ]),
+  (model, record) => {
+    const data = readData(record);
+    const airTemperature = findRight(data, isAirTemperature);
+
+    return batch(update, model, [
+      AddChartData(data),
+      SetSidebarAirTemperature(airTemperature),
+      FetchLatest
+    ]);
+  },
   (model, error) => {
     const action = AlertBanner(error);
 
@@ -299,3 +318,5 @@ const templateRecentUrl = (origin, id) =>
     limit: MAX_DATAPOINTS,
     descending: true
   });
+
+const isAirTemperature = dataPoint => dataPoint.variable === AIR_TEMPERATURE;
