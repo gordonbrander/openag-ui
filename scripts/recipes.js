@@ -38,7 +38,9 @@ const TagBanner = source => ({
   source
 });
 
-const FailRecipeStart = TagBanner(Banner.AlertDismissable("Blarg! Couldn't start recipe"));
+const AlertRefreshable = compose(TagBanner, Banner.AlertRefreshable);
+const AlertDismissable = compose(TagBanner, Banner.AlertDismissable);
+const FailRecipeStart = AlertDismissable("Blarg! Couldn't start recipe");
 
 const RecipesFormAction = action =>
   action.type === 'Back' ?
@@ -175,8 +177,10 @@ const syncedOk = model =>
   update(model, RestoreRecipes);
 
 // @TODO do something with sync errors.
-const syncedError = model =>
-  update(model, NoOp);
+const syncedError = model => {
+  const message = localize("Hmm, couldn't connect with browser database. There is probably something wrong with your browser.");
+  return update(model, AlertRefreshable(message));
+}
 
 const restoredRecipes = Result.updater(
   (model, recipes) => [
