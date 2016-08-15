@@ -55,7 +55,8 @@ const TagSidebar = action =>
   RequestOpenRecipes :
   tagged('Sidebar', action);
 
-const SetSidebarAirTemperature = compose(TagSidebar, Sidebar.SetAirTemperature);
+export const SetSidebarRecipe = compose(TagSidebar, Sidebar.SetRecipe);
+export const SetSidebarAirTemperature = compose(TagSidebar, Sidebar.SetAirTemperature);
 
 const TagToolbox = action =>
   action.type === 'OpenExporter' ?
