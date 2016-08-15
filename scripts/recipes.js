@@ -178,7 +178,7 @@ const syncedOk = model =>
   update(model, RestoreRecipes);
 
 const syncedError = model => {
-  const message = localize("Hmm, couldn't sync with the cloud database.");
+  const message = localize("Couldn't sync with the cloud. Using local database.");
   return update(model, AlertDismissable(message));
 }
 
