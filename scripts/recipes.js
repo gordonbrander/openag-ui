@@ -178,8 +178,8 @@ const syncedOk = model =>
   update(model, RestoreRecipes);
 
 const syncedError = model => {
-  const message = localize("Hmm, couldn't sync with your browser's database.");
-  return update(model, AlertRefreshable(message));
+  const message = localize("Hmm, couldn't sync with the cloud database.");
+  return update(model, AlertDismissable(message));
 }
 
 const restoredRecipes = Result.updater(
