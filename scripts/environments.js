@@ -9,6 +9,10 @@ import * as Environment from './environments/environment';
 
 // Actions and tagging functions
 
+const RequestOpenRecipes = {
+  type: 'RequestOpenRecipes'
+};
+
 const IndexedAction = tag('Indexed');
 const ActivateIndexed = compose(IndexedAction, Indexed.Activate);
 
@@ -24,6 +28,8 @@ export const EnvironmentByID = (id, source) => ({
 export const EnvironmentAction = (id, action) =>
   action.type === 'AlertBanner' ?
   AlertBanner(action.source) :
+  action.type === 'RequestOpenRecipes' ?
+  RequestOpenRecipes :
   EnvironmentByID(id, action);
 
 const ToActive = action => ({

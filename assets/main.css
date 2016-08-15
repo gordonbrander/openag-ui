@@ -539,6 +539,7 @@ p {
 
 .current-recipe--name {
   color: #00A5ED;
+  cursor: pointer;
   display: block;
   font-size: 20px;
   line-height: 24px;

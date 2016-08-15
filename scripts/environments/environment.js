@@ -36,6 +36,10 @@ const NoOp = {
   type: 'NoOp'
 };
 
+const RequestOpenRecipes = {
+  type: 'RequestOpenRecipes'
+};
+
 // Restore state action received from parent.
 export const Restore = value => ({
   type: 'Restore',
@@ -46,10 +50,10 @@ const TagExporter = tag('Exporter');
 const OpenExporter = TagExporter(Exporter.Open);
 const RestoreExporter = compose(TagExporter, Exporter.Restore);
 
-const TagSidebar = source => ({
-  type: 'Sidebar',
-  source
-});
+const TagSidebar = action =>
+  action.type === 'RequestOpenRecipes' ?
+  RequestOpenRecipes :
+  tagged('Sidebar', action);
 
 const SetSidebarAirTemperature = compose(TagSidebar, Sidebar.SetAirTemperature);
 

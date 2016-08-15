@@ -1,6 +1,7 @@
 import {html, forward, Effects, Task, thunk} from 'reflex';
-import {merge, batch} from '../common/prelude';
+import {merge, batch, tagged} from '../common/prelude';
 import {cursor} from '../common/cursor';
+import {compose} from '../lang/functional';
 import {update as updateUnknown} from '../common/unknown';
 import * as Recipe from './sidebar/recipe';
 
@@ -18,20 +19,13 @@ export const SetAirTemperature = value => ({
 });
 
 // Tag sidebar recipe actions so we can forward them down.
-export const TagRecipe = source => ({
-  type: 'Recipe',
-  source
-});
-
-// Route recipe actions to destination. This is where we intercept actions we
-// want to deal with here in the parent module.
-export const RouteRecipe = action =>
-  action.type === 'RequestRecipes' ?
+export const TagRecipe = action =>
+  action.type === 'RequestOpenRecipes' ?
   RequestOpenRecipes :
-  TagRecipe(action);
+  tagged('Recipe', action);
 
 // Set recipe on Recipe submodule.
-export const SetRecipe = TagRecipe(Recipe.SetRecipe);
+export const SetRecipe = compose(TagRecipe, Recipe.SetRecipe);
 
 // Model, init, update
 
@@ -43,7 +37,7 @@ export const init = () => {
       recipe,
       airTemperature: null
     },
-    recipeFx.map(RouteRecipe)
+    recipeFx.map(TagRecipe)
   ];
 }
 
@@ -58,7 +52,7 @@ const updateRecipe = cursor({
   get: model => model.recipe,
   set: (model, recipe) => merge(model, {recipe}),
   update: Recipe.update,
-  tag: RouteRecipe
+  tag: TagRecipe
 })
 
 const setAirTemperature = (model, airTemperature) => {
@@ -82,7 +76,7 @@ export const view = (model, address) =>
         'sidebar-recipe',
         Recipe.view,
         model.recipe,
-        forward(address, RouteRecipe)
+        forward(address, TagRecipe)
       ),
       viewAirTemperature(model.airTemperature)
     ])
