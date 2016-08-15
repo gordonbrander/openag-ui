@@ -526,7 +526,7 @@ p {
 ----------------------------------------------------------------------------- */
 
 .current-recipe {
-  margin-bottom: 24px;
+  margin-bottom: 36px;
 }
 
 .current-recipe--label {
@@ -538,6 +538,10 @@ p {
 }
 
 .current-recipe--name {
+  background-image: url(sprite.png);
+  background-repeat: no-repeat;
+  background-position: right -900px;
+  background-size: 100px auto;
   color: #00A5ED;
   cursor: pointer;
   display: block;
