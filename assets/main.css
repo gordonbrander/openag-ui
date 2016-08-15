@@ -522,6 +522,31 @@ p {
   margin: 24px;
 }
 
+/* Current recipe widget in sidebar
+----------------------------------------------------------------------------- */
+
+.current-recipe {
+  margin-bottom: 24px;
+}
+
+.current-recipe--label {
+  color: #989898;
+  font-size: 13px;
+  line-height: 18px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+
+.current-recipe--name {
+  color: #00A5ED;
+  display: block;
+  font-size: 20px;
+  line-height: 24px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
 /* Recipes library
 ----------------------------------------------------------------------------- */
 
