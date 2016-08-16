@@ -32,12 +32,13 @@ export const EnvironmentAction = (id, action) =>
   RequestOpenRecipes :
   EnvironmentByID(id, action);
 
-const ToActive = action => ({
-  type: 'ToActive',
+const ForActive = action => ({
+  type: 'ForActive',
   source: action
 });
 
-export const Restore = compose(ToActive, Environment.Restore);
+export const Restore = compose(ForActive, Environment.Restore);
+export const SetRecipeForActive = compose(ForActive, Environment.SetRecipe);
 
 // Tag actions by id
 // @TODO figure out how to generalize this.
@@ -61,7 +62,7 @@ export const init = () => {
 export const update = (model, action) =>
   action.type === 'Indexed' ?
   updateIndexed(model, action.source) :
-  action.type === 'ToActive' ?
+  action.type === 'ForActive' ?
   toActive(model, action.source) :
   action.type === 'EnvironmentByID' ?
   updateEnvironmentByID(model, action.id, action.source) :

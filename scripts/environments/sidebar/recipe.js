@@ -5,12 +5,12 @@ import {update as updateUnknown} from '../../common/unknown';
 
 // Actions
 
-const RequestOpenRecipes = {
+export const RequestOpenRecipes = {
   type: 'RequestOpenRecipes'
 };
 
 // Set the recipe
-const SetRecipe = recipe => ({
+export const SetRecipe = recipe => ({
   type: 'SetRecipe',
   recipe
 });
@@ -36,8 +36,9 @@ export const update = (model, action) =>
 
 const setRecipe = (model, recipe) => [
   merge(model, {
-    id: recipe.id,
-    name: recipe.name
+    id: recipe._id,
+    // @TODO recipes don't currently have a name. When they do, put it here.
+    name: (recipe.name || recipe._id)
   }),
   Effects.none
 ];

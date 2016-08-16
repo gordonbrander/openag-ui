@@ -55,8 +55,8 @@ const TagSidebar = action =>
   RequestOpenRecipes :
   tagged('Sidebar', action);
 
-export const SetSidebarRecipe = compose(TagSidebar, Sidebar.SetRecipe);
-export const SetSidebarAirTemperature = compose(TagSidebar, Sidebar.SetAirTemperature);
+export const SetRecipe = compose(TagSidebar, Sidebar.SetRecipe);
+export const SetAirTemperature = compose(TagSidebar, Sidebar.SetAirTemperature);
 
 const TagToolbox = action =>
   action.type === 'OpenExporter' ?
@@ -161,7 +161,7 @@ const updateLatest = Result.updater(
 
     return batch(update, model, [
       AddChartData(data),
-      SetSidebarAirTemperature(airTemperature),
+      SetAirTemperature(airTemperature),
       PongPoll
     ]);
   },
@@ -202,7 +202,7 @@ const updateBacklog = Result.updater(
 
     return batch(update, model, [
       AddChartData(data),
-      SetSidebarAirTemperature(airTemperature),
+      SetAirTemperature(airTemperature),
       FetchLatest
     ]);
   },
