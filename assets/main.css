@@ -204,28 +204,18 @@ p {
   position: relative;
 }
 
-.nav-current-recipe {
+.nav-name {
   background: #5ADA00;
+  font-size: 18px;
   left: 0;
+  line-height: 32px;
   position: absolute;
   width: calc(256px - (24px * 2));
   height: 32px;
   padding: calc((72px - 32px) / 2) 24px;
-}
-
-.nav-current-recipe-label {
-  display: block;
-  font-size: 10px;
-  font-weight: bold;
-  line-height: 16px;
-  text-transform: uppercase;
-}
-
-.nav-current-recipe-title {
-  display: block;
-  font-size: 14px;
-  font-weight: bold;
-  line-height: 16px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 .nav-dashboard-icon {

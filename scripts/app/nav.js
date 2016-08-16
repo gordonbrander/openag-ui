@@ -41,7 +41,7 @@ export const view = (model, address) =>
       className: 'nav-toolbar'
     }, [
       html.a({
-        className: 'nav-current-recipe'
+        className: 'nav-name'
       }, [
         readName(model)
       ]),
