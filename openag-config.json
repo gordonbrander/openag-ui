@@ -21,8 +21,8 @@
   },
 
   "environments": {
-    "local": "environments",
-    "origin": "{{origin_url}}/environments"
+    "local": "environment",
+    "origin": "{{origin_url}}/environment"
   },
 
   "app": {

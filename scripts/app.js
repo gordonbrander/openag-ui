@@ -73,6 +73,8 @@ const CloseRecipes = TagRecipes(Recipes.Close);
 const TagEnvironments = action =>
   tagged('Environments', action);
 
+const ConfigureEnvironments = compose(TagEnvironments, Environments.Configure);
+
 const TagEnvironment = action =>
   action.type === 'AlertBanner' ?
   AlertRefreshableBanner(action.source) :
@@ -306,6 +308,7 @@ const restore = (model, record) => {
   return batch(update, next, [
     RestoreAppNav(record),
     RestoreEnvironment(record),
+    ConfigureEnvironments(record.origin),
     RestoreRecipes(record)
   ]);
 }
