@@ -10,8 +10,7 @@ import {readRootUrl} from './common/url';
 import * as Request from './common/request';
 import * as Banner from './common/banner';
 import * as Persistence from './persistence';
-import * as AppNav from './app/nav';
-import * as Environments from './environments';
+import * as AppNav from './app/nav';  
 import * as Environment from './environments/environment';
 import * as Recipes from './recipes';
 import * as Settings from './first-time-use';
@@ -74,15 +73,8 @@ const TagEnvironment = action =>
   OpenRecipes :
   tagged('Environment', action);
 
-const TagEnvironments = action =>
-  action.type === 'AlertBanner' ?
-  AlertRefreshableBanner(action.source) :
-  action.type === 'RequestOpenRecipes' ?
-  OpenRecipes :
-  tagged('Environments', action);
-
-const RestoreEnvironments = compose(TagEnvironments, Environments.Restore);
-const SetRecipeForActiveEnvironment = compose(TagEnvironments, Environments.SetRecipeForActive)
+const RestoreEnvironment = compose(TagEnvironment, Environment.Restore);
+const SetRecipeForEnvironment = compose(TagEnvironment, Environment.SetRecipe);
 
 const OpenRecipes = TagRecipes(Recipes.Open);
 const CloseRecipes = TagRecipes(Recipes.Close);
@@ -125,7 +117,6 @@ export const init = () => {
   // kept in an environments db instead.
   const activeEnvironment = Config.active_environment;
   const [environment, environmentFx] = Environment.init(activeEnvironment);
-  const [environments, environmentsFx] = Environments.init();
   const [recipes, recipesFx] = Recipes.init();
   const [appNav, appNavFx] = AppNav.init();
   const [banner, bannerFx] = Banner.init();
@@ -148,7 +139,6 @@ export const init = () => {
 
       // Store submodule states.
       environment,
-      environments,
       recipes,
       appNav,
       banner,
@@ -157,7 +147,6 @@ export const init = () => {
     Effects.batch([
       Effects.receive(GetState),
       environmentFx.map(TagEnvironment),
-      environmentsFx.map(TagEnvironments),
       recipesFx.map(TagRecipes),
       appNavFx.map(TagAppNav),
       bannerFx.map(TagBanner),
@@ -169,8 +158,6 @@ export const init = () => {
 export const update = (model, action) =>
   action.type === 'Environment' ?
   updateEnvironment(model, action.source) :
-  action.type === 'Environments' ?
-  updateEnvironments(model, action.source) :
   action.type === 'Recipes' ?
   updateRecipes(model, action.source) :
   action.type === 'AppNav' ?
@@ -238,18 +225,10 @@ const updateEnvironment = cursor({
   tag: TagEnvironment
 });
 
-const updateEnvironments = cursor({
-  get: model => model.environments,
-  set: (model, environments) => merge(model, {environments}),
-  update: Environments.update,
-  tag: TagEnvironments
-});
-
 const startRecipe = (model, recipe) =>
   batch(update, model, [
-    SetRecipeForActiveEnvironment(recipe),
-    // @TODO bring environments up a level
-    PostRecipe(model.environments.active, recipe._id),
+    SetRecipeForEnvironment(recipe),
+    PostRecipe(model.environment.id, recipe._id),
     CloseRecipes
   ]);
 
@@ -310,7 +289,7 @@ const restore = (model, record) => {
 
   return batch(update, next, [
     RestoreAppNav(record),
-    RestoreEnvironments(record),
+    RestoreEnvironment(record),
     RestoreRecipes(record)
   ]);
 }
