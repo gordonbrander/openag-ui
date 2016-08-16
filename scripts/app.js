@@ -26,9 +26,9 @@ const Restore = value => ({
   value
 });
 
-const Heartbeat = url => ({
-  type: 'Heartbeat',
-  url
+const Configured = form => ({
+  type: 'Configured',
+  form
 });
 
 // Update address of Food Computer.
@@ -38,8 +38,8 @@ const UpdateAddress = url => ({
 });
 
 const TagFirstTimeUse = action =>
-  action.type === 'NotifyHeartbeat' ?
-  Heartbeat(action.url) :
+  action.type === 'NotifySubmit' ?
+  Configured(action.form) :
   tagged('FirstTimeUse', action);
 
 const OpenFirstTimeUse = TagFirstTimeUse(Settings.Open);
@@ -79,9 +79,9 @@ const OpenRecipes = TagRecipes(Recipes.Open);
 const CloseRecipes = TagRecipes(Recipes.Close);
 
 const TagAppNav = action =>
-  action.type === 'RequestRecipes' ?
-  OpenRecipes :
   tagged('AppNav', action);
+
+const RestoreAppNav = compose(TagAppNav, AppNav.Restore);
 
 const TagBanner = tag('Banner');
 const AlertBanner = compose(TagBanner, Banner.Alert);
@@ -167,8 +167,8 @@ export const update = (model, action) =>
   // Specialized update functions
   action.type === 'Restore' ?
   restore(model, action.value) :
-  action.type === 'Heartbeat' ?
-  updateHeartbeat(model, action.url) :
+  action.type === 'Configured' ?
+  updateConfigured(model, action.form) :
   action.type === 'StartRecipe' ?
   startRecipe(model, action.value) :
   action.type === 'PostRecipe' ?
@@ -250,17 +250,12 @@ const recipePostedError = (model, error) => {
   return update(model, AlertRefreshableBanner(message));
 }
 
-const updateHeartbeat = (model, url) => {
-  const rootUrl = readRootUrl(url);
-
+const updateConfigured = (model, form) => {
   // First, update the URL in the model
   const next = merge(model, {
-    api: Template.render(Config.api, {
-      root_url: rootUrl
-    }),
-    origin: Template.render(Config.origin, {
-      root_url: rootUrl
-    })
+    api: form.api,
+    origin: form.origin,
+    name: form.name
   });
 
   const record = serialize(next);
@@ -280,7 +275,8 @@ const serialize = model => ({
   _rev: model._rev,
   version: model.version,
   api: model.api,
-  origin: model.origin
+  origin: model.origin,
+  name: model.name
 });
 
 const restore = (model, record) => {
@@ -289,6 +285,7 @@ const restore = (model, record) => {
   const next = merge(model, record);
 
   return batch(update, next, [
+    RestoreAppNav(record),
     RestoreEnvironments(record),
     RestoreRecipes(record)
   ]);

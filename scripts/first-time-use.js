@@ -60,10 +60,10 @@ const GotHeartbeat = result => ({
   result
 });
 
-// Let the parent know we had a successful heartbeat.
-const NotifyHeartbeat = url => ({
-  type: 'NotifyHeartbeat',
-  url
+// Let the parent know we had a successful form submit.
+const NotifySubmit = form => ({
+  type: 'NotifySubmit',
+  form
 });
 
 const TagAddress = action =>
@@ -178,12 +178,35 @@ const updateSubmitter = cursor({
 });
 
 const submit = model => {
+  // We only care about validating the address. Any name will do.
   if (Validator.isOk(model.address)) {
-    const value = Validator.readValue(model.address);
-    const rooturl = readRootUrl(value);
-    return [model, Effects.receive(NotifyHeartbeat(rooturl))];
+    const addressValue = Validator.readValue(model.address);
+    const rootUrl = readRootUrl(addressValue);
+
+    // Given root URL, template API url.
+    const api = Template.render(Config.api, {
+      root_url: rootUrl
+    });
+
+    // Given root URL, origin CouchDB url.
+    const origin = Template.render(Config.origin, {
+      root_url: rootUrl
+    });
+
+    const nameValue = Validator.readValue(model.name);
+    const name = readName(nameValue);
+
+    const form = {
+      name,
+      api,
+      origin
+    };
+
+    return [model, Effects.receive(NotifySubmit(form))];
   }
+  // We should never be able to hit this case.
   else {
+    console.warn('First time use form was submitted, but url was not valid.');
     return [model, Effects.none];
   }
 }
@@ -308,6 +331,10 @@ export const viewFTU = (model, address) =>
 
 // Helpers
 
+const ALL_SPACES = /^\s*$/;
+
+const DEFAULT_NAME = localize('Food Computer');
+
 const NAMES = [
   'Bert',
   'Alice',
@@ -349,3 +376,8 @@ const chooseRandom = array => {
   const i = Math.floor(Math.random() * array.length);
   return array[i];
 }
+
+const readName = name =>
+  name.search(ALL_SPACES) === -1 ?
+  name :
+  DEFAULT_NAME;
