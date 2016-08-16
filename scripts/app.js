@@ -10,8 +10,8 @@ import {readRootUrl} from './common/url';
 import * as Request from './common/request';
 import * as Banner from './common/banner';
 import * as Persistence from './persistence';
-import * as AppNav from './app/nav';
-import * as Environments from './environments';
+import * as AppNav from './app/nav';  
+import * as Environment from './environment';
 import * as Recipes from './recipes';
 import * as Settings from './first-time-use';
 import {compose} from './lang/functional';
@@ -26,6 +26,7 @@ const Restore = value => ({
   value
 });
 
+// Sent when First Run Experience is successfully completed.
 const Configured = form => ({
   type: 'Configured',
   form
@@ -65,15 +66,15 @@ const TagRecipes = action =>
 
 const RestoreRecipes = compose(TagRecipes, Recipes.Restore);
 
-const TagEnvironments = action =>
+const TagEnvironment = action =>
   action.type === 'AlertBanner' ?
   AlertRefreshableBanner(action.source) :
   action.type === 'RequestOpenRecipes' ?
   OpenRecipes :
-  tagged('Environments', action);
+  tagged('Environment', action);
 
-const RestoreEnvironments = compose(TagEnvironments, Environments.Restore);
-const SetRecipeForActiveEnvironment = compose(TagEnvironments, Environments.SetRecipeForActive)
+const RestoreEnvironment = compose(TagEnvironment, Environment.Restore);
+const SetRecipeForEnvironment = compose(TagEnvironment, Environment.SetRecipe);
 
 const OpenRecipes = TagRecipes(Recipes.Open);
 const CloseRecipes = TagRecipes(Recipes.Close);
@@ -112,7 +113,10 @@ const RecipePosted = (result) => ({
 // Init and update
 
 export const init = () => {
-  const [environments, environmentsFx] = Environments.init();
+  // @FIXME we hardcode active environment for the moment. This should be
+  // kept in an environments db instead.
+  const activeEnvironment = Config.active_environment;
+  const [environment, environmentFx] = Environment.init(activeEnvironment);
   const [recipes, recipesFx] = Recipes.init();
   const [appNav, appNavFx] = AppNav.init();
   const [banner, bannerFx] = Banner.init();
@@ -134,7 +138,7 @@ export const init = () => {
       version,
 
       // Store submodule states.
-      environments,
+      environment,
       recipes,
       appNav,
       banner,
@@ -142,7 +146,7 @@ export const init = () => {
     },
     Effects.batch([
       Effects.receive(GetState),
-      environmentsFx.map(TagEnvironments),
+      environmentFx.map(TagEnvironment),
       recipesFx.map(TagRecipes),
       appNavFx.map(TagAppNav),
       bannerFx.map(TagBanner),
@@ -152,8 +156,8 @@ export const init = () => {
 }
 
 export const update = (model, action) =>
-  action.type === 'Environments' ?
-  updateEnvironments(model, action.source) :
+  action.type === 'Environment' ?
+  updateEnvironment(model, action.source) :
   action.type === 'Recipes' ?
   updateRecipes(model, action.source) :
   action.type === 'AppNav' ?
@@ -214,18 +218,17 @@ const updateRecipes = cursor({
   tag: TagRecipes
 });
 
-const updateEnvironments = cursor({
-  get: model => model.environments,
-  set: (model, environments) => merge(model, {environments}),
-  update: Environments.update,
-  tag: TagEnvironments
+const updateEnvironment = cursor({
+  get: model => model.environment,
+  set: (model, environment) => merge(model, {environment}),
+  update: Environment.update,
+  tag: TagEnvironment
 });
 
 const startRecipe = (model, recipe) =>
   batch(update, model, [
-    SetRecipeForActiveEnvironment(recipe),
-    // @TODO bring environments up a level
-    PostRecipe(model.environments.active, recipe._id),
+    SetRecipeForEnvironment(recipe),
+    PostRecipe(model.environment.id, recipe._id),
     CloseRecipes
   ]);
 
@@ -286,7 +289,7 @@ const restore = (model, record) => {
 
   return batch(update, next, [
     RestoreAppNav(record),
-    RestoreEnvironments(record),
+    RestoreEnvironment(record),
     RestoreRecipes(record)
   ]);
 }
@@ -328,10 +331,10 @@ const viewConfigured = (model, address) =>
       'global-banner'
     ),
     thunk(
-      'environments',
-      Environments.view,
-      model.environments,
-      forward(address, TagEnvironments)
+      'environment',
+      Environment.view,
+      model.environment,
+      forward(address, TagEnvironment)
     ),
     thunk(
       'recipes',
