@@ -12,6 +12,7 @@ import * as Banner from './common/banner';
 import * as Persistence from './persistence';
 import * as AppNav from './app/nav';
 import * as Environments from './environments';
+import * as Environment from './environments/environment';
 import * as Recipes from './recipes';
 import * as Settings from './first-time-use';
 import {compose} from './lang/functional';
@@ -26,6 +27,7 @@ const Restore = value => ({
   value
 });
 
+// Sent when First Run Experience is successfully completed.
 const Configured = form => ({
   type: 'Configured',
   form
@@ -64,6 +66,9 @@ const TagRecipes = action =>
   tagged('Recipes', action);
 
 const RestoreRecipes = compose(TagRecipes, Recipes.Restore);
+
+const TagEnvironment = action =>
+  tagged('Environment', action);
 
 const TagEnvironments = action =>
   action.type === 'AlertBanner' ?
@@ -112,6 +117,10 @@ const RecipePosted = (result) => ({
 // Init and update
 
 export const init = () => {
+  // @FIXME we hardcode active environment for the moment. This should be
+  // kept in an environments db instead.
+  const activeEnvironment = Config.active_environment;
+  const [environment, environmentFx] = Environment.init(activeEnvironment);
   const [environments, environmentsFx] = Environments.init();
   const [recipes, recipesFx] = Recipes.init();
   const [appNav, appNavFx] = AppNav.init();
@@ -134,6 +143,7 @@ export const init = () => {
       version,
 
       // Store submodule states.
+      environment,
       environments,
       recipes,
       appNav,
@@ -142,6 +152,7 @@ export const init = () => {
     },
     Effects.batch([
       Effects.receive(GetState),
+      environmentFx.map(TagEnvironment),
       environmentsFx.map(TagEnvironments),
       recipesFx.map(TagRecipes),
       appNavFx.map(TagAppNav),
@@ -152,6 +163,8 @@ export const init = () => {
 }
 
 export const update = (model, action) =>
+  action.type === 'Environment' ?
+  updateEnvironment(model, action.source) :
   action.type === 'Environments' ?
   updateEnvironments(model, action.source) :
   action.type === 'Recipes' ?
@@ -212,6 +225,13 @@ const updateRecipes = cursor({
   set: (model, recipes) => merge(model, {recipes}),
   update: Recipes.update,
   tag: TagRecipes
+});
+
+const updateEnvironment = cursor({
+  get: model => model.environment,
+  set: (model, environment) => merge(model, {environment}),
+  update: Environment.update,
+  tag: TagEnvironment
 });
 
 const updateEnvironments = cursor({
@@ -328,10 +348,10 @@ const viewConfigured = (model, address) =>
       'global-banner'
     ),
     thunk(
-      'environments',
-      Environments.view,
-      model.environments,
-      forward(address, TagEnvironments)
+      'environment',
+      Environment.view,
+      model.environment,
+      forward(address, TagEnvironment)
     ),
     thunk(
       'recipes',
