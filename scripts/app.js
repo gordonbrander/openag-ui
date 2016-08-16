@@ -11,6 +11,7 @@ import * as Request from './common/request';
 import * as Banner from './common/banner';
 import * as Persistence from './persistence';
 import * as AppNav from './app/nav';  
+import * as Environments from './environments';
 import * as Environment from './environment';
 import * as Recipes from './recipes';
 import * as Settings from './first-time-use';
@@ -66,6 +67,12 @@ const TagRecipes = action =>
 
 const RestoreRecipes = compose(TagRecipes, Recipes.Restore);
 
+const OpenRecipes = TagRecipes(Recipes.Open);
+const CloseRecipes = TagRecipes(Recipes.Close);
+
+const TagEnvironments = action =>
+  tagged('Environments', action);
+
 const TagEnvironment = action =>
   action.type === 'AlertBanner' ?
   AlertRefreshableBanner(action.source) :
@@ -75,9 +82,6 @@ const TagEnvironment = action =>
 
 const RestoreEnvironment = compose(TagEnvironment, Environment.Restore);
 const SetRecipeForEnvironment = compose(TagEnvironment, Environment.SetRecipe);
-
-const OpenRecipes = TagRecipes(Recipes.Open);
-const CloseRecipes = TagRecipes(Recipes.Close);
 
 const TagAppNav = action =>
   tagged('AppNav', action);
@@ -117,6 +121,7 @@ export const init = () => {
   // kept in an environments db instead.
   const activeEnvironment = Config.active_environment;
   const [environment, environmentFx] = Environment.init(activeEnvironment);
+  const [environments, environmentsFx] = Environments.init();
   const [recipes, recipesFx] = Recipes.init();
   const [appNav, appNavFx] = AppNav.init();
   const [banner, bannerFx] = Banner.init();
@@ -139,6 +144,7 @@ export const init = () => {
 
       // Store submodule states.
       environment,
+      environments,
       recipes,
       appNav,
       banner,
@@ -147,6 +153,7 @@ export const init = () => {
     Effects.batch([
       Effects.receive(GetState),
       environmentFx.map(TagEnvironment),
+      environmentsFx.map(TagEnvironments),
       recipesFx.map(TagRecipes),
       appNavFx.map(TagAppNav),
       bannerFx.map(TagBanner),
@@ -168,6 +175,8 @@ export const update = (model, action) =>
   updatePersistence(model, action.source) :
   action.type === 'FirstTimeUse' ?
   updateFirstTimeUse(model, action.source) :
+  action.type === 'Environments' ?
+  updateEnvironments(model, action.source) :
   // Specialized update functions
   action.type === 'Restore' ?
   restore(model, action.value) :
@@ -223,6 +232,13 @@ const updateEnvironment = cursor({
   set: (model, environment) => merge(model, {environment}),
   update: Environment.update,
   tag: TagEnvironment
+});
+
+const updateEnvironments = cursor({
+  get: model => model.environments,
+  set: (model, environments) => merge(model, {environments}),
+  update: Environments.update,
+  tag: TagEnvironments
 });
 
 const startRecipe = (model, recipe) =>
