@@ -4,31 +4,34 @@ import * as Unknown from '../common/unknown';
 import {classed} from '../common/attr';
 import {localize} from '../common/lang';
 
-const RequestRecipes = {
-  type: 'RequestRecipes'
-};
-
-export const ChangeRecipeTitle = value => ({
-  type: 'ChangeRecipeTitle',
+// Restore settings (usually comes from parent who read it from local DB).
+export const Restore = value => ({
+  type: 'Restore',
   value
 });
 
 export const init = () => [
   {
-    recipeTitle: null
+    name: null
   },
   Effects.none
 ];
 
 export const update = (model, action) =>
-  action.type === 'ChangeRecipeTitle' ?
-  [merge(model, {recipeTitle: action.value}), Effects.none] :
+  action.type === 'Restore' ?
+  [
+    merge(model, {
+      name: readNameFromRecord(action.value)
+    }),
+    Effects.none
+  ] :
   Unknown.update(model, action);
 
-const readTitle = model =>
-  typeof model.recipeTitle === 'string' ?
-  model.recipeTitle :
-  localize('None');
+const readNameFromRecord = record => record.name;
+
+const readName = model =>
+  typeof model.name === 'string' ?
+  model.name : '-';
 
 export const view = (model, address) =>
   html.div({
@@ -38,19 +41,9 @@ export const view = (model, address) =>
       className: 'nav-toolbar'
     }, [
       html.a({
-        className: 'nav-current-recipe',
-        onClick: () => address(RequestRecipes)
+        className: 'nav-name'
       }, [
-        html.span({
-          className: 'nav-current-recipe-label'
-        }, [
-          'Current Recipe'
-        ]),
-        html.span({
-          className: 'nav-current-recipe-title'
-        }, [
-          readTitle(model)
-        ])
+        readName(model)
       ]),
       html.a({
         className: classed({
