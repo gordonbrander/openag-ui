@@ -1,20 +1,20 @@
-import * as Config from '../../openag-config.json';
+import * as Config from '../openag-config.json';
 import {html, forward, Effects, Task, thunk} from 'reflex';
-import {merge, tagged, tag, batch} from '../common/prelude';
-import * as Poll from '../common/poll';
-import * as Template from '../common/stache';
-import * as Request from '../common/request';
-import * as Result from '../common/result';
-import * as Unknown from '../common/unknown';
-import {map as mapMaybe} from '../common/maybe';
-import {cursor} from '../common/cursor';
-import {localize} from '../common/lang';
-import {compose, constant} from '../lang/functional';
-import {findRight} from '../lang/find';
-import * as Chart from '../environments/chart';
-import * as Toolbox from '../environments/toolbox';
-import * as Exporter from '../environments/exporter';
-import * as Sidebar from '../environments/sidebar';
+import {merge, tagged, tag, batch} from './common/prelude';
+import * as Poll from './common/poll';
+import * as Template from './common/stache';
+import * as Request from './common/request';
+import * as Result from './common/result';
+import * as Unknown from './common/unknown';
+import {map as mapMaybe} from './common/maybe';
+import {cursor} from './common/cursor';
+import {localize} from './common/lang';
+import {compose, constant} from './lang/functional';
+import {findRight} from './lang/find';
+import * as Chart from './environment/chart';
+import * as Toolbox from './environment/toolbox';
+import * as Exporter from './environment/exporter';
+import * as Sidebar from './environment/sidebar';
 
 // Variable key for environmental data point that represents temperature.
 const AIR_TEMPERATURE = 'air_temperature';

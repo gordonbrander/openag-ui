@@ -11,7 +11,7 @@ import * as Request from './common/request';
 import * as Banner from './common/banner';
 import * as Persistence from './persistence';
 import * as AppNav from './app/nav';  
-import * as Environment from './environments/environment';
+import * as Environment from './environment';
 import * as Recipes from './recipes';
 import * as Settings from './first-time-use';
 import {compose} from './lang/functional';
