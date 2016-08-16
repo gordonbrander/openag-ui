@@ -41,7 +41,6 @@ export const init = () => {
   return [
     {
       origin: null,
-      active: null,
       environments: []
     },
     Effects.none
@@ -70,7 +69,7 @@ export const update = (model, action) =>
   Unknown.update(model, action);
 
 const restoredOk = (model, record) => {
-  const ids = record.map(getDocID);
+  const ids = record.map(readDoc);
 
   return [
     merge(model, {environments: ids}),
@@ -113,4 +112,7 @@ const configure = (model, originUrl) => {
 
 // Helpers
 
-const getDocID = doc => doc._id;
+const readDoc = doc => ({
+  _id: doc._id,
+  name: doc.name
+});

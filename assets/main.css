@@ -488,6 +488,9 @@ p {
 ----------------------------------------------------------------------------- */
 
 .environment-main {
+  background-color: #f4f4f4;
+  /* Full height minus the app header */
+  height: calc(100vh - 72px);
   position: relative;
 }
 
@@ -495,13 +498,22 @@ p {
   padding-left: 256px;
 }
 
+.environment-content {
+  height: 100%;
+  width: 100%;
+}
+
+.environment-content--loading {
+  background: url(loading.svg) no-repeat center center;
+  background-size: 80px 80px;
+}
+
 /* Summary sidebar
 ----------------------------------------------------------------------------- */
 
 .sidebar-summary {
   background-color: #fff;
-  /* Full height minus the app header */
-  height: calc(100vh - 72px);
+  height: 100%;
   width: 256px;
   position: absolute;
   left: 0;

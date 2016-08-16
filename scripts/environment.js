@@ -144,12 +144,12 @@ export const update = (model, action) =>
   Unknown.update(model, action);
 
 const fetchLatest = model => {
-  if (model.origin) {
+  if (model.origin && model.id) {
     const url = templateLatestUrl(model.origin, model.id);
     return [model, Request.get(url).map(Latest)];
   }
   else {
-    console.warn('FetchLatest was called before origin was restored on model');
+    console.warn('fetchLatest was called before origin and ID were restored on model');
     return [model, Effects.none];
   }
 }
@@ -184,12 +184,12 @@ const updateLatest = Result.updater(
 );
 
 const getBacklog = model => {
-  if (model.origin) {
+  if (model.origin && model.id) {
     const url = templateRecentUrl(model.origin, model.id);
     return [model, Request.get(url).map(GotBacklog)];
   }
   else {
-    console.warn('GetBacklog was requested before origin was restored in model');
+    console.warn('GetBacklog was requested before origin and ID were restored on model');
     return [model, Effects.none];
   }
 }
@@ -262,6 +262,11 @@ const updatePoll = cursor({
 // View
 
 export const view = (model, address) =>
+  model.id ?
+  viewReady(model, address) :
+  viewWaiting(model, address);
+
+const viewReady = (model, address) =>
   html.div({
     className: 'environment-main environment-main--has-sidebar'
   }, [
@@ -280,6 +285,21 @@ export const view = (model, address) =>
       forward(address, TagExporter),
       model.id
     )
+  ]);
+
+const viewWaiting= (model, address) =>
+  html.div({
+    className: 'environment-main environment-main--has-sidebar'
+  }, [
+    thunk(
+      'sidebar',
+      Sidebar.view,
+      model.sidebar,
+      forward(address, TagSidebar)
+    ),
+    html.div({
+      className: 'environment-content environment-content--loading'
+    })
   ]);
 
 // Helpers
