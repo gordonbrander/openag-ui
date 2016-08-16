@@ -501,6 +501,57 @@ p {
   position: relative;
 }
 
+.environment-main--has-sidebar {
+  padding-left: 256px;
+}
+
+/* Summary sidebar
+----------------------------------------------------------------------------- */
+
+.sidebar-summary {
+  background-color: #fff;
+  /* Full height minus the app header */
+  height: calc(100vh - 72px);
+  width: 256px;
+  position: absolute;
+  left: 0;
+  top: 0;
+}
+
+.sidebar-summary--in {
+  margin: 24px;
+}
+
+/* Current recipe widget in sidebar
+----------------------------------------------------------------------------- */
+
+.current-recipe {
+  margin-bottom: 36px;
+}
+
+.current-recipe--label {
+  color: #989898;
+  font-size: 13px;
+  line-height: 18px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+
+.current-recipe--name {
+  background-image: url(sprite.png);
+  background-repeat: no-repeat;
+  background-position: right -900px;
+  background-size: 100px auto;
+  color: #00A5ED;
+  cursor: pointer;
+  display: block;
+  font-size: 20px;
+  line-height: 24px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
 /* Recipes library
 ----------------------------------------------------------------------------- */
 
@@ -573,4 +624,23 @@ p {
 
 .ftu-validator .validator-input {
   font-size: 24px;
+}
+
+/* Environment icons
+----------------------------------------------------------------------------- */
+
+.env-temperature--large {
+  background-image: url(env.png);
+  background-position: 0 0;
+  background-size: 108px auto;
+  font-size: 48px;
+  font-weight: bold;
+  text-align: center;
+  line-height: 108px;
+  height: 108px;
+  width: 108px;
+}
+
+.env-temperature--unit {
+  margin-right: -0.3em;
 }

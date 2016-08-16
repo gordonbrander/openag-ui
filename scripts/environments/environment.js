@@ -6,27 +6,38 @@ import * as Template from '../common/stache';
 import * as Request from '../common/request';
 import * as Result from '../common/result';
 import * as Unknown from '../common/unknown';
+import {map as mapMaybe} from '../common/maybe';
 import {cursor} from '../common/cursor';
 import {localize} from '../common/lang';
 import {compose, constant} from '../lang/functional';
+import {findRight} from '../lang/find';
 import * as Chart from '../environments/chart';
 import * as Toolbox from '../environments/toolbox';
 import * as Exporter from '../environments/exporter';
+import * as Sidebar from '../environments/sidebar';
 
+// Variable key for environmental data point that represents temperature.
+const AIR_TEMPERATURE = 'air_temperature';
+
+// Time constants in ms
 const S_MS = 1000;
 const MIN_MS = S_MS * 60;
 const HR_MS = MIN_MS * 60;
 const DAY_MS = HR_MS * 24;
-
 const POLL_TIMEOUT = 4 * S_MS;
 const RETRY_TIMEOUT = 4 * S_MS;
 
+// Limit to the number of datapoints that will be rendered in chart.
 const MAX_DATAPOINTS = 5000;
 
 // Actions
 
 const NoOp = {
   type: 'NoOp'
+};
+
+const RequestOpenRecipes = {
+  type: 'RequestOpenRecipes'
 };
 
 // Restore state action received from parent.
@@ -38,6 +49,14 @@ export const Restore = value => ({
 const TagExporter = tag('Exporter');
 const OpenExporter = TagExporter(Exporter.Open);
 const RestoreExporter = compose(TagExporter, Exporter.Restore);
+
+const TagSidebar = action =>
+  action.type === 'RequestOpenRecipes' ?
+  RequestOpenRecipes :
+  tagged('Sidebar', action);
+
+export const SetRecipe = compose(TagSidebar, Sidebar.SetRecipe);
+export const SetAirTemperature = compose(TagSidebar, Sidebar.SetAirTemperature);
 
 const TagToolbox = action =>
   action.type === 'OpenExporter' ?
@@ -82,18 +101,21 @@ export const init = id => {
   const [poll, pollFx] = Poll.init(POLL_TIMEOUT);
   const [chart, chartFx] = Chart.init();
   const [exporter, exporterFx] = Exporter.init();
+  const [sidebar, sidebarFx] = Sidebar.init();
 
   return [
     {
       id,
       chart,
       poll,
-      exporter
+      exporter,
+      sidebar
     },
     Effects.batch([
       chartFx.map(TagChart),
       pollFx.map(TagPoll),
-      exporterFx.map(TagExporter)
+      exporterFx.map(TagExporter),
+      sidebarFx.map(TagSidebar)
     ])
   ];
 };
@@ -107,6 +129,8 @@ export const update = (model, action) =>
   updateExporter(model, action.source) :
   action.type === 'Chart' ?
   updateChart(model, action.source) :
+  action.type === 'Sidebar' ?
+  updateSidebar(model, action.source) :
   action.type === 'FetchLatest' ?
   fetchLatest(model) :
   action.type === 'Latest' ?
@@ -131,10 +155,16 @@ const fetchLatest = model => {
 }
 
 const updateLatest = Result.updater(
-  (model, record) => batch(update, model, [
-    AddChartData(readData(record)),
-    PongPoll
-  ]),
+  (model, record) => {
+    const data = readData(record);
+    const airTemperature = findAirTemperature(data);
+
+    return batch(update, model, [
+      AddChartData(data),
+      SetAirTemperature(airTemperature),
+      PongPoll
+    ]);
+  },
   (model, error) => {
     // Send miss poll
     const [next, fx] = update(model, MissPoll);
@@ -166,10 +196,16 @@ const getBacklog = model => {
 
 // Update chart backlog from result of fetch.
 const updateBacklog = Result.updater(
-  (model, record) => batch(update, model, [
-    AddChartData(readData(record)),
-    FetchLatest
-  ]),
+  (model, record) => {
+    const data = readData(record);
+    const airTemperature = findAirTemperature(data);
+
+    return batch(update, model, [
+      AddChartData(data),
+      SetAirTemperature(airTemperature),
+      FetchLatest
+    ]);
+  },
   (model, error) => {
     const action = AlertBanner(error);
 
@@ -194,6 +230,13 @@ const restore = (model, record) => {
     GetBacklog
   ]);
 }
+
+const updateSidebar = cursor({
+  get: model => model.sidebar,
+  set: (model, sidebar) => merge(model, {sidebar}),
+  update: Sidebar.update,
+  tag: TagSidebar
+});
 
 const updateChart = cursor({
   get: model => model.chart,
@@ -220,9 +263,15 @@ const updatePoll = cursor({
 
 export const view = (model, address) =>
   html.div({
-    className: 'environment-main'
+    className: 'environment-main environment-main--has-sidebar'
   }, [
     thunk('chart', Chart.view, model.chart, forward(address, TagChart)),
+    thunk(
+      'sidebar',
+      Sidebar.view,
+      model.sidebar,
+      forward(address, TagSidebar)
+    ),
     thunk('chart-toolbox', Toolbox.view, model, forward(address, TagToolbox)),
     thunk(
       'chart-export',
@@ -275,3 +324,10 @@ const templateRecentUrl = (origin, id) =>
     limit: MAX_DATAPOINTS,
     descending: true
   });
+
+const isAirTemperature = dataPoint => dataPoint.variable === AIR_TEMPERATURE;
+
+const getValue = dataPoint => dataPoint.value;
+
+const findAirTemperature = data =>
+  mapMaybe(findRight(data, isAirTemperature), getValue);

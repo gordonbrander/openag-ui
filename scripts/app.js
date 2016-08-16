@@ -59,8 +59,8 @@ const GetState = TagPersistence(Persistence.GetState);
 const PutState = compose(TagPersistence, Persistence.PutState);
 
 const TagRecipes = action =>
-  action.type === 'Activated' ?
-  RecipeActivated(action.value) :
+  action.type === 'RequestStart' ?
+  StartRecipe(action.value) :
   tagged('Recipes', action);
 
 const RestoreRecipes = compose(TagRecipes, Recipes.Restore);
@@ -68,9 +68,12 @@ const RestoreRecipes = compose(TagRecipes, Recipes.Restore);
 const TagEnvironments = action =>
   action.type === 'AlertBanner' ?
   AlertRefreshableBanner(action.source) :
+  action.type === 'RequestOpenRecipes' ?
+  OpenRecipes :
   tagged('Environments', action);
 
 const RestoreEnvironments = compose(TagEnvironments, Environments.Restore);
+const SetRecipeForActiveEnvironment = compose(TagEnvironments, Environments.SetRecipeForActive)
 
 const OpenRecipes = TagRecipes(Recipes.Open);
 const CloseRecipes = TagRecipes(Recipes.Close);
@@ -85,8 +88,8 @@ const AlertBanner = compose(TagBanner, Banner.Alert);
 const AlertRefreshableBanner = compose(TagBanner, Banner.AlertRefreshable);
 const AlertDismissableBanner = compose(TagBanner, Banner.AlertRefreshable);
 
-const RecipeActivated = value => ({
-  type: 'RecipeActivated',
+const StartRecipe = value => ({
+  type: 'StartRecipe',
   value
 });
 
@@ -105,8 +108,6 @@ const RecipePosted = (result) => ({
   type: 'RecipePosted',
   result
 });
-
-const ChangeAppNavRecipeTitle = compose(TagAppNav, AppNav.ChangeRecipeTitle);
 
 // Init and update
 
@@ -168,8 +169,8 @@ export const update = (model, action) =>
   restore(model, action.value) :
   action.type === 'Heartbeat' ?
   updateHeartbeat(model, action.url) :
-  action.type === 'RecipeActivated' ?
-  recipeActivated(model, action.value) :
+  action.type === 'StartRecipe' ?
+  startRecipe(model, action.value) :
   action.type === 'PostRecipe' ?
   postRecipe(model, action.environmentID, action.recipeID) :
   action.type === 'RecipePosted' ?
@@ -220,9 +221,9 @@ const updateEnvironments = cursor({
   tag: TagEnvironments
 });
 
-const recipeActivated = (model, recipe) =>
+const startRecipe = (model, recipe) =>
   batch(update, model, [
-    ChangeAppNavRecipeTitle(recipe.title),
+    SetRecipeForActiveEnvironment(recipe),
     // @TODO bring environments up a level
     PostRecipe(model.environments.active, recipe._id),
     CloseRecipes
@@ -245,7 +246,7 @@ const recipePostedOk = (model, value) =>
   [model, Effects.none];
 
 const recipePostedError = (model, error) => {
-  const message = localize('Food computer failed to start recipe');
+  const message = localize('Food computer was unable to start recipe');
   return update(model, AlertRefreshableBanner(message));
 }
 

@@ -10,3 +10,14 @@ export const find = (array, predicate) => {
     }
   }
 }
+
+// Find an item in array, starting from right side of array and working
+// toward the left.
+// Returns result or null.
+export const findRight = (array, predicate) => {
+  for (var i = array.length - 1; i >= 0; i--) {
+    if (predicate(array[i])) {
+      return array[i];
+    }
+  }
+}

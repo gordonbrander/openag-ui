@@ -94,8 +94,8 @@ export const StartByID = id => ({
   id
 });
 
-export const Activated = value => ({
-  type: 'Activated',
+export const RequestStart = value => ({
+  type: 'RequestStart',
   value
 });
 
@@ -206,7 +206,7 @@ const startByID = (model, id) => {
     next,
     Effects.batch([
       fx,
-      Effects.receive(Activated(merge({}, model.entries[id])))
+      Effects.receive(RequestStart(merge({}, model.entries[id])))
     ])
   ];
 }
