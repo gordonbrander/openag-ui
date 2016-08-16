@@ -20,6 +20,11 @@
     "origin": "{{origin_url}}/recipes"
   },
 
+  "environments": {
+    "local": "environments",
+    "origin": "{{origin_url}}/environments"
+  },
+
   "app": {
     "local": "openag",
     "state_id": "state"
