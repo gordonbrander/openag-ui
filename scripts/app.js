@@ -68,6 +68,10 @@ const TagRecipes = action =>
 const RestoreRecipes = compose(TagRecipes, Recipes.Restore);
 
 const TagEnvironment = action =>
+  action.type === 'AlertBanner' ?
+  AlertRefreshableBanner(action.source) :
+  action.type === 'RequestOpenRecipes' ?
+  OpenRecipes :
   tagged('Environment', action);
 
 const TagEnvironments = action =>
