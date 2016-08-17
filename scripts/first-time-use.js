@@ -32,14 +32,14 @@ const TagModal = tag('Modal');
 export const Open = TagModal(Modal.Open);
 export const Close = TagModal(Modal.Close);
 
-const GetEnvironments = rootUrl => ({
+const GetEnvironments = origin => ({
   type: 'GetEnvironments',
-  rootUrl
+  origin
 });
 
-const RequestEnvironments = rootUrl => ({
+const RequestEnvironments = origin => ({
   type: 'RequestEnvironments',
-  rootUrl
+  origin
 });
 
 const TagEnvironments = action =>
@@ -174,7 +174,7 @@ export const update = (model, action) =>
   action.type === 'GetEnvironments' ?
   // Currently we keep environments database in the environments module.
   // Send request up to parent to get this info.
-  [model, Effects.receive(RequestEnvironments(action.rootUrl))] :
+  [model, Effects.receive(RequestEnvironments(action.origin))] :
   action.type === 'GotEnvironments' ?
   (
     action.result.isOk ?
@@ -291,9 +291,14 @@ const gotHeartbeat = Result.updater(
     const addressValue = Validator.readValue(model.address);
     const rootUrl = readRootUrl(addressValue);
 
+    // Given root URL, origin CouchDB url.
+    const origin = Template.render(Config.origin, {
+      root_url: rootUrl
+    });
+
     return batch(update, model, [
       AddressOk(message),
-      GetEnvironments(rootUrl),
+      GetEnvironments(origin),
       EnableSubmitter
     ]);
   },
