@@ -11,6 +11,7 @@ Includes settings (like IP address of app) and, in future, log-in creds.
 import {html, Effects, forward, thunk} from 'reflex';
 import * as Config from '../openag-config.json';
 import * as Validator from './common/validator';
+import * as Select from './common/select';
 import * as Button from './common/button';
 import * as Modal from './common/modal';
 import * as Template from './common/stache';
@@ -30,6 +31,9 @@ const TagModal = tag('Modal');
 
 export const Open = TagModal(Modal.Open);
 export const Close = TagModal(Modal.Close);
+
+const TagEnvironments = action =>
+  tagged('Environments', action);
 
 const TagName = action =>
   action.type === 'Validate' ?
@@ -111,6 +115,8 @@ export const init = () => {
     false
   );
 
+  const [environments, environmentsFx] = Select.init();
+
   const [submitter, submitterFx] = Button.init(localize('Save'), false, true, false, false);
   
   return [
@@ -118,12 +124,14 @@ export const init = () => {
       isOpen: false,
       name,
       address,
-      submitter
+      submitter,
+      environments
     },
     Effects.batch([
       addressFx.map(TagAddress),
       nameFx.map(TagName),
-      submitterFx.map(TagSubmitter)
+      submitterFx.map(TagSubmitter),
+      environmentsFx.map(TagEnvironments)
     ])
   ];
 }
@@ -137,6 +145,8 @@ export const update = (model, action) =>
   updateSubmitter(model, action.source) :
   action.type === 'Name' ?
   updateName(model, action.source) :
+  action.type === 'Environments' ?
+  updateEnvironments(model, action.source) :
   action.type === 'Submit' ?
   submit(model) :
   action.type === 'TryName' ?
@@ -168,6 +178,13 @@ const updateName = cursor({
   set: (model, name) => merge(model, {name}),
   update: Validator.update,
   tag: TagName
+});
+
+const updateEnvironments = cursor({
+  get: model => model.environments,
+  set: (model, environments) => merge(model, {environments}),
+  update: Select.update,
+  tag: TagEnvironments
 });
 
 const updateSubmitter = cursor({
@@ -326,6 +343,13 @@ export const viewFTU = (model, address) =>
                 model.address,
                 forward(address, TagAddress),
                 'ftu-validator'
+              ),
+              thunk(
+                'ftu-select-environment',
+                Select.view,
+                model.environments,
+                forward(address, TagEnvironments),
+                'select'
               ),
               html.p({
                 className: 'tip'
