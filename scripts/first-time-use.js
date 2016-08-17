@@ -313,8 +313,20 @@ export const viewFTU = (model, address) =>
               html.p({}, [
                 localize("Congrats! It's almost time to start planting! We just need a couple things to get your Food Computer up and running.")
               ]),
-              Validator.view(model.name, forward(address, TagName), 'ftu-validator'),
-              Validator.view(model.address, forward(address, TagAddress), 'ftu-validator'),
+              thunk(
+                'ftu-validator-name',
+                Validator.view,
+                model.name,
+                forward(address, TagName),
+                'ftu-validator'
+              ),
+              thunk(
+                'ftu-validator-address',
+                Validator.view,
+                model.address,
+                forward(address, TagAddress),
+                'ftu-validator'
+              ),
               html.p({
                 className: 'tip'
               }, [
