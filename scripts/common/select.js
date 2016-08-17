@@ -1,12 +1,12 @@
 import {html, Effects, forward, thunk} from 'reflex';
-import {annotate} from '../common/prelude'
+import * as Option from '../common/option';
 import {update as updateUnknown} from '../common/unknown';
 
 // Actions
 
-export const AppendOption = (id, text, value) => ({
+export const AppendOption = (id, text, value, isDisabled) => ({
   type: 'AppendOption',
-  option: Option(id, text, value)
+  option: Option.assemble(id, text, value, isDisabled)
 });
 
 export const Options = options => ({
@@ -17,7 +17,7 @@ export const Options = options => ({
 // @TODO this should also capture active selection.
 export const Change = value => ({
   type: 'Change',
-   value
+  value
 });
 
 const For = (id, action) => ({
@@ -26,16 +26,11 @@ const For = (id, action) => ({
   source: action
 });
 
-const TagForID = (id, action) =>
-  For(id, action);
+const TagForID = (id, action) => For(id, action);
 
 const ForID = id => action => TagForID(id, action);
 
 // Model, init, update
-
-export const Option = (id, text, value) => ({
-  id, text, value
-});
 
 export const init = (options, active) => {
   return [
@@ -75,15 +70,8 @@ export const view = (model, address, className) =>
       className,
       onChange: onChange(address)
     },
-    model.options.map(renderOption)
+    model.options.map(Option.view)
   );
-
-const renderOption = (model) =>
-  html.option({
-    value: model.value
-  }, [
-    model.text
-  ]);
 
 export const onChange = address => forward(address, decodeChangeEvent);
 
