@@ -32,8 +32,20 @@ const TagModal = tag('Modal');
 export const Open = TagModal(Modal.Open);
 export const Close = TagModal(Modal.Close);
 
+const GetEnvironments = rootUrl => ({
+  type: 'GetEnvironments',
+  rootUrl
+});
+
+const RequestEnvironments = rootUrl => ({
+  type: 'RequestEnvironments',
+  rootUrl
+});
+
 const TagEnvironments = action =>
   tagged('Environments', action);
+
+const EnvironmentsOptions = compose(TagEnvironments, Select.Options);
 
 const TagName = action =>
   action.type === 'Validate' ?
@@ -159,6 +171,16 @@ export const update = (model, action) =>
   getHeartbeat(model, action.url) :
   action.type === 'GotHeartbeat' ?
   gotHeartbeat(model, action.result) :
+  action.type === 'GetEnvironments' ?
+  // Currently we keep environments database in the environments module.
+  // Send request up to parent to get this info.
+  [model, Effects.receive(RequestEnvironments(action.rootUrl))] :
+  action.type === 'GotEnvironments' ?
+  (
+    action.result.isOk ?
+    gotEnvironmentsOk(model, result.value) :
+    gotEnvironmentsError(model, result.error)
+  ) :
   Unknown.update(model, action);
 
 const updateModal = cursor({
@@ -266,8 +288,12 @@ const gotHeartbeat = Result.updater(
   (model, value) => {
     const message = localize('Success! Connected to Food Computer.');
 
+    const addressValue = Validator.readValue(model.address);
+    const rootUrl = readRootUrl(addressValue);
+
     return batch(update, model, [
       AddressOk(message),
+      GetEnvironments(rootUrl),
       EnableSubmitter
     ]);
   },
@@ -276,6 +302,13 @@ const gotHeartbeat = Result.updater(
   }
 );
 
+const gotEnvironmentsOk = (model, value) =>
+  update(model, EnvironmentsOptions(value));
+
+const gotEnvironmentsError = (model, error) => {
+  // @FIXME error banner or some feedback.
+  return [model, Effects.none];
+}
 
 const tryName = (model, value) => {
   const message = chooseRandom(NAME_MESSAGES);
