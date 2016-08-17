@@ -88,7 +88,7 @@ const SetRecipeForEnvironment = compose(TagEnvironment, Environment.SetRecipe);
 const TagAppNav = action =>
   tagged('AppNav', action);
 
-const RestoreAppNav = compose(TagAppNav, AppNav.Restore);
+const ConfigureAppNav = compose(TagAppNav, AppNav.Configure);
 
 const TagBanner = tag('Banner');
 const AlertBanner = compose(TagBanner, Banner.Alert);
@@ -306,7 +306,7 @@ const restore = (model, record) => {
   const next = merge(model, record);
 
   return batch(update, next, [
-    RestoreAppNav(record),
+    ConfigureAppNav(record),
     RestoreEnvironment(record),
     ConfigureEnvironments(record.origin),
     RestoreRecipes(record)
