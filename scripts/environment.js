@@ -40,15 +40,15 @@ const RequestOpenRecipes = {
   type: 'RequestOpenRecipes'
 };
 
-// Restore state action received from parent.
-export const Restore = value => ({
-  type: 'Restore',
-  value
+// Configure action received from parent.
+export const Configure = record => ({
+  type: 'Configure',
+  record
 });
 
 const TagExporter = tag('Exporter');
 const OpenExporter = TagExporter(Exporter.Open);
-const RestoreExporter = compose(TagExporter, Exporter.Restore);
+const ConfigureExporter = compose(TagExporter, Exporter.Configure);
 
 const TagSidebar = action =>
   action.type === 'RequestOpenRecipes' ?
@@ -120,6 +120,18 @@ export const init = id => {
   ];
 };
 
+// Serialize environment for storing locally.
+export const serialize = model => ({
+  id: model.id,
+  name: model.name
+});
+
+export const deserialize = record => ({
+  origin: record.origin,
+  id: record.environment.id,
+  name: record.environment.name
+});
+
 export const update = (model, action) =>
   action.type === 'NoOp' ?
   [model, Effects.none] :
@@ -139,8 +151,8 @@ export const update = (model, action) =>
   getBacklog(model) :
   action.type === 'GotBacklog' ?
   updateBacklog(model, action.result) :
-  action.type === 'Restore' ?
-  restore(model, action.value) :
+  action.type === 'Configure' ?
+  configure(model, action.record) :
   Unknown.update(model, action);
 
 const fetchLatest = model => {
@@ -220,12 +232,12 @@ const updateBacklog = Result.updater(
   }
 );
 
-const restore = (model, record) => {
-  const next = merge(model, {origin: record.origin});
+const configure = (model, record) => {
+  const next = merge(model, record);
 
   return batch(update, next, [
     // Forward restore down to exporter module
-    RestoreExporter(record),
+    ConfigureExporter(Exporter.deserialize(record)),
     // Now that we have the origin, get the backlog.
     GetBacklog
   ]);

@@ -82,7 +82,7 @@ const TagEnvironment = action =>
   OpenRecipes :
   tagged('Environment', action);
 
-const RestoreEnvironment = compose(TagEnvironment, Environment.Restore);
+const ConfigureEnvironment = compose(TagEnvironment, Environment.Configure);
 const SetRecipeForEnvironment = compose(TagEnvironment, Environment.SetRecipe);
 
 const TagAppNav = action =>
@@ -297,7 +297,8 @@ const serialize = model => ({
   version: model.version,
   api: model.api,
   origin: model.origin,
-  name: model.name
+  name: model.name,
+  environment: Environment.serialize(model.environment)
 });
 
 const restore = (model, record) => {
@@ -307,7 +308,7 @@ const restore = (model, record) => {
 
   return batch(update, next, [
     ConfigureAppNav(record),
-    RestoreEnvironment(record),
+    ConfigureEnvironment(Environment.deserialize(record)),
     ConfigureEnvironments(record.origin),
     RestoreRecipes(record)
   ]);
