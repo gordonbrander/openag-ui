@@ -326,8 +326,7 @@ const gotHeartbeat = Result.updater(
 
     return batch(update, model, [
       AddressOk(message),
-      SyncEnvironments(origin),
-      EnableSubmitter
+      SyncEnvironments(origin)
     ]);
   },
   (model, error) => {
@@ -354,7 +353,13 @@ const syncedEnvironmentsError = (model, error) => {
 
 const restoredEnvironmentsOk = (model, rows) => {
   const options = rows.map(readOptionFromRecord);
-  return update(model, EnvironmentsOptions(options));
+
+  return batch(update, model, [
+    // Fill select box with options.
+    EnvironmentsOptions(options),
+    // Enable submit button, because we're in a valid state now.
+    EnableSubmitter
+  ]);
 }
 
 const restoredEnvironmentsError = (model, error) => {
@@ -413,7 +418,7 @@ export const viewFTU = (model, address) =>
               className: 'panel--in'
             }, [
               html.p({}, [
-                localize("Congrats! It's almost time to start planting! We just need a couple things to get your Food Computer up and running.")
+                localize("Congrats! It's almost time to get planting! We just need a couple of details to get your Food Computer up and running.")
               ]),
               thunk(
                 'ftu-validator-name',

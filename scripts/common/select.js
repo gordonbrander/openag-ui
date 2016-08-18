@@ -1,5 +1,6 @@
 import {html, Effects, forward, thunk} from 'reflex';
 import * as Option from '../common/option';
+import {toggle} from '../common/attr';
 import {merge} from '../common/prelude';
 import {update as updateUnknown} from '../common/unknown';
 
@@ -104,6 +105,7 @@ export const view = (model, address, className) =>
   html.select(
     {
       className,
+      disabled: toggle('disabled', model.options.length === 0),
       onChange: onChange(address)
     },
     model.options.map(Option.view)
