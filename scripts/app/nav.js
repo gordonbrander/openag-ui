@@ -5,9 +5,9 @@ import {classed} from '../common/attr';
 import {localize} from '../common/lang';
 
 // Configure settings (usually comes from parent who read it from local DB).
-export const Configure = value => ({
+export const Configure = name => ({
   type: 'Configure',
-  value
+  name
 });
 
 export const init = () => [
@@ -20,14 +20,10 @@ export const init = () => [
 export const update = (model, action) =>
   action.type === 'Configure' ?
   [
-    merge(model, {
-      name: readNameFromRecord(action.value)
-    }),
+    merge(model, {name: action.name}),
     Effects.none
   ] :
   Unknown.update(model, action);
-
-const readNameFromRecord = record => record.name;
 
 const readName = model =>
   typeof model.name === 'string' ?

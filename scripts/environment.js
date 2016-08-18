@@ -41,9 +41,11 @@ const RequestOpenRecipes = {
 };
 
 // Configure action received from parent.
-export const Configure = record => ({
+export const Configure = (environmentID, environmentName, origin) => ({
   type: 'Configure',
-  record
+  origin: origin,
+  id: environmentID,
+  name: environmentName
 });
 
 const TagExporter = tag('Exporter');
@@ -126,12 +128,6 @@ export const serialize = model => ({
   name: model.name
 });
 
-export const deserialize = record => ({
-  origin: record.origin,
-  id: record.environment.id,
-  name: record.environment.name
-});
-
 export const update = (model, action) =>
   action.type === 'NoOp' ?
   [model, Effects.none] :
@@ -152,7 +148,7 @@ export const update = (model, action) =>
   action.type === 'GotBacklog' ?
   updateBacklog(model, action.result) :
   action.type === 'Configure' ?
-  configure(model, action.record) :
+  configure(model, action) :
   Unknown.update(model, action);
 
 const fetchLatest = model => {
@@ -232,12 +228,16 @@ const updateBacklog = Result.updater(
   }
 );
 
-const configure = (model, record) => {
-  const next = merge(model, record);
+const configure = (model, {origin, id, name}) => {
+  const next = merge(model, {
+    origin,
+    id,
+    name
+  });
 
   return batch(update, next, [
-    // Forward restore down to exporter module
-    ConfigureExporter(Exporter.deserialize(record)),
+    // Forward restore down to exporter module.
+    ConfigureExporter(origin),
     // Now that we have the origin, get the backlog.
     GetBacklog
   ]);

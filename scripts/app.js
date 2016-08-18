@@ -22,14 +22,14 @@ const STATE_ID = Config.app.state_id;
 
 // Actions and tagging functions
 
-const Restore = value => ({
-  type: 'Restore',
+const Configure = value => ({
+  type: 'Configure',
   value
 });
 
 // Sent when First Run Experience is successfully completed.
-const Configured = form => ({
-  type: 'Configured',
+const ConfigureFirstTime = form => ({
+  type: 'ConfigureFirstTime',
   form
 });
 
@@ -41,7 +41,7 @@ const UpdateAddress = url => ({
 
 const TagFirstTimeUse = action =>
   action.type === 'NotifySubmit' ?
-  Configured(action.form) :
+  ConfigureFirstTime(action.form) :
   tagged('FirstTimeUse', action);
 
 const OpenFirstTimeUse = TagFirstTimeUse(Settings.Open);
@@ -49,7 +49,7 @@ const CloseFirstTimeUse = TagFirstTimeUse(Settings.Close);
 
 const TagPersistence = action =>
   action.type === 'NotifyRestore' ?
-  Restore(action.value) :
+  Configure(action.value) :
   // If we were notified of any errors, forward them to the banner module.
   action.type === 'NotifyBanner' ?
   AlertRefreshableBanner(action.message) :
@@ -60,12 +60,15 @@ const TagPersistence = action =>
 const GetState = TagPersistence(Persistence.GetState);
 const PutState = compose(TagPersistence, Persistence.PutState);
 
+// Request a state put.
+const SaveState = {type: 'SaveState'};
+
 const TagRecipes = action =>
   action.type === 'RequestStart' ?
   StartRecipe(action.value) :
   tagged('Recipes', action);
 
-const RestoreRecipes = compose(TagRecipes, Recipes.Restore);
+const ConfigureRecipes = compose(TagRecipes, Recipes.Configure);
 
 const OpenRecipes = TagRecipes(Recipes.Open);
 const CloseRecipes = TagRecipes(Recipes.Close);
@@ -179,11 +182,12 @@ export const update = (model, action) =>
   updateFirstTimeUse(model, action.source) :
   action.type === 'Environments' ?
   updateEnvironments(model, action.source) :
+
   // Specialized update functions
-  action.type === 'Restore' ?
-  restore(model, action.value) :
-  action.type === 'Configured' ?
-  updateConfigured(model, action.form) :
+  action.type === 'Configure' ?
+  configure(model, action.value) :
+  action.type === 'ConfigureFirstTime' ?
+  configureFirstTime(model, action.form) :
   action.type === 'StartRecipe' ?
   startRecipe(model, action.value) :
   action.type === 'PostRecipe' ?
@@ -194,6 +198,8 @@ export const update = (model, action) =>
     recipePostedOk(model, action.result.value) :
     recipePostedError(model, action.result.error)
   ) :
+  action.type === 'SaveState' ?
+  saveState(model) :
   Unknown.update(model, action);
 
 const updatePersistence = cursor({
@@ -271,48 +277,70 @@ const recipePostedError = (model, error) => {
   return update(model, AlertRefreshableBanner(message));
 }
 
-const updateConfigured = (model, form) => {
-  // First, update the URL in the model
-  const next = merge(model, {
+const configureFirstTime = (model, form) => {
+  // 1. First send configure actions to the module and submodule.
+  // 2. Then serialize and store the configuration in PouchDB with Putstate.
+
+  // Construct a faux record of the same shape we would get back from the db.
+  const record = serialize({
+    // Use any of this information if already on the model (_id and _rev)
+    // should be empty.
+    _id: model._id,
+    _rev: model._rev,
+    version: model.version,
+
+    // This comes from the FTU.
     api: form.api,
     origin: form.origin,
-    name: form.name
+    environment: {
+      id: form.environment.id,
+      name: form.environment.name
+    }
   });
 
-  const record = serialize(next);
-
-  return batch(update, next, [
+  return batch(update, model, [
+    // Send the configuration info to in-memory model.
+    // This is the action we would typically send after getting back record from
+    // local DB.
+    Configure(record),
+    // Close FTU
     CloseFirstTimeUse,
-    // Send the settings info to in-memory model
-    Restore(record),
-    // Save settings info to local database
-    PutState(record)
+    // Save updated model to local database.
+    SaveState
   ]);
 }
 
-// Serialize and deserialize data stored in persistence module.
+const configure = (model, {api, origin, environment}) => {
+  // Restore serialized data from stored record.
+  // Merge into in-memory app model.
+  const next = merge(model, {
+    api,
+    origin
+  });
+
+  return batch(update, next, [
+    ConfigureAppNav(environment.name),
+    ConfigureEnvironment(environment.id, environment.name, origin),
+    ConfigureEnvironments(origin),
+    ConfigureRecipes(origin)
+  ]);
+}
+
+const saveState = model => {
+  // Serialize the model and Put it.
+  const record = serialize(model);
+  return update(model, PutState(record));
+}
+
+// Serialize data stored in persistence module.
 const serialize = model => ({
   _id: model._id,
   _rev: model._rev,
   version: model.version,
   api: model.api,
   origin: model.origin,
-  name: model.name,
   environment: Environment.serialize(model.environment)
 });
-
-const restore = (model, record) => {
-  // Restore serialized data from stored record.
-  // Merge into in-memory app model.
-  const next = merge(model, record);
-
-  return batch(update, next, [
-    ConfigureAppNav(record),
-    ConfigureEnvironment(Environment.deserialize(record)),
-    ConfigureEnvironments(record.origin),
-    RestoreRecipes(record)
-  ]);
-}
 
 // View
 

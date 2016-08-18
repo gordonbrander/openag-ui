@@ -37,7 +37,6 @@ export const update = (model, action) =>
 const setRecipe = (model, recipe) => [
   merge(model, {
     id: recipe._id,
-    // @TODO recipes don't currently have a name. When they do, put it here.
     name: (recipe.name || recipe._id)
   }),
   Effects.none

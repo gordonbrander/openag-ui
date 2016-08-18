@@ -12,9 +12,9 @@ const MAX_DATAPOINTS = 5000;
 
 // Actions
 
-export const Configure = record => ({
+export const Configure = origin => ({
   type: 'Configure',
-  record
+  origin
 });
 
 export const TagModal = tag('Modal');
@@ -36,14 +36,13 @@ export const update = (model, action) =>
   action.type === 'Modal' ?
   updateModal(model, action.source) :
   action.type === 'Configure' ?
-  configure(model, action.record) :
+  configure(model, action.origin) :
   Unknown.update(model, action);
 
-export const deserialize = record => ({
-  origin: record.origin
-});
-
-const configure = (model, record) => nofx(merge(model, record));
+const configure = (model, origin) =>
+  nofx(merge(model, {
+    origin
+  }));
 
 const updateModal = cursor({
   update: Modal.update,

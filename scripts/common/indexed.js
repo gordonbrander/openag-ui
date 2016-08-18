@@ -119,8 +119,6 @@ export const updateWithID = (update, tag, model, id, action) => {
   if (model.order.indexOf(id) < 0) {
     return [
       model,
-      // @TODO can we handle this case in a way that doesn't require
-      // the modul to implement noop?
       Effects
         .task(Unknown.error(`model with id: ${id} is not found`))
         .map(AlwaysNoOp)
