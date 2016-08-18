@@ -38,6 +38,19 @@ p {
   margin: 24px 0;
 }
 
+::-webkit-input-placeholder { /* Chrome/Opera/Safari */
+  color: #989898;
+}
+::-moz-placeholder { /* Firefox 19+ */
+  color: #989898;
+}
+:-ms-input-placeholder { /* IE 10+ */
+  color: #989898;
+}
+:-moz-placeholder { /* Firefox 18- */
+  color: #989898;
+}
+
 /* Helpers
 ----------------------------------------------------------------------------- */
 
@@ -112,6 +125,7 @@ p {
   width: 100%;
   -webkit-appearance: none;
   -moz-appearance: none;
+  -ms-appearance: none;
 }
 .txt-textarea:focus {
   box-shadow: 0 2px 0 #00A5ED;
@@ -137,6 +151,19 @@ p {
   outline: none;
 }
 
+/* Labeled form things
+----------------------------------------------------------------------------- */
+
+.labeled--label {
+  color: #00A5ED;
+  display: block;
+  font-size: 13px;
+  line-height: 24px;
+  min-height: 24px;
+  padding-bottom: 4px;
+  padding-top: 4px;
+}
+
 /* Validated inputs
 ----------------------------------------------------------------------------- */
 
@@ -146,6 +173,7 @@ p {
 
 .validator-message {
   color: #00A5ED;
+  display: block;
   font-size: 13px;
   line-height: 24px;
   min-height: 24px;
@@ -175,6 +203,36 @@ p {
 
 .validator-ok .validator-message {
   color: #2DC500;
+}
+
+/* Selects
+----------------------------------------------------------------------------- */
+
+.select {
+  background-color: transparent;
+  background-image: url(sprite.png);
+  background-repeat: no-repeat;
+  background-position: right -1000px;
+  background-size: 100px auto;
+  border: 0;
+  border-radius: 0;
+  box-shadow: 0 1px 0 #d8d8d8;
+  box-sizing: border-box;
+  display: block;
+  width: 100%;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  -ms-appearance: none;
+}
+
+.select:focus {
+  box-shadow: 0 2px 0 #00A5ED;
+  border: 0;
+  outline: none;
+}
+
+.select::-moz-focus-inner {
+  border: 0;
 }
 
 /* App
@@ -488,6 +546,9 @@ p {
 ----------------------------------------------------------------------------- */
 
 .environment-main {
+  background-color: #f4f4f4;
+  /* Full height minus the app header */
+  height: calc(100vh - 72px);
   position: relative;
 }
 
@@ -495,13 +556,22 @@ p {
   padding-left: 256px;
 }
 
+.environment-content {
+  height: 100%;
+  width: 100%;
+}
+
+.environment-content--loading {
+  background: url(loading.svg) no-repeat center center;
+  background-size: 80px 80px;
+}
+
 /* Summary sidebar
 ----------------------------------------------------------------------------- */
 
 .sidebar-summary {
   background-color: #fff;
-  /* Full height minus the app header */
-  height: calc(100vh - 72px);
+  height: 100%;
   width: 256px;
   position: absolute;
   left: 0;
@@ -614,6 +684,13 @@ p {
 
 .ftu-validator .validator-input {
   font-size: 24px;
+  height: 40px;
+}
+
+.ftu-select {
+  background-position: right -1100px;
+  font-size: 24px;
+  height: 40px;
 }
 
 /* Environment icons

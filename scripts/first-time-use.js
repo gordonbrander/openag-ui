@@ -10,7 +10,11 @@ Includes settings (like IP address of app) and, in future, log-in creds.
 */
 import {html, Effects, forward, thunk} from 'reflex';
 import * as Config from '../openag-config.json';
+import PouchDB from 'pouchdb-browser';
+import * as Database from './common/database';
 import * as Validator from './common/validator';
+import * as Select from './common/select';
+import {assemble as assembleOption} from './common/option';
 import * as Button from './common/button';
 import * as Modal from './common/modal';
 import * as Template from './common/stache';
@@ -24,12 +28,38 @@ import {localize} from './common/lang';
 import * as Unknown from './common/unknown';
 import {compose} from './lang/functional';
 
+// Create a PouchDB instance for the local environments db, so we can
+// sync to it.
+const DB = new PouchDB(Config.environments.local);
+
 // Actions
 
 const TagModal = tag('Modal');
 
 export const Open = TagModal(Modal.Open);
 export const Close = TagModal(Modal.Close);
+
+const SyncEnvironments = origin => ({
+  type: 'SyncEnvironments',
+  origin
+});
+
+const SyncedEnvironments = result => ({
+  type: 'SyncedEnvironments',
+  result
+});
+
+const RestoreEnvironments = {type: 'RestoreEnvironments'};
+
+const RestoredEnvironments = result => ({
+  type: 'RestoredEnvironments',
+  result
+});
+
+const TagEnvironments = action =>
+  tagged('Environments', action);
+
+const EnvironmentsOptions = compose(TagEnvironments, Select.Options);
 
 const TagName = action =>
   action.type === 'Validate' ?
@@ -111,6 +141,8 @@ export const init = () => {
     false
   );
 
+  const [environments, environmentsFx] = Select.init();
+
   const [submitter, submitterFx] = Button.init(localize('Save'), false, true, false, false);
   
   return [
@@ -118,12 +150,14 @@ export const init = () => {
       isOpen: false,
       name,
       address,
-      submitter
+      submitter,
+      environments
     },
     Effects.batch([
       addressFx.map(TagAddress),
       nameFx.map(TagName),
-      submitterFx.map(TagSubmitter)
+      submitterFx.map(TagSubmitter),
+      environmentsFx.map(TagEnvironments)
     ])
   ];
 }
@@ -137,6 +171,8 @@ export const update = (model, action) =>
   updateSubmitter(model, action.source) :
   action.type === 'Name' ?
   updateName(model, action.source) :
+  action.type === 'Environments' ?
+  updateEnvironments(model, action.source) :
   action.type === 'Submit' ?
   submit(model) :
   action.type === 'TryName' ?
@@ -149,6 +185,24 @@ export const update = (model, action) =>
   getHeartbeat(model, action.url) :
   action.type === 'GotHeartbeat' ?
   gotHeartbeat(model, action.result) :
+  action.type === 'SyncEnvironments' ?
+  // Currently we keep environments database in the environments module.
+  // Send request up to parent to get this info.
+  syncEnvironments(model, action.origin) :
+  action.type === 'SyncedEnvironments' ?
+  (
+    action.result.isOk ?
+    syncedEnvironmentsOk(model, action.result.value) :
+    syncedEnvironmentsError(model, action.result.error)
+  ) :
+  action.type === 'RestoreEnvironments' ?
+  [model, Database.restore(DB).map(RestoredEnvironments)] :
+  action.type === 'RestoredEnvironments' ?
+  (
+    action.result.isOk ?
+    restoredEnvironmentsOk(model, action.result.value) :
+    restoredEnvironmentsError(model, action.result.error)
+  ) :
   Unknown.update(model, action);
 
 const updateModal = cursor({
@@ -168,6 +222,13 @@ const updateName = cursor({
   set: (model, name) => merge(model, {name}),
   update: Validator.update,
   tag: TagName
+});
+
+const updateEnvironments = cursor({
+  get: model => model.environments,
+  set: (model, environments) => merge(model, {environments}),
+  update: Select.update,
+  tag: TagEnvironments
 });
 
 const updateSubmitter = cursor({
@@ -194,10 +255,16 @@ const submit = model => {
     });
 
     const nameValue = Validator.readValue(model.name);
-    const name = readName(nameValue);
+    const environmentName = readName(nameValue);
 
+    const environmentID = Select.readValue(model.environments);
+
+    // Construct form message to send up to app.
     const form = {
-      name,
+      environment: {
+        id: environmentID,
+        name: environmentName
+      },
       api,
       origin
     };
@@ -249,9 +316,17 @@ const gotHeartbeat = Result.updater(
   (model, value) => {
     const message = localize('Success! Connected to Food Computer.');
 
+    const addressValue = Validator.readValue(model.address);
+    const rootUrl = readRootUrl(addressValue);
+
+    // Given root URL, origin CouchDB url.
+    const origin = Template.render(Config.origin, {
+      root_url: rootUrl
+    });
+
     return batch(update, model, [
       AddressOk(message),
-      EnableSubmitter
+      SyncEnvironments(origin)
     ]);
   },
   (model, error) => {
@@ -259,6 +334,38 @@ const gotHeartbeat = Result.updater(
   }
 );
 
+const syncEnvironments = (model, origin) => {
+  // Render environment url
+  const environments = Template.render(Config.environments.origin, {
+    origin_url: origin
+  });
+
+  return [model, Database.sync(DB, environments).map(SyncedEnvironments)];
+}
+
+const syncedEnvironmentsOk = (model, value) =>
+  update(model, RestoreEnvironments);
+
+const syncedEnvironmentsError = (model, error) => {
+  // @FIXME error banner or some feedback.
+  return [model, Effects.none];
+}
+
+const restoredEnvironmentsOk = (model, rows) => {
+  const options = rows.map(readOptionFromRecord);
+
+  return batch(update, model, [
+    // Fill select box with options.
+    EnvironmentsOptions(options),
+    // Enable submit button, because we're in a valid state now.
+    EnableSubmitter
+  ]);
+}
+
+const restoredEnvironmentsError = (model, error) => {
+  // @FIXME error banner or some feedback.
+  return [model, Effects.none];  
+}
 
 const tryName = (model, value) => {
   const message = chooseRandom(NAME_MESSAGES);
@@ -311,10 +418,38 @@ export const viewFTU = (model, address) =>
               className: 'panel--in'
             }, [
               html.p({}, [
-                localize("Congrats! It's almost time to start planting! We just need a couple things to get your Food Computer up and running.")
+                localize("Congrats! It's almost time to get planting! We just need a couple of details to get your Food Computer up and running.")
               ]),
-              Validator.view(model.name, forward(address, TagName), 'ftu-validator'),
-              Validator.view(model.address, forward(address, TagAddress), 'ftu-validator'),
+              thunk(
+                'ftu-validator-name',
+                Validator.view,
+                model.name,
+                forward(address, TagName),
+                'ftu-validator'
+              ),
+              thunk(
+                'ftu-validator-address',
+                Validator.view,
+                model.address,
+                forward(address, TagAddress),
+                'ftu-validator'
+              ),
+              html.div({
+                className: 'labeled'
+              }, [
+                thunk(
+                  'ftu-select-environment',
+                  Select.view,
+                  model.environments,
+                  forward(address, TagEnvironments),
+                  'select ftu-select'
+                ),
+                html.label({
+                  className: 'labeled--label'
+                }, [
+                  localize('Choose an environment')
+                ])
+              ]),
               html.p({
                 className: 'tip'
               }, [
@@ -381,3 +516,6 @@ const readName = name =>
   name.search(ALL_SPACES) === -1 ?
   name :
   DEFAULT_NAME;
+
+const readOptionFromRecord = ({_id}) =>
+  assembleOption(_id, _id, _id, false);

@@ -248,7 +248,7 @@ export const view = (model, address, className) =>
       onFocus: onFocus(address),
       onBlur: () => address(Blur)
     }),
-    html.div({
+    html.label({
       className: 'validator-message'
     }, [
       model.message || model.label

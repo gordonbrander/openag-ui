@@ -40,15 +40,17 @@ const RequestOpenRecipes = {
   type: 'RequestOpenRecipes'
 };
 
-// Restore state action received from parent.
-export const Restore = value => ({
-  type: 'Restore',
-  value
+// Configure action received from parent.
+export const Configure = (environmentID, environmentName, origin) => ({
+  type: 'Configure',
+  origin: origin,
+  id: environmentID,
+  name: environmentName
 });
 
 const TagExporter = tag('Exporter');
 const OpenExporter = TagExporter(Exporter.Open);
-const RestoreExporter = compose(TagExporter, Exporter.Restore);
+const ConfigureExporter = compose(TagExporter, Exporter.Configure);
 
 const TagSidebar = action =>
   action.type === 'RequestOpenRecipes' ?
@@ -120,6 +122,12 @@ export const init = id => {
   ];
 };
 
+// Serialize environment for storing locally.
+export const serialize = model => ({
+  id: model.id,
+  name: model.name
+});
+
 export const update = (model, action) =>
   action.type === 'NoOp' ?
   [model, Effects.none] :
@@ -139,17 +147,17 @@ export const update = (model, action) =>
   getBacklog(model) :
   action.type === 'GotBacklog' ?
   updateBacklog(model, action.result) :
-  action.type === 'Restore' ?
-  restore(model, action.value) :
+  action.type === 'Configure' ?
+  configure(model, action) :
   Unknown.update(model, action);
 
 const fetchLatest = model => {
-  if (model.origin) {
+  if (model.origin && model.id) {
     const url = templateLatestUrl(model.origin, model.id);
     return [model, Request.get(url).map(Latest)];
   }
   else {
-    console.warn('FetchLatest was called before origin was restored on model');
+    console.warn('fetchLatest was called before origin and ID were restored on model');
     return [model, Effects.none];
   }
 }
@@ -184,12 +192,12 @@ const updateLatest = Result.updater(
 );
 
 const getBacklog = model => {
-  if (model.origin) {
+  if (model.origin && model.id) {
     const url = templateRecentUrl(model.origin, model.id);
     return [model, Request.get(url).map(GotBacklog)];
   }
   else {
-    console.warn('GetBacklog was requested before origin was restored in model');
+    console.warn('GetBacklog was requested before origin and ID were restored on model');
     return [model, Effects.none];
   }
 }
@@ -220,12 +228,16 @@ const updateBacklog = Result.updater(
   }
 );
 
-const restore = (model, record) => {
-  const next = merge(model, {origin: record.origin});
+const configure = (model, {origin, id, name}) => {
+  const next = merge(model, {
+    origin,
+    id,
+    name
+  });
 
   return batch(update, next, [
-    // Forward restore down to exporter module
-    RestoreExporter(record),
+    // Forward restore down to exporter module.
+    ConfigureExporter(origin),
     // Now that we have the origin, get the backlog.
     GetBacklog
   ]);
@@ -262,6 +274,11 @@ const updatePoll = cursor({
 // View
 
 export const view = (model, address) =>
+  model.id ?
+  viewReady(model, address) :
+  viewWaiting(model, address);
+
+const viewReady = (model, address) =>
   html.div({
     className: 'environment-main environment-main--has-sidebar'
   }, [
@@ -280,6 +297,21 @@ export const view = (model, address) =>
       forward(address, TagExporter),
       model.id
     )
+  ]);
+
+const viewWaiting= (model, address) =>
+  html.div({
+    className: 'environment-main environment-main--has-sidebar'
+  }, [
+    thunk(
+      'sidebar',
+      Sidebar.view,
+      model.sidebar,
+      forward(address, TagSidebar)
+    ),
+    html.div({
+      className: 'environment-content environment-content--loading'
+    })
   ]);
 
 // Helpers

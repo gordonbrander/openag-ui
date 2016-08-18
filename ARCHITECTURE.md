@@ -59,3 +59,19 @@ export const view = (model, address) =>
 ## Examples
 
 https://github.com/Gozala/reflex-virtual-dom-driver/tree/master/examples
+
+## Naming things
+
+You'll see these action names used a lot. Sticking to the naming convention makes
+code easier to read.
+
+- `Configure` for configuration from parent (usually restored from database).
+- `Ok`, `Error` are for `Result` actions (which can be either error or ok).
+- `Get`, `Put`, `Post` and `Got`, `Putted`, `Posted` for http tasks and results thereof.
+- `Push`, `Pull` and `Pushed`, `Pulled` for uni-directional syncing PouchDB/CouchDB.
+- `Sync` and `Synced` for doing a bi-directional PouchDB/CouchDB sync.
+- `Restore`, `Restored` for doing an `allDocs` full restore to in-memory model from local database.
+- `serialize` is a function exported from some modules that reads the in-memory
+  data structure into a data structure suitable for saving to local database.
+- `deserialize` takes the record stored in the database and creates a merge-able object for a given module.
+- `record` is generally meant to mean a record from a database. `row` is a row in the database.

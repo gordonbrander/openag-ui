@@ -142,16 +142,11 @@ export const Synced = result => ({
 
 export const sync = (db, replica) =>
   Effects.perform(new Task(succeed => {
-    try {
-      db
-        .sync(replica)
-        .then(
-          Result.ok,
-          Result.error
-        )
-        .then(succeed);
-    }
-    catch (error) {
-      succeed(Result.error(error));
-    }
+    db
+      .sync(replica)
+      .then(
+        Result.ok,
+        Result.error
+      )
+      .then(succeed);
   }));

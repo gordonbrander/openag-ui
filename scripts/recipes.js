@@ -62,11 +62,10 @@ const ByID = id => action =>
   RecipeAction(id, action);
 
 
-// "Restore from above". This action handles information restored from the
-// parent.
-export const Restore = value => ({
-  type: 'Restore',
-  value
+// This action handles information restored from the parent.
+export const Configure = origin => ({
+  type: 'Configure',
+  origin
 });
 
 // Restore recipes in-memory from PouchDB
@@ -227,8 +226,8 @@ const putted = (model, result) =>
   [model, Effects.none] :
   [model, Effects.none];
 
-const restore = (model, record) => {
-  const next = merge(model, {origin: record.origin});
+const configure = (model, origin) => {
+  const next = merge(model, {origin});
 
   return batch(update, next, [
     RestoreRecipes,
@@ -269,8 +268,8 @@ export const update = (model, action) =>
   ) :
   action.type === 'Recipe' ?
   updateByID(model, action.id, action.source) :
-  action.type === 'Restore' ?
-  restore(model, action.value) :
+  action.type === 'Configure' ?
+  configure(model, action.origin) :
   Unknown.update(model, action);
 
 // View

@@ -1,7 +1,7 @@
 import {html, Effects} from 'reflex';
 import * as Config from '../../openag-config.json';
 import * as Template from '../common/stache';
-import {merge, tag} from '../common/prelude';
+import {merge, tag, nofx} from '../common/prelude';
 import {classed, toggle} from '../common/attr';
 import * as Modal from '../common/modal';
 import {cursor} from '../common/cursor';
@@ -12,9 +12,9 @@ const MAX_DATAPOINTS = 5000;
 
 // Actions
 
-export const Restore = value => ({
-  type: 'Restore',
-  value
+export const Configure = origin => ({
+  type: 'Configure',
+  origin
 });
 
 export const TagModal = tag('Modal');
@@ -35,16 +35,14 @@ export const init = () => [
 export const update = (model, action) =>
   action.type === 'Modal' ?
   updateModal(model, action.source) :
-  action.type === 'Restore' ?
-  restore(model, action.value) :
+  action.type === 'Configure' ?
+  configure(model, action.origin) :
   Unknown.update(model, action);
 
-const restore = (model, record) => [
-  merge(model, {
-    origin: record.origin
-  }),
-  Effects.none
-];
+const configure = (model, origin) =>
+  nofx(merge(model, {
+    origin
+  }));
 
 const updateModal = cursor({
   update: Modal.update,
