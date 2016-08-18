@@ -418,7 +418,7 @@ export const viewFTU = (model, address) =>
               className: 'panel--in'
             }, [
               html.p({}, [
-                localize("Congrats! It's almost time to get planting! We just need a couple of details to get your Food Computer up and running.")
+                localize("It's almost time to get planting! We just need a few details to get your Food Computer up and running.")
               ]),
               thunk(
                 'ftu-validator-name',
