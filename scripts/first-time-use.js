@@ -255,10 +255,16 @@ const submit = model => {
     });
 
     const nameValue = Validator.readValue(model.name);
-    const name = readName(nameValue);
+    const environmentName = readName(nameValue);
 
+    const environmentID = Select.readValue(model.environments);
+
+    // Construct form message to send up to app.
     const form = {
-      name,
+      environment: {
+        id: environmentID,
+        name: environmentName
+      },
       api,
       origin
     };
@@ -410,17 +416,17 @@ export const viewFTU = (model, address) =>
                 localize("Congrats! It's almost time to start planting! We just need a couple things to get your Food Computer up and running.")
               ]),
               thunk(
-                'ftu-validator-address',
-                Validator.view,
-                model.address,
-                forward(address, TagAddress),
-                'ftu-validator'
-              ),
-              thunk(
                 'ftu-validator-name',
                 Validator.view,
                 model.name,
                 forward(address, TagName),
+                'ftu-validator'
+              ),
+              thunk(
+                'ftu-validator-address',
+                Validator.view,
+                model.address,
+                forward(address, TagAddress),
                 'ftu-validator'
               ),
               html.div({

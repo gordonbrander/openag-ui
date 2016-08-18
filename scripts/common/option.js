@@ -59,3 +59,7 @@ export const view = (model) =>
   }, [
     model.text
   ]);
+
+// Helpers
+
+export const readValue = option => option.value;
