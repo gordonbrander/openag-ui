@@ -10,8 +10,11 @@ Includes settings (like IP address of app) and, in future, log-in creds.
 */
 import {html, Effects, forward, thunk} from 'reflex';
 import * as Config from '../openag-config.json';
+import PouchDB from 'pouchdb-browser';
+import * as Database from './common/database';
 import * as Validator from './common/validator';
 import * as Select from './common/select';
+import {assemble as assembleOption} from './common/option';
 import * as Button from './common/button';
 import * as Modal from './common/modal';
 import * as Template from './common/stache';
@@ -25,6 +28,10 @@ import {localize} from './common/lang';
 import * as Unknown from './common/unknown';
 import {compose} from './lang/functional';
 
+// Create a PouchDB instance for the local environments db, so we can
+// sync to it.
+const DB = new PouchDB(Config.environments.local);
+
 // Actions
 
 const TagModal = tag('Modal');
@@ -32,14 +39,21 @@ const TagModal = tag('Modal');
 export const Open = TagModal(Modal.Open);
 export const Close = TagModal(Modal.Close);
 
-const GetEnvironments = origin => ({
-  type: 'GetEnvironments',
+const SyncEnvironments = origin => ({
+  type: 'SyncEnvironments',
   origin
 });
 
-const RequestEnvironments = origin => ({
-  type: 'RequestEnvironments',
-  origin
+const SyncedEnvironments = result => ({
+  type: 'SyncedEnvironments',
+  result
+});
+
+const RestoreEnvironments = {type: 'RestoreEnvironments'};
+
+const RestoredEnvironments = result => ({
+  type: 'RestoredEnvironments',
+  result
 });
 
 const TagEnvironments = action =>
@@ -171,15 +185,23 @@ export const update = (model, action) =>
   getHeartbeat(model, action.url) :
   action.type === 'GotHeartbeat' ?
   gotHeartbeat(model, action.result) :
-  action.type === 'GetEnvironments' ?
+  action.type === 'SyncEnvironments' ?
   // Currently we keep environments database in the environments module.
   // Send request up to parent to get this info.
-  [model, Effects.receive(RequestEnvironments(action.origin))] :
-  action.type === 'GotEnvironments' ?
+  syncEnvironments(model, action.origin) :
+  action.type === 'SyncedEnvironments' ?
   (
     action.result.isOk ?
-    gotEnvironmentsOk(model, result.value) :
-    gotEnvironmentsError(model, result.error)
+    syncedEnvironmentsOk(model, action.result.value) :
+    syncedEnvironmentsError(model, action.result.error)
+  ) :
+  action.type === 'RestoreEnvironments' ?
+  [model, Database.restore(DB).map(RestoredEnvironments)] :
+  action.type === 'RestoredEnvironments' ?
+  (
+    action.result.isOk ?
+    restoredEnvironmentsOk(model, action.result.value) :
+    restoredEnvironmentsError(model, action.result.error)
   ) :
   Unknown.update(model, action);
 
@@ -298,7 +320,7 @@ const gotHeartbeat = Result.updater(
 
     return batch(update, model, [
       AddressOk(message),
-      GetEnvironments(origin),
+      SyncEnvironments(origin),
       EnableSubmitter
     ]);
   },
@@ -307,12 +329,31 @@ const gotHeartbeat = Result.updater(
   }
 );
 
-const gotEnvironmentsOk = (model, value) =>
-  update(model, EnvironmentsOptions(value));
+const syncEnvironments = (model, origin) => {
+  // Render environment url
+  const environments = Template.render(Config.environments.origin, {
+    origin_url: origin
+  });
 
-const gotEnvironmentsError = (model, error) => {
+  return [model, Database.sync(DB, environments).map(SyncedEnvironments)];
+}
+
+const syncedEnvironmentsOk = (model, value) =>
+  update(model, RestoreEnvironments);
+
+const syncedEnvironmentsError = (model, error) => {
   // @FIXME error banner or some feedback.
   return [model, Effects.none];
+}
+
+const restoredEnvironmentsOk = (model, rows) => {
+  const options = rows.map(readOptionFromRecord);
+  return update(model, EnvironmentsOptions(options));
+}
+
+const restoredEnvironmentsError = (model, error) => {
+  // @FIXME error banner or some feedback.
+  return [model, Effects.none];  
 }
 
 const tryName = (model, value) => {
@@ -455,3 +496,6 @@ const readName = name =>
   name.search(ALL_SPACES) === -1 ?
   name :
   DEFAULT_NAME;
+
+const readOptionFromRecord = ({_id}) =>
+  assembleOption(_id, _id, _id, false);

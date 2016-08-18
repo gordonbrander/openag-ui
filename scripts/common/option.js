@@ -28,8 +28,8 @@ export class Model {
 
 export const assemble = (id, text, value, isDisabled) => new Model(
   id,
-  text,
-  value,
+  (text != null ? text : id),
+  (value != null ? value : id),
   isDisabled ? Control.Model.disabled : Control.Model.enabled
 );
 

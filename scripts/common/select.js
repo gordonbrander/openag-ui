@@ -1,5 +1,6 @@
 import {html, Effects, forward, thunk} from 'reflex';
 import * as Option from '../common/option';
+import {merge} from '../common/prelude';
 import {update as updateUnknown} from '../common/unknown';
 
 // Actions

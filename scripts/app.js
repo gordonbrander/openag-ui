@@ -42,8 +42,6 @@ const UpdateAddress = url => ({
 const TagFirstTimeUse = action =>
   action.type === 'NotifySubmit' ?
   Configured(action.form) :
-  action.type === 'RequestEnvironments' ?
-  ConfigureEnvironments(action.origin) :
   tagged('FirstTimeUse', action);
 
 const OpenFirstTimeUse = TagFirstTimeUse(Settings.Open);
