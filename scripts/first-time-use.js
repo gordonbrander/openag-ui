@@ -410,13 +410,6 @@ export const viewFTU = (model, address) =>
                 localize("Congrats! It's almost time to start planting! We just need a couple things to get your Food Computer up and running.")
               ]),
               thunk(
-                'ftu-validator-name',
-                Validator.view,
-                model.name,
-                forward(address, TagName),
-                'ftu-validator'
-              ),
-              thunk(
                 'ftu-validator-address',
                 Validator.view,
                 model.address,
@@ -424,12 +417,28 @@ export const viewFTU = (model, address) =>
                 'ftu-validator'
               ),
               thunk(
-                'ftu-select-environment',
-                Select.view,
-                model.environments,
-                forward(address, TagEnvironments),
-                'select'
+                'ftu-validator-name',
+                Validator.view,
+                model.name,
+                forward(address, TagName),
+                'ftu-validator'
               ),
+              html.div({
+                className: 'labeled'
+              }, [
+                thunk(
+                  'ftu-select-environment',
+                  Select.view,
+                  model.environments,
+                  forward(address, TagEnvironments),
+                  'select ftu-select'
+                ),
+                html.label({
+                  className: 'labeled--label'
+                }, [
+                  localize('Choose an environment')
+                ])
+              ]),
               html.p({
                 className: 'tip'
               }, [

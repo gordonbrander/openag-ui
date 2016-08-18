@@ -151,6 +151,19 @@ p {
   outline: none;
 }
 
+/* Labeled form things
+----------------------------------------------------------------------------- */
+
+.labeled--label {
+  color: #00A5ED;
+  display: block;
+  font-size: 13px;
+  line-height: 24px;
+  min-height: 24px;
+  padding-bottom: 4px;
+  padding-top: 4px;
+}
+
 /* Validated inputs
 ----------------------------------------------------------------------------- */
 
@@ -160,6 +173,7 @@ p {
 
 .validator-message {
   color: #00A5ED;
+  display: block;
   font-size: 13px;
   line-height: 24px;
   min-height: 24px;
@@ -195,7 +209,11 @@ p {
 ----------------------------------------------------------------------------- */
 
 .select {
-  background: transparent;
+  background-color: transparent;
+  background-image: url(sprite.png);
+  background-repeat: no-repeat;
+  background-position: right -1000px;
+  background-size: 100px auto;
   border: 0;
   border-radius: 0;
   box-shadow: 0 1px 0 #d8d8d8;
@@ -666,6 +684,13 @@ p {
 
 .ftu-validator .validator-input {
   font-size: 24px;
+  height: 40px;
+}
+
+.ftu-select {
+  background-position: right -1100px;
+  font-size: 24px;
+  height: 40px;
 }
 
 /* Environment icons
