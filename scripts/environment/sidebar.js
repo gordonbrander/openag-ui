@@ -1,5 +1,7 @@
 import {html, forward, Effects, Task, thunk} from 'reflex';
 import {merge, batch, tagged} from '../common/prelude';
+import {localize} from '../common/lang';
+import * as Button from '../common/button';
 import {cursor} from '../common/cursor';
 import {compose} from '../lang/functional';
 import {update as updateUnknown} from '../common/unknown';
@@ -27,23 +29,39 @@ export const TagRecipe = action =>
 // Set recipe on Recipe submodule.
 export const SetRecipe = compose(TagRecipe, Recipe.SetRecipe);
 
+export const TagMarkerButton = action =>
+  tagged('MarkerButton', action);
+
 // Model, init, update
 
 export const init = () => {
   const [recipe, recipeFx] = Recipe.init();
+  const [markerButton, markerButtonFx] = Button.init(
+    localize('Drop Marker'),
+    false,
+    false,
+    false,
+    false
+  );
 
   return [
     {
       recipe,
+      markerButton,
       airTemperature: null
     },
-    recipeFx.map(TagRecipe)
+    Effects.batch([
+      recipeFx.map(TagRecipe),
+      markerButtonFx.map(TagMarkerButton)
+    ])
   ];
 }
 
 export const update = (model, action) =>
   action.type === 'Recipe' ?
   updateRecipe(model, action.source) :
+  action.type === 'MarkerButton' ?
+  updateMarkerButton(model, action.source) :
   action.type === 'SetAirTemperature' ?
   setAirTemperature(model, action.value) :
   updateUnknown(model, action);
@@ -53,7 +71,14 @@ const updateRecipe = cursor({
   set: (model, recipe) => merge(model, {recipe}),
   update: Recipe.update,
   tag: TagRecipe
-})
+});
+
+const updateMarkerButton = cursor({
+  get: model => model.markerButton,
+  set: (model, markerButton) => merge(model, {markerButton}),
+  update: Button.update,
+  tag: TagMarkerButton
+});
 
 const setAirTemperature = (model, airTemperature) => {
   return (
@@ -72,13 +97,36 @@ export const view = (model, address) =>
     html.div({
       className: 'sidebar-summary--in'
     }, [
-      thunk(
-        'sidebar-recipe',
-        Recipe.view,
-        model.recipe,
-        forward(address, TagRecipe)
-      ),
-      viewAirTemperature(model.airTemperature)
+      html.div({
+        className: 'sidebar-summary--unit'
+      }, [
+        thunk(
+          'sidebar-recipe',
+          Recipe.view,
+          model.recipe,
+          forward(address, TagRecipe)
+        )
+      ]),
+      html.div({
+        className: 'sidebar-summary--unit'
+      }, [
+        thunk(
+          'sidebar-air-temperature',
+          viewAirTemperature,
+          model.airTemperature
+        )
+      ]),
+      html.div({
+        className: 'sidebar-summary--unit'
+      }, [
+        thunk(
+          'sidebar-marker-button',
+          Button.view,
+          model.markerButton,
+          forward(address, TagMarkerButton),
+          'btn-secondary btn-secondary--full-width'
+        )
+      ])
     ])
   ]);
 
