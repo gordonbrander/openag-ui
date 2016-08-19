@@ -1,4 +1,4 @@
-import {extent, max, bisector} from 'd3-array';
+import {extent, max, min, bisector} from 'd3-array';
 import {scaleLinear, scaleTime} from 'd3-scale';
 import {line} from 'd3-shape';
 import {timeHour} from 'd3-time';
@@ -16,6 +16,7 @@ import {listByKeys, indexWith} from '../common/indexed';
 import {compose} from '../lang/functional';
 import {find} from '../lang/find';
 import {onWindow} from '../driver/virtual-dom';
+import {marker} from '../environment/datapoints';
 
 const CHART_CONFIG = Config.chart;
 
@@ -44,6 +45,8 @@ export const Resize = (width, height) => ({
   width,
   height
 });
+
+export const DropMarker = {type: 'DropMarker'};
 
 export const MoveXhair = tag('MoveXhair');
 export const SetData = tag('SetData');
@@ -181,10 +184,12 @@ export const update = (model, action) =>
   [merge(model, {isLoading: true}), Effects.none] :
   action.type === 'Ready' ?
   [merge(model, {isLoading: false}), Effects.none] :
+  action.type === 'DropMarker' ?
+  dropMarker(model) :
   Unknown.update(model, action);
 
 const addData = (model, data) => {
-  const variables = concatMonotonic(model.variables, data, MAX_DATAPOINTS, readX);
+  const variables = concatSortedBuffer(model.variables, data, MAX_DATAPOINTS, readX);
 
   // If variables model actually updated, then create new chart model.
   if (model.variables !== variables) {
@@ -204,6 +209,17 @@ const addData = (model, data) => {
   else {
     return [model, Effects.none];
   }
+}
+
+const dropMarker = model => {
+  const nowInSeconds = Date.now() / 1000;
+  const mark = marker(nowInSeconds, '');
+  const variables = insertSortedBuffer(model.variables, mark, MAX_DATAPOINTS, readX);
+
+  return [
+    merge(model, {variables}),
+    Effects.none
+  ];
 }
 
 const updateSize = (model, width, height) => [
@@ -677,20 +693,19 @@ const getVariable = x => x.variable;
 
 // Trim buffer array to limit, fro the left. Mutates and returns buffer.
 const trimLeft = (buffer, limit) => {
-  // @TODO benchmark against array splice.
-  while (buffer.length > limit) {
-    buffer.shift();
+  if (buffer.length > limit) {
+    buffer.splice(0, buffer.length - limit);
   }
   return buffer;
 }
 
 const trimSorted = (buffer, limit, readX) => {
-  const sorted = sortDesc(buffer, readX);
-  const trimmed = trimLeft(sorted, limit);
-  return trimmed;
+  sortDesc(buffer, readX);
+  trimLeft(buffer, limit);
+  return buffer;
 }
 
-const concatMonotonic = (buffer, items, limit, readX) => {
+const concatSortedBuffer = (buffer, items, limit, readX) => {
   // If the buffer is empty, create a new items array, sort it. This is now
   // the buffer.
   if (buffer.length === 0) {
@@ -700,14 +715,27 @@ const concatMonotonic = (buffer, items, limit, readX) => {
   else if (items.length === 0) {
     return buffer;
   }
-  // If the most recent item is not newer than the most recent buffer item,
-  // don't append to buffer.
-  else if (max(buffer, readX) >= max(items, readX)) {
+  // If the most recent new item is still not newer than the most recent buffer
+  // item, don't append to buffer.
+  else if (max(items, readX) <= max(buffer, readX)) {
     return buffer;
   }
   // Otherwise, add everything, then sort, then trim.
   else {
     return trimSorted(buffer.concat(items), limit, readX);
+  }
+}
+
+// Insert a datapoint somewhere into a sorted buffer.
+// Returns a new buffer array, sorted by readX desc.
+const insertSortedBuffer = (buffer, item, limit, readX) => {
+  // If the buffer is empty, create a new items array, sort it. This is now
+  // the buffer.
+  if (buffer.length === 0) {
+    return [item];
+  }
+  else {
+    return trimSorted(buffer.concat(item), limit, readX);
   }
 }
 

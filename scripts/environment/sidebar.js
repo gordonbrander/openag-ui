@@ -29,7 +29,12 @@ export const TagRecipe = action =>
 // Set recipe on Recipe submodule.
 export const SetRecipe = compose(TagRecipe, Recipe.SetRecipe);
 
+// Drop a marker (in the chart)
+const DropMarker = {type: 'DropMarker'};
+
 export const TagMarkerButton = action =>
+  action.type === 'Click' ?
+  DropMarker :
   tagged('MarkerButton', action);
 
 // Model, init, update
