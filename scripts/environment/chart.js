@@ -675,57 +675,39 @@ const calcRelativeMousePos = (node, clientX, clientY) => {
 
 const getVariable = x => x.variable;
 
-// Advance buffer by one item, removing item to stay under limit.
-const advanceBuffer = (buffer, item, limit) => {
-  if (buffer.length < limit) {
-    buffer.push(item);
-  }
-  else {
+// Trim buffer array to limit, fro the left. Mutates and returns buffer.
+const trimLeft = (buffer, limit) => {
+  // @TODO benchmark against array splice.
+  while (buffer.length > limit) {
     buffer.shift();
-    buffer.push(item);
   }
   return buffer;
 }
 
-const advanceThresholdBuffer = (buffer, item, limit, threshold, read) => {
-  const score = read(item);
-  return (
-    score > threshold ?
-    advanceBuffer(buffer, item, limit) :
-    buffer
-  );
-}
-
-// Append n items to end of buffer, removing items from beginning of buffer
-// to stay under limit.
-const appendThresholdBuffer = (buffer, items, limit, threshold, read) => {
-  const length = items.length;
-  for (var i = 0; i < length; i++) {
-    advanceThresholdBuffer(buffer, items[i], limit, threshold, read);
-  }
-  return buffer;
+const trimSorted = (buffer, limit, readX) => {
+  const sorted = sortDesc(buffer, readX);
+  const trimmed = trimLeft(sorted, limit);
+  return trimmed;
 }
 
 const concatMonotonic = (buffer, items, limit, readX) => {
-  // If the buffer is empty, take the fast path out.
+  // If the buffer is empty, create a new items array, sort it. This is now
+  // the buffer.
   if (buffer.length === 0) {
-    return items.slice().sort(descending(readX));
+    return sortDesc(items.slice(), readX);
   }
+  // If there are no items, return the buffer unchanged.
   else if (items.length === 0) {
     return buffer;
   }
+  // If the most recent item is not newer than the most recent buffer item,
+  // don't append to buffer.
+  else if (max(buffer, readX) >= max(items, readX)) {
+    return buffer;
+  }
+  // Otherwise, add everything, then sort, then trim.
   else {
-    // Find the last largest timestamp.
-    const bufferHighScore = readX(last(buffer));
-    const sorted = items.slice().sort(descending(readX));
-    const itemsHighScore = readX(last(sorted));
-    if (itemsHighScore > bufferHighScore) {
-      const next = buffer.slice();
-      return appendThresholdBuffer(next, items, limit, bufferHighScore, readX);
-    }
-    else {
-      return buffer;
-    }
+    return trimSorted(buffer.concat(items), limit, readX);
   }
 }
 
@@ -736,6 +718,11 @@ const isMonotonic = (array, item, readX) => {
   const timestamp = mapOr(last(array), readX, 0);
   return readX(item) > timestamp;
 }
+
+// Sort items in descending order, in place
+// Returns mutated sorted array.
+const sortDesc = (array, read) =>
+  array.sort(descending(read));
 
 // Create a comparator for sorting from a read function.
 // Returns a comparator function.
@@ -748,9 +735,6 @@ const descending = (read) => (a, b) => {
     0
   );
 }
-
-const filterAbove = (array, value, read) =>
-  array.filter(item => read(item) > value);
 
 const last = array => array.length > 0 ? array[array.length - 1] : null;
 
