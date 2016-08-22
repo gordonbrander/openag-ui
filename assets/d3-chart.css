@@ -17,11 +17,11 @@
 }
 
 .chart-tick--user > .chart-tick--line {
-  stroke: red;
+  stroke: #0052B3;
 }
 
 .chart-tick--user > .chart-tick--text {
-  fill: red;
+  fill: #0052B3;
 }
 
 .chart {
