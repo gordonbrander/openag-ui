@@ -435,7 +435,8 @@ export const viewFTU = (model, address) =>
                 'ftu-validator'
               ),
               html.div({
-                className: 'labeled'
+                className: 'labeled',
+                hidden: toggle(model.environments.options.length < 2, 'hidden')
               }, [
                 thunk(
                   'ftu-select-environment',
