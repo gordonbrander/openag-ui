@@ -25,6 +25,8 @@ class NumberPoint {
 export const marker = (timestamp, value) =>
   new StringPoint('marker', false, true, timestamp, value);
 
+export const isMarker = dataPoint => dataPoint.variable === 'marker';
+
 // @TODO readDataPoint
 // reformat openag-config.json to have a hashmap and a weight field, instead
 // of being an array. Then only read datapoints that exist in the chart.
