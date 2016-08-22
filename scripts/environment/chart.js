@@ -218,8 +218,7 @@ const addData = (model, data) => {
 }
 
 const dropMarker = model => {
-  const nowInSeconds = Date.now() / 1000;
-  const mark = marker(nowInSeconds, '');
+  const mark = marker(secondsNow(), '');
   const variables = insertSortedBuffer(model.variables, mark, MAX_DATAPOINTS, readX);
 
   return [
@@ -615,7 +614,7 @@ const renderUserMarkers = (markers, scale, height, readX) =>
   }, markers.map(marker => {
     const timestamp = readX(marker);
     const x = scale(timestamp);
-    const text = formatTime(timestamp);
+    const text = formatTick(timestamp);
     return renderUserMarker(x, height, text);
   }));
 
@@ -802,3 +801,6 @@ const last = array => array.length > 0 ? array[array.length - 1] : null;
 
 const isRecipeStart = x => x.variable === RECIPE_START;
 const isRecipeEnd = x => x.variable === RECIPE_END;
+
+// Read Date.now() in seconds.
+const secondsNow = () => Date.now() / 1000;
