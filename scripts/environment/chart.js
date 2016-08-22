@@ -613,7 +613,7 @@ const renderUserMarkers = (markers, scale, height) =>
   svgG({
     className: 'chart-user-markers'
   }, markers.map(marker => {
-    const timestamp = marker.timestamp;
+    const timestamp = readX(marker);
     const x = scale(timestamp);
     const text = formatTime(timestamp);
     return renderUserMarker(x, height, text);
