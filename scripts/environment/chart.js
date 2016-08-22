@@ -362,7 +362,7 @@ const viewData = (model, address) => {
   const axis = renderAxis(x, svgHeight);
   children.push(axis);
 
-  const userMarkers = renderUserMarkers(markers, x, svgHeight);
+  const userMarkers = renderUserMarkers(markers, x, svgHeight, readX);
   children.push(userMarkers);
 
   if (recipeStart) {
@@ -609,7 +609,7 @@ const renderAxis = (scale, height) => {
   }, ticks.map(tick => renderAxisMarker(scale(tick), height, formatTick(tick))));
 }
 
-const renderUserMarkers = (markers, scale, height) =>
+const renderUserMarkers = (markers, scale, height, readX) =>
   svgG({
     className: 'chart-user-markers'
   }, markers.map(marker => {
