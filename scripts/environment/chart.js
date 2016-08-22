@@ -122,20 +122,26 @@ const readGroupFromConfig = ({
 //
 // Output:
 //
-//     {
-//       air_temperature: {
+//     [
+//       {
+//         variable: 'air_temperature',
 //         measured: [dataPoint, dataPoint, ...],
-//         desired: [dataPoint, dataPoint, ...]
+//         desired: [dataPoint, dataPoint, ...],
+//         title: "Temperature",
+//         unit: "\u00B0",
+//         min: 7.2,
+//         max: 48.8,
+//         color: '#ff8300'
 //       },
 //       ...
-//     }
+//     ]
 const readSeries = (model) => {
   const {variables, config} = model;
   const groupList = config.map(readGroupFromConfig);
   const groupIndex = indexWith(groupList, getVariable);
   const populated = variables.reduce(insertDataPoint, groupIndex);
   const variableKeys = config.map(getVariable);
- return listByKeys(populated, variableKeys);
+  return listByKeys(populated, variableKeys);
 }
 
 // Insert datapoint in index, mutating model. We use this function to build
@@ -149,7 +155,7 @@ const insertDataPoint = (index, dataPoint) => {
   // Check that this is a known variable in our configuration
   // File datapoint away in measured or desired, making sure that it is
   // monotonic (that a new datapoint comes after any older datapoints).
-  if (index[variable] && isMonotonic(index[variable][type], dataPoint, readX)) {
+  if (index[variable]) {
     index[variable][type].push(dataPoint);
   }
 
@@ -737,14 +743,6 @@ const insertSortedBuffer = (buffer, item, limit, readX) => {
   else {
     return trimSorted(buffer.concat(item), limit, readX);
   }
-}
-
-// Check if an item comes after the last item in an array. "Comes after" is
-// defined by value returned from `readX`.
-const isMonotonic = (array, item, readX) => {
-  // If there is no last item in the array, then use 0 as the timestamp.
-  const timestamp = mapOr(last(array), readX, 0);
-  return readX(item) > timestamp;
 }
 
 // Sort items in descending order, in place
