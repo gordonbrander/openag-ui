@@ -76,11 +76,11 @@ p {
 
 .btn-primary {
   background: #00A5ED;
-  border-radius: 18px;
+  border-radius: 3px;
   border: 0;
   color: #fff;
-  height: 36px;
-  line-height: 36px;
+  height: 40px;
+  line-height: 40px;
   margin-right: 6px;
   padding: 0 18px;
   -webkit-appearance: none;
@@ -88,12 +88,44 @@ p {
 }
 
 .btn-primary:focus {
-  outline: 0;
+  outline: none;
 }
 
 .btn-primary:active {
   /* Active backgrounds are 10 points less bright in hsb. */
   background: #0094D4;
+}
+
+.btn-secondary {
+  background: #F4F4F4;
+  border-radius: 3px;
+  border: 0;
+  color: #595959;
+  height: 40px;
+  line-height: 40px;
+  margin-right: 6px;
+  padding: 0 18px;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+}
+
+.btn-secondary:focus {
+  outline: none;
+}
+
+.btn-secondary:active {
+  /* Active backgrounds are 10 points less bright in hsb. */
+  background: #989898;
+  color: #fff;
+}
+
+.btn-secondary--activated {
+  background: #0052B3;
+}
+
+.btn-secondary--full-width {
+  width: 100%;
+  margin-right: 0;
 }
 
 .btn-panel {
@@ -580,6 +612,10 @@ p {
 
 .sidebar-summary--in {
   margin: 24px;
+}
+
+.sidebar-summary--unit {
+  margin-bottom: 36px;
 }
 
 /* Current recipe widget in sidebar

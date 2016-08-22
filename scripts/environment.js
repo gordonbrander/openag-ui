@@ -15,6 +15,7 @@ import * as Chart from './environment/chart';
 import * as Toolbox from './environment/toolbox';
 import * as Exporter from './environment/exporter';
 import * as Sidebar from './environment/sidebar';
+import {readNumberPoint} from './environment/datapoints';
 
 // Variable key for environmental data point that represents temperature.
 const AIR_TEMPERATURE = 'air_temperature';
@@ -55,6 +56,8 @@ const ConfigureExporter = compose(TagExporter, Exporter.Configure);
 const TagSidebar = action =>
   action.type === 'RequestOpenRecipes' ?
   RequestOpenRecipes :
+  action.type === 'DropMarker' ?
+  DropMarker :
   tagged('Sidebar', action);
 
 export const SetRecipe = compose(TagSidebar, Sidebar.SetRecipe);
@@ -88,6 +91,8 @@ const MissPoll = TagPoll(Poll.Miss);
 const TagChart = tag('Chart');
 const AddChartData = compose(TagChart, Chart.AddData);
 const ChartLoading = compose(TagChart, Chart.Loading);
+// Drop a marker (in the chart)
+const DropMarker = TagChart(Chart.DropMarker);
 
 // Send an alert. We use this to send up problems to be displayed in banner.
 const AlertBanner = tag('AlertBanner');
@@ -324,17 +329,8 @@ const readRecord = record => record.rows.map(readRow);
 const compareByTimestamp = (a, b) =>
   a.timestamp > b.timestamp ? 1 : -1;
 
-// @TODO we should distinguish between datapoint types so we know what values
-// to parse to.
-const readDataPoint = ({variable, is_desired, timestamp, value}) => ({
-  variable,
-  timestamp,
-  is_desired,
-  value: Number.parseFloat(value)
-});
-
 const readData = record => {
-  const data = readRecord(record).map(readDataPoint);
+  const data = readRecord(record);
   data.sort(compareByTimestamp);
   return data;
 };

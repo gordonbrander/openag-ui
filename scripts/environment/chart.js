@@ -1,4 +1,4 @@
-import {extent, max, bisector} from 'd3-array';
+import {extent, max, min, bisector} from 'd3-array';
 import {scaleLinear, scaleTime} from 'd3-scale';
 import {line} from 'd3-shape';
 import {timeHour} from 'd3-time';
@@ -16,6 +16,7 @@ import {listByKeys, indexWith} from '../common/indexed';
 import {compose} from '../lang/functional';
 import {find} from '../lang/find';
 import {onWindow} from '../driver/virtual-dom';
+import {marker, isMarker} from '../environment/datapoints';
 
 const CHART_CONFIG = Config.chart;
 
@@ -44,6 +45,8 @@ export const Resize = (width, height) => ({
   width,
   height
 });
+
+export const DropMarker = {type: 'DropMarker'};
 
 export const MoveXhair = tag('MoveXhair');
 export const SetData = tag('SetData');
@@ -119,20 +122,26 @@ const readGroupFromConfig = ({
 //
 // Output:
 //
-//     {
-//       air_temperature: {
+//     [
+//       {
+//         variable: 'air_temperature',
 //         measured: [dataPoint, dataPoint, ...],
-//         desired: [dataPoint, dataPoint, ...]
+//         desired: [dataPoint, dataPoint, ...],
+//         title: "Temperature",
+//         unit: "\u00B0",
+//         min: 7.2,
+//         max: 48.8,
+//         color: '#ff8300'
 //       },
 //       ...
-//     }
+//     ]
 const readSeries = (model) => {
   const {variables, config} = model;
   const groupList = config.map(readGroupFromConfig);
   const groupIndex = indexWith(groupList, getVariable);
   const populated = variables.reduce(insertDataPoint, groupIndex);
   const variableKeys = config.map(getVariable);
- return listByKeys(populated, variableKeys);
+  return listByKeys(populated, variableKeys);
 }
 
 // Insert datapoint in index, mutating model. We use this function to build
@@ -146,7 +155,7 @@ const insertDataPoint = (index, dataPoint) => {
   // Check that this is a known variable in our configuration
   // File datapoint away in measured or desired, making sure that it is
   // monotonic (that a new datapoint comes after any older datapoints).
-  if (index[variable] && isMonotonic(index[variable][type], dataPoint, readX)) {
+  if (index[variable]) {
     index[variable][type].push(dataPoint);
   }
 
@@ -181,10 +190,12 @@ export const update = (model, action) =>
   [merge(model, {isLoading: true}), Effects.none] :
   action.type === 'Ready' ?
   [merge(model, {isLoading: false}), Effects.none] :
+  action.type === 'DropMarker' ?
+  dropMarker(model) :
   Unknown.update(model, action);
 
 const addData = (model, data) => {
-  const variables = concatMonotonic(model.variables, data, MAX_DATAPOINTS, readX);
+  const variables = concatSortedBuffer(model.variables, data, MAX_DATAPOINTS, readX);
 
   // If variables model actually updated, then create new chart model.
   if (model.variables !== variables) {
@@ -204,6 +215,16 @@ const addData = (model, data) => {
   else {
     return [model, Effects.none];
   }
+}
+
+const dropMarker = model => {
+  const mark = marker(secondsNow(), '');
+  const variables = insertSortedBuffer(model.variables, mark, MAX_DATAPOINTS, readX);
+
+  return [
+    merge(model, {variables}),
+    Effects.none
+  ];
 }
 
 const updateSize = (model, width, height) => [
@@ -289,6 +310,9 @@ const viewData = (model, address) => {
 
   const extentX = extent(variables, readX);
   const series = readSeries(model);
+  // @TODO it may be better to do a single pass in readSeries and build up
+  // the full index that way.
+  const markers = variables.filter(isMarker);
 
   const scrubberAt = scrubber.coords;
   const isDragging = scrubber.isDragging;
@@ -337,8 +361,11 @@ const viewData = (model, address) => {
   const axis = renderAxis(x, svgHeight);
   children.push(axis);
 
+  const userMarkers = renderUserMarkers(markers, x, svgHeight, readX);
+  children.push(userMarkers);
+
   if (recipeStart) {
-    const recipeStartMarker = renderMarker(
+    const recipeStartMarker = renderAxisMarker(
       x(recipeStart),
       svgHeight,
       localize('Recipe Started')
@@ -348,7 +375,7 @@ const viewData = (model, address) => {
   }
 
   if (recipeEnd) {
-    const recipeEndMarker = renderMarker(
+    const recipeEndMarker = renderAxisMarker(
       x(recipeEnd),
       svgHeight,
       localize('Recipe Ended')
@@ -534,9 +561,29 @@ const renderReadout = (group, measured, desired) =>
     }, [desired])
   ]);
 
-const renderMarker = (x, height, text) =>
+const renderAxisMarker = (x, height, text) =>
   svgG({
     className: 'chart-tick',
+    transform: `translate(${x}, 0)`
+  }, [
+    svgLine({
+      className: 'chart-tick--line',
+      x2: 0.5,
+      y1: 0.5,
+      y2: height
+    }),
+    svgText({
+      className: 'chart-tick--text',
+      x: 6.0,
+      y: 16.0
+    }, [
+      text
+    ])
+  ]);
+
+const renderUserMarker = (x, height, text) =>
+  svgG({
+    className: 'chart-tick chart-tick--user',
     transform: `translate(${x}, 0)`
   }, [
     svgLine({
@@ -558,8 +605,18 @@ const renderAxis = (scale, height) => {
   const ticks = scale.ticks(timeHour);
   return svgG({
     className: 'chart-time-axis'
-  }, ticks.map(tick => renderMarker(scale(tick), height, formatTick(tick))));
+  }, ticks.map(tick => renderAxisMarker(scale(tick), height, formatTick(tick))));
 }
+
+const renderUserMarkers = (markers, scale, height, readX) =>
+  svgG({
+    className: 'chart-user-markers'
+  }, markers.map(marker => {
+    const timestamp = readX(marker);
+    const x = scale(timestamp);
+    const text = formatTick(timestamp);
+    return renderUserMarker(x, height, text);
+  }));
 
 // Helpers
 
@@ -675,67 +732,58 @@ const calcRelativeMousePos = (node, clientX, clientY) => {
 
 const getVariable = x => x.variable;
 
-// Advance buffer by one item, removing item to stay under limit.
-const advanceBuffer = (buffer, item, limit) => {
-  if (buffer.length < limit) {
-    buffer.push(item);
-  }
-  else {
-    buffer.shift();
-    buffer.push(item);
+// Trim buffer array to limit, fro the left. Mutates and returns buffer.
+const trimLeft = (buffer, limit) => {
+  if (buffer.length > limit) {
+    buffer.splice(0, buffer.length - limit);
   }
   return buffer;
 }
 
-const advanceThresholdBuffer = (buffer, item, limit, threshold, read) => {
-  const score = read(item);
-  return (
-    score > threshold ?
-    advanceBuffer(buffer, item, limit) :
-    buffer
-  );
-}
-
-// Append n items to end of buffer, removing items from beginning of buffer
-// to stay under limit.
-const appendThresholdBuffer = (buffer, items, limit, threshold, read) => {
-  const length = items.length;
-  for (var i = 0; i < length; i++) {
-    advanceThresholdBuffer(buffer, items[i], limit, threshold, read);
-  }
+const trimSorted = (buffer, limit, readX) => {
+  sortDesc(buffer, readX);
+  trimLeft(buffer, limit);
   return buffer;
 }
 
-const concatMonotonic = (buffer, items, limit, readX) => {
-  // If the buffer is empty, take the fast path out.
+const concatSortedBuffer = (buffer, items, limit, readX) => {
+  // If the buffer is empty, create a new items array, sort it. This is now
+  // the buffer.
   if (buffer.length === 0) {
-    return items.slice().sort(descending(readX));
+    return sortDesc(items.slice(), readX);
   }
+  // If there are no items, return the buffer unchanged.
   else if (items.length === 0) {
     return buffer;
   }
+  // If the most recent new item is still not newer than the most recent buffer
+  // item, don't append to buffer.
+  else if (max(items, readX) <= max(buffer, readX)) {
+    return buffer;
+  }
+  // Otherwise, add everything, then sort, then trim.
   else {
-    // Find the last largest timestamp.
-    const bufferHighScore = readX(last(buffer));
-    const sorted = items.slice().sort(descending(readX));
-    const itemsHighScore = readX(last(sorted));
-    if (itemsHighScore > bufferHighScore) {
-      const next = buffer.slice();
-      return appendThresholdBuffer(next, items, limit, bufferHighScore, readX);
-    }
-    else {
-      return buffer;
-    }
+    return trimSorted(buffer.concat(items), limit, readX);
   }
 }
 
-// Check if an item comes after the last item in an array. "Comes after" is
-// defined by value returned from `readX`.
-const isMonotonic = (array, item, readX) => {
-  // If there is no last item in the array, then use 0 as the timestamp.
-  const timestamp = mapOr(last(array), readX, 0);
-  return readX(item) > timestamp;
+// Insert a datapoint somewhere into a sorted buffer.
+// Returns a new buffer array, sorted by readX desc.
+const insertSortedBuffer = (buffer, item, limit, readX) => {
+  // If the buffer is empty, create a new items array, sort it. This is now
+  // the buffer.
+  if (buffer.length === 0) {
+    return [item];
+  }
+  else {
+    return trimSorted(buffer.concat(item), limit, readX);
+  }
 }
+
+// Sort items in descending order, in place
+// Returns mutated sorted array.
+const sortDesc = (array, read) =>
+  array.sort(descending(read));
 
 // Create a comparator for sorting from a read function.
 // Returns a comparator function.
@@ -749,10 +797,10 @@ const descending = (read) => (a, b) => {
   );
 }
 
-const filterAbove = (array, value, read) =>
-  array.filter(item => read(item) > value);
-
 const last = array => array.length > 0 ? array[array.length - 1] : null;
 
 const isRecipeStart = x => x.variable === RECIPE_START;
 const isRecipeEnd = x => x.variable === RECIPE_END;
+
+// Read Date.now() in seconds.
+const secondsNow = () => Date.now() / 1000;

@@ -16,6 +16,14 @@
   fill: #b1b1b1;
 }
 
+.chart-tick--user > .chart-tick--line {
+  stroke: #0052B3;
+}
+
+.chart-tick--user > .chart-tick--text {
+  fill: #0052B3;
+}
+
 .chart {
   overflow: hidden;
   position: relative;
@@ -187,6 +195,7 @@
   top: 50%;
   transform: translateX(-50%) translateY(-70%);
 }
+
 
 /* Chart toolbox
 ----------------------------------------------------------------------------- */

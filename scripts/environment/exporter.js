@@ -52,8 +52,6 @@ const updateModal = cursor({
 // View
 
 export const view = (model, address, environmentID) => {
-  const variables = Config.chart.map(readVariable);
-
   return html.div({
     className: 'modal',
     hidden: toggle(!model.isOpen, 'hidden')
