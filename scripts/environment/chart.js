@@ -16,7 +16,7 @@ import {listByKeys, indexWith} from '../common/indexed';
 import {compose} from '../lang/functional';
 import {find} from '../lang/find';
 import {onWindow} from '../driver/virtual-dom';
-import {marker} from '../environment/datapoints';
+import {marker, isMarker} from '../environment/datapoints';
 
 const CHART_CONFIG = Config.chart;
 
@@ -311,6 +311,9 @@ const viewData = (model, address) => {
 
   const extentX = extent(variables, readX);
   const series = readSeries(model);
+  // @TODO it may be better to do a single pass in readSeries and build up
+  // the full index that way.
+  const markers = variables.filter(isMarker);
 
   const scrubberAt = scrubber.coords;
   const isDragging = scrubber.isDragging;
@@ -359,8 +362,11 @@ const viewData = (model, address) => {
   const axis = renderAxis(x, svgHeight);
   children.push(axis);
 
+  const userMarkers = renderUserMarkers(markers, x, svgHeight);
+  children.push(userMarkers);
+
   if (recipeStart) {
-    const recipeStartMarker = renderMarker(
+    const recipeStartMarker = renderAxisMarker(
       x(recipeStart),
       svgHeight,
       localize('Recipe Started')
@@ -370,7 +376,7 @@ const viewData = (model, address) => {
   }
 
   if (recipeEnd) {
-    const recipeEndMarker = renderMarker(
+    const recipeEndMarker = renderAxisMarker(
       x(recipeEnd),
       svgHeight,
       localize('Recipe Ended')
@@ -556,9 +562,29 @@ const renderReadout = (group, measured, desired) =>
     }, [desired])
   ]);
 
-const renderMarker = (x, height, text) =>
+const renderAxisMarker = (x, height, text) =>
   svgG({
     className: 'chart-tick',
+    transform: `translate(${x}, 0)`
+  }, [
+    svgLine({
+      className: 'chart-tick--line',
+      x2: 0.5,
+      y1: 0.5,
+      y2: height
+    }),
+    svgText({
+      className: 'chart-tick--text',
+      x: 6.0,
+      y: 16.0
+    }, [
+      text
+    ])
+  ]);
+
+const renderUserMarker = (x, height, text) =>
+  svgG({
+    className: 'chart-tick chart-tick--user',
     transform: `translate(${x}, 0)`
   }, [
     svgLine({
@@ -580,8 +606,18 @@ const renderAxis = (scale, height) => {
   const ticks = scale.ticks(timeHour);
   return svgG({
     className: 'chart-time-axis'
-  }, ticks.map(tick => renderMarker(scale(tick), height, formatTick(tick))));
+  }, ticks.map(tick => renderAxisMarker(scale(tick), height, formatTick(tick))));
 }
+
+const renderUserMarkers = (markers, scale, height) =>
+  svgG({
+    className: 'chart-user-markers'
+  }, markers.map(marker => {
+    const timestamp = marker.timestamp;
+    const x = scale(timestamp);
+    const text = formatTime(timestamp);
+    return renderUserMarker(x, height, text);
+  }));
 
 // Helpers
 
