@@ -91,22 +91,15 @@ export const Pushed = result => ({
   result
 });
 
-export const push = (db, replica) =>
+export const push = (db, replica, options) =>
   Effects.perform(new Task(succeed => {
-    // Pouch will throw an error from xhr if there is no internet connection.
-    // @TODO find out why Pouch isn't catching these 404s within the promise.
-    try {
-      db
-        .replicate.to(replica)
-        .then(
-          Result.ok,
-          Result.error
-        )
-        .then(succeed);
-    }
-    catch (error) {
-      succeed(Result.error(error));
-    }
+    db
+      .replicate.to(replica, options)
+      .then(
+        Result.ok,
+        Result.error
+      )
+      .then(succeed);
   }));
 
 // Request down-directional sync
@@ -119,10 +112,10 @@ export const Pulled = result => ({
   result
 });
 
-export const pull = (db, replica) =>
+export const pull = (db, replica, options) =>
   Effects.perform(new Task(succeed => {
     db
-      .replicate.from(replica)
+      .replicate.from(replica, options)
       .then(
         Result.ok,
         Result.error
@@ -140,10 +133,10 @@ export const Synced = result => ({
   result
 });
 
-export const sync = (db, replica) =>
+export const sync = (db, replica, options) =>
   Effects.perform(new Task(succeed => {
     db
-      .sync(replica)
+      .sync(replica, options)
       .then(
         Result.ok,
         Result.error
