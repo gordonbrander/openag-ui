@@ -4,7 +4,7 @@ The architecture of this JavaScript app is heavily inspired by
 We use the following libraries:
 
 - [reflex](http://github.com/gozala/reflex), which provides a JavaScript
-  interpretation of Elm's StartApp package.
+  interpretation of Elm's StartApp package. [Read more about Reflex here](https://www.gitbook.com/book/gozala/reflex/details).
 - [reflex-virtual-dom-driver](https://github.com/Gozala/reflex-virtual-dom-driver),
   which uses the [VirtualDom](https://github.com/Matt-Esch/virtual-dom) library
   as a rendering backend.
