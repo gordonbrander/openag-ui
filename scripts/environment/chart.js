@@ -16,7 +16,7 @@ import {listByKeys, indexWith} from '../common/indexed';
 import {compose} from '../lang/functional';
 import {findRight} from '../lang/find';
 import {onWindow} from '../driver/virtual-dom';
-import {marker, isMarker} from '../environment/datapoints';
+import {marker, isMarker, isRecipeStart, isRecipeEnd, readX, readY} from '../environment/datapoints';
 
 const CHART_CONFIG = Config.chart;
 
@@ -32,9 +32,6 @@ const TOOLTIP_SPACE = 30;
 const READOUT_HEIGHT = 18;
 const TOOLTIP_PADDING = 20;
 const RATIO_DOMAIN = [0, 1.0];
-
-const RECIPE_START = 'recipe_start';
-const RECIPE_END = 'recipe_end';
 
 const MAX_DATAPOINTS = 5000;
 
@@ -639,13 +636,6 @@ const svgCircle = compose(svgNS, html.circle);
 const svgLine = compose(svgNS, html.line);
 const svgText = compose(svgNS, html.text);
 
-const readX = d =>
-  // Timestamp is in seconds. For x position, read timestamp as ms.
-  Math.round(d.timestamp * 1000);
-
-const readY = d =>
-  Number.parseFloat(d.value);
-
 const clamp = (v, min, max) => Math.max(Math.min(v, max), min);
 const isNumber = x => (typeof x === 'number');
 
@@ -795,9 +785,6 @@ const descending = (read) => (a, b) => {
 }
 
 const last = array => array.length > 0 ? array[array.length - 1] : null;
-
-const isRecipeStart = x => x.variable === RECIPE_START;
-const isRecipeEnd = x => x.variable === RECIPE_END;
 
 // Read Date.now() in seconds.
 const secondsNow = () => Date.now() / 1000;

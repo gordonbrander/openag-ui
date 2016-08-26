@@ -15,7 +15,7 @@ import * as Chart from './environment/chart';
 import * as Toolbox from './environment/toolbox';
 import * as Exporter from './environment/exporter';
 import * as Sidebar from './environment/sidebar';
-import {readNumberPoint} from './environment/datapoints';
+import {readNumberPoint, findRunningRecipe} from './environment/datapoints';
 
 // Variable key for environmental data point that represents temperature.
 const AIR_TEMPERATURE = 'air_temperature';
@@ -213,11 +213,19 @@ const updateBacklog = Result.updater(
     const data = readData(record);
     const airTemperature = findAirTemperature(data);
 
-    return batch(update, model, [
+    const actions = [
       AddChartData(data),
       SetAirTemperature(airTemperature),
       FetchLatest
-    ]);
+    ];
+
+    const recipeStart = findRunningRecipe(data);
+
+    if (recipeStart) {
+      actions.push(SetRecipe(recipeStart));
+    }
+
+    return batch(update, model, actions);
   },
   (model, error) => {
     const action = AlertBanner(error);

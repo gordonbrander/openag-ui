@@ -37,7 +37,7 @@ export const update = (model, action) =>
 const setRecipe = (model, recipe) => [
   merge(model, {
     id: recipe._id,
-    name: (recipe.name || recipe._id)
+    name: (recipe.value || recipe._id)
   }),
   Effects.none
 ];
