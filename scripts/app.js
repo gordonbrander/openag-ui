@@ -264,7 +264,7 @@ const postRecipe = (model, environmentID, recipeID) => {
 
   return [
     model,
-    Request.post(url, {data: recipeID}).map(RecipePosted)
+    Request.post(url, {recipe_id: recipeID}).map(RecipePosted)
   ];
 }
 
