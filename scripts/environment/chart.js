@@ -14,7 +14,7 @@ import {classed} from '../common/attr';
 import * as Unknown from '../common/unknown';
 import {listByKeys, indexWith} from '../common/indexed';
 import {compose} from '../lang/functional';
-import {find} from '../lang/find';
+import {findRight} from '../lang/find';
 import {onWindow} from '../driver/virtual-dom';
 import {marker, isMarker} from '../environment/datapoints';
 
@@ -199,8 +199,8 @@ const addData = (model, data) => {
 
   // If variables model actually updated, then create new chart model.
   if (model.variables !== variables) {
-    const recipeStart = mapOr(find(variables, isRecipeStart), readX, model.recipeStart);
-    const recipeEnd = mapOr(find(variables, isRecipeEnd), readX, model.recipeEnd);
+    const recipeStart = mapOr(findRight(variables, isRecipeStart), readX, model.recipeStart);
+    const recipeEnd = mapOr(findRight(variables, isRecipeEnd), readX, model.recipeEnd);
 
     const next = merge(model, {
       // Create new variables model for data.
