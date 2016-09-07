@@ -40,15 +40,6 @@ export const view = (model, address) =>
         className: 'nav-name'
       }, [
         readName(model)
-      ]),
-      html.a({
-        className: classed({
-          'ir': true,
-          'nav-chart-icon': true,
-          'nav-chart-icon-active': true
-        })
-      }, [
-        localize('Chart')
       ])
     ])
   ]);
