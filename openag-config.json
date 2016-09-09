@@ -40,8 +40,16 @@
       "max": 100000
     },
     {
+      "variable": "air_carbon_dioxide",
+      "title": "Air CO2",
+      "unit": " ppm",
+      "min": 0,
+      "max": 2200,
+      "color": "#9B5000"
+    },
+    {
       "variable": "air_temperature",
-      "title": "Temperature",
+      "title": "Air Temperature",
       "unit": "\u00B0",
       "min": 7.2,
       "max": 48.8,
