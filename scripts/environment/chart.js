@@ -67,7 +67,6 @@ const ReleaseScrubber = ScrubberAction(Draggable.Release);
 
 export const Model = (
   series,
-  config,
   recipeStart,
   recipeEnd,
   width,
