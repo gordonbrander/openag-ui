@@ -1,13 +1,12 @@
-// We have 2 different kinds of datapoint classes so that instances are
-// monomorphic. This gives the JavaScript JIT an opportunity to do some
-// optimization, treating instances as structs in the backend.
-
-import {findRight} from '../lang/find';
+import findLast from 'lodash/findLast';
 
 const RECIPE_START = 'recipe_start';
 const RECIPE_END = 'recipe_end';
 const MARKER = 'marker';
 
+// We have 2 different kinds of datapoint classes so that instances are
+// monomorphic. This gives the JavaScript JIT an opportunity to do some
+// optimization, treating instances as structs in the backend.
 class StringPoint {
   constructor(variable, is_desired, is_manual, timestamp, value) {
     this.variable = variable;
@@ -49,8 +48,8 @@ export const isRecipeRunning = (recipeStart, recipeEnd) => {
 }
 
 export const findRunningRecipe = data => {
-  const recipeStart = findRight(data, isRecipeStart);
-  const recipeEnd = findRight(data, isRecipeEnd);
+  const recipeStart = findLast(data, isRecipeStart);
+  const recipeEnd = findLast(data, isRecipeEnd);
 
   return (
     isRecipeRunning(recipeStart, recipeEnd) ?
@@ -65,6 +64,8 @@ export const readX = dataPoint =>
 
 export const readY = dataPoint =>
   Number.parseFloat(dataPoint.value);
+
+export const readVariable = datum => datum.variable;
 
 // @TODO readDataPoint
 // reformat openag-config.json to have a hashmap and a weight field, instead

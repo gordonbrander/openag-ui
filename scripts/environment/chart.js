@@ -4,7 +4,8 @@ import {line} from 'd3-shape';
 import {timeHour} from 'd3-time';
 import {timeFormat} from 'd3-time-format';
 import {html, forward, Effects, thunk} from 'reflex';
-import * as Config from '../../openag-config.json';
+import findLast from 'lodash/findLast';
+import {chart as CHART} from '../../openag-config.json';
 import {localize} from '../common/lang';
 import {mapOr} from '../common/maybe';
 import {merge, tag} from '../common/prelude';
@@ -14,16 +15,15 @@ import {classed} from '../common/attr';
 import * as Unknown from '../common/unknown';
 import {listByKeys, indexWith} from '../common/indexed';
 import {compose} from '../lang/functional';
-import {findRight} from '../lang/find';
 import {onWindow} from '../driver/virtual-dom';
-import {marker, isMarker, isRecipeStart, isRecipeEnd, readX, readY} from '../environment/datapoints';
-
-const CHART_CONFIG = Config.chart;
+import {marker, isMarker, isRecipeStart, isRecipeEnd, readX, readY, readVariable} from '../environment/datapoints';
+import {SeriesView} from '../environment/series';
 
 const S_MS = 1000;
 const MIN_MS = S_MS * 60;
 const HR_MS = MIN_MS * 60;
 const DAY_MS = HR_MS * 24;
+const CHART_DURATION = DAY_MS * 2;
 
 const SIDEBAR_WIDTH = 256;
 const HEADER_HEIGHT = 72;
@@ -33,7 +33,8 @@ const READOUT_HEIGHT = 18;
 const TOOLTIP_PADDING = 20;
 const RATIO_DOMAIN = [0, 1.0];
 
-const MAX_DATAPOINTS = 5000;
+// Max number of datapoints per line buffer.
+const MAX_DATAPOINTS = 500;
 
 // Actions
 
@@ -65,7 +66,7 @@ const ReleaseScrubber = ScrubberAction(Draggable.Release);
 // Init and update functions
 
 export const Model = (
-  variables,
+  series,
   config,
   recipeStart,
   recipeEnd,
@@ -75,8 +76,7 @@ export const Model = (
   xhairAt,
   isLoading
 ) => ({
-  variables,
-  config,
+  series,
 
   recipeStart,
   recipeEnd,
@@ -95,57 +95,11 @@ export const Model = (
   isLoading
 });
 
-// Construct a group from a config object
-const readGroupFromConfig = ({
-  variable,
-  title,
-  unit,
-  min,
-  max,
-  color
-}) => ({
-  measured: [],
-  desired: [],
-  variable,
-  title,
-  unit,
-  min,
-  max,
-  color
-});
-
-
-// Construct a tree structure from model (useful for view)
-//
-// Output:
-//
-//     [
-//       {
-//         variable: 'air_temperature',
-//         measured: [dataPoint, dataPoint, ...],
-//         desired: [dataPoint, dataPoint, ...],
-//         title: "Temperature",
-//         unit: "\u00B0",
-//         min: 7.2,
-//         max: 48.8,
-//         color: '#ff8300'
-//       },
-//       ...
-//     ]
-const readSeries = (model) => {
-  const {variables, config} = model;
-  const groupList = config.map(readGroupFromConfig);
-  const groupIndex = indexWith(groupList, getVariable);
-  const populated = variables.reduce(insertDataPoint, groupIndex);
-  const variableKeys = config.map(getVariable);
-  return listByKeys(populated, variableKeys);
-}
-
 // Insert datapoint in index, mutating model. We use this function to build
 // up the variable groups index.
 // Returns mutated index.
 const insertDataPoint = (index, dataPoint) => {
-  const variable = getVariable(dataPoint);
+  const variable = readVariable(dataPoint);
   const group = index[variable];
   const type = dataPoint.is_desired ? 'desired' : 'measured';
 
@@ -161,8 +115,7 @@ const insertDataPoint = (index, dataPoint) => {
 
 export const init = () => [
   Model(
-    [],
-    CHART_CONFIG,
+    SeriesView.from([], CHART, MAX_DATAPOINTS),
     null,
     null,
     calcChartWidth(window.innerWidth),
@@ -192,26 +145,18 @@ export const update = (model, action) =>
   Unknown.update(model, action);
 
 const addData = (model, data) => {
-  const variables = concatSortedBuffer(model.variables, data, MAX_DATAPOINTS, readX);
+    // const recipeStart = mapOr(findLast(variables, isRecipeStart), readX, model.recipeStart);
+    // const recipeEnd = mapOr(findLast(variables, isRecipeEnd), readX, model.recipeEnd);
 
-  // If variables model actually updated, then create new chart model.
-  if (model.variables !== variables) {
-    const recipeStart = mapOr(findRight(variables, isRecipeStart), readX, model.recipeStart);
-    const recipeEnd = mapOr(findRight(variables, isRecipeEnd), readX, model.recipeEnd);
-
-    const next = merge(model, {
-      // Create new variables model for data.
-      variables,
-      isLoading: false,
-      recipeStart,
-      recipeEnd
-    });
-
-    return [next, Effects.none];
-  }
-  else {
-    return [model, Effects.none];
-  }
+    return [
+      merge(model, {
+        series: model.series.advanceMany(data),
+        isLoading: false,
+        // recipeStart,
+        // recipeEnd
+      }),
+      Effects.none
+    ];
 }
 
 const dropMarker = model => {
@@ -244,9 +189,9 @@ export const view = (model, address) =>
   // If model is loading, show loading view
   model.isLoading ?
   viewLoading(model, address) :
-  // If not loading and no data to show, render empty
-  model.variables.length === 0 ?
-  viewEmpty(model, address) :
+  // // If not loading and no data to show, render empty
+  // model.variables.length === 0 ?
+  // viewEmpty(model, address) :
   viewData(model, address);
 
 // Handle the case where there is no data yet.
@@ -302,20 +247,20 @@ const viewEmpty = (model, address) => {
 }
 
 const viewData = (model, address) => {
-  const {variables, interval, width, height, tooltipWidth,
+  const {series, interval, width, height, tooltipWidth,
     scrubber, xhairAt, recipeStart, recipeEnd} = model;
 
-  const extentX = extent(variables, readX);
-  const series = readSeries(model);
-  // @TODO it may be better to do a single pass in readSeries and build up
-  // the full index that way.
-  const markers = variables.filter(isMarker);
+  // Read out series class into array.
+  const groups = SeriesView.groups(series);
+  const now = Date.now();
+  const extentX = [now - CHART_DURATION, now];
+  // const markers = variables.filter(isMarker);
 
   const scrubberAt = scrubber.coords;
   const isDragging = scrubber.isDragging;
 
   // Calculate dimensions
-  const tooltipHeight = (series.length * READOUT_HEIGHT) + (TOOLTIP_PADDING * 2);
+  const tooltipHeight = (groups.length * READOUT_HEIGHT) + (TOOLTIP_PADDING * 2);
   const plotWidth = calcPlotWidth(extentX, interval, width);
   const plotHeight = calcPlotHeight(height, tooltipHeight);
   const svgHeight = calcSvgHeight(height);
@@ -353,13 +298,13 @@ const viewData = (model, address) => {
   // value (time) under xhair.
   const xhairTime = x.invert(plotX + xhairX);
 
-  const children = series.map(group => viewGroup(group, address, x, plotHeight));
+  const children = groups.map(group => viewGroup(group, address, x, plotHeight));
 
   const axis = renderAxis(x, svgHeight);
   children.push(axis);
 
-  const userMarkers = renderUserMarkers(markers, x, svgHeight, readX);
-  children.push(userMarkers);
+  // const userMarkers = renderUserMarkers(markers, x, svgHeight, readX);
+  // children.push(userMarkers);
 
   if (recipeStart) {
     const recipeStartMarker = renderAxisMarker(
@@ -391,7 +336,7 @@ const viewData = (model, address) => {
     }
   }, children);
 
-  const readouts = series.map(group => {
+  const readouts = groups.map(group => {
     const measured = displayYValueFromX(group.measured, xhairTime, readX, readY, group.unit);
     const desired = displayYValueFromX(group.desired, xhairTime, readX, readY, group.unit);
     return renderReadout(group, measured, desired);
@@ -716,75 +661,6 @@ const calcRelativeMousePos = (node, clientX, clientY) => {
   const rect = node.getBoundingClientRect();
   return [(clientX - rect.left - node.clientLeft), (clientY - rect.top - node.clientTop)];
 }
-
-const getVariable = x => x.variable;
-
-// Trim buffer array to limit, fro the left. Mutates and returns buffer.
-const trimLeft = (buffer, limit) => {
-  if (buffer.length > limit) {
-    buffer.splice(0, buffer.length - limit);
-  }
-  return buffer;
-}
-
-const trimSorted = (buffer, limit, readX) => {
-  sortDesc(buffer, readX);
-  trimLeft(buffer, limit);
-  return buffer;
-}
-
-const concatSortedBuffer = (buffer, items, limit, readX) => {
-  // If the buffer is empty, create a new items array, sort it. This is now
-  // the buffer.
-  if (buffer.length === 0) {
-    return sortDesc(items.slice(), readX);
-  }
-  // If there are no items, return the buffer unchanged.
-  else if (items.length === 0) {
-    return buffer;
-  }
-  // If the most recent new item is still not newer than the most recent buffer
-  // item, don't append to buffer.
-  else if (max(items, readX) <= max(buffer, readX)) {
-    return buffer;
-  }
-  // Otherwise, add everything, then sort, then trim.
-  else {
-    return trimSorted(buffer.concat(items), limit, readX);
-  }
-}
-
-// Insert a datapoint somewhere into a sorted buffer.
-// Returns a new buffer array, sorted by readX desc.
-const insertSortedBuffer = (buffer, item, limit, readX) => {
-  // If the buffer is empty, create a new items array, sort it. This is now
-  // the buffer.
-  if (buffer.length === 0) {
-    return [item];
-  }
-  else {
-    return trimSorted(buffer.concat(item), limit, readX);
-  }
-}
-
-// Sort items in descending order, in place
-// Returns mutated sorted array.
-const sortDesc = (array, read) =>
-  array.sort(descending(read));
-
-// Create a comparator for sorting from a read function.
-// Returns a comparator function.
-const descending = (read) => (a, b) => {
-  const fa = read(a);
-  const fb = read(b);
-  return (
-    fa > fb ? 1 :
-    fa < fb ? -1 :
-    0
-  );
-}
-
-const last = array => array.length > 0 ? array[array.length - 1] : null;
 
 // Read Date.now() in seconds.
 const secondsNow = () => Date.now() / 1000;

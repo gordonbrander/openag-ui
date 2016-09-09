@@ -121,5 +121,3 @@ const templateCsvUrl = (origin, environmentID, variable) =>
     group_level: 4,
     descending: true
   });
-
-const readVariable = d => d.variable;
