@@ -1,5 +1,5 @@
 {
-  "api": "{{root_url}}:5000/api/0.0.1",
+  "api": "{{root_url}}:5984/_openag/api/0.0.1",
   "origin": "{{root_url}}:5984",
   "heartbeat": "{{root_url}}:5984",
 
