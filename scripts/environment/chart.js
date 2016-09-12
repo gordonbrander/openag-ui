@@ -17,8 +17,8 @@ import {listByKeys, indexWith} from '../common/indexed';
 import {compose} from '../lang/functional';
 import {onWindow} from '../driver/virtual-dom';
 import {marker, isMarker, isRecipeStart, isRecipeEnd, readX, readY, readVariable} from '../environment/datapoints';
-import {Buffer} from '../environment/buffer';
-import {Group} from '../environment/group';
+import {FixedBuffer} from '../environment/fixed-buffer';
+import {LineGroup} from '../environment/line-group';
 import {SeriesView} from '../environment/series';
 
 const S_MS = 1000;
@@ -113,7 +113,7 @@ class Model {
 Model.isEmpty = model => {
   const tally = SeriesView.reduce(
     model.series,
-    (state, group) => state + Group.calcLength(group),
+    (state, group) => state + LineGroup.calcLength(group),
     0
   );
 
@@ -548,7 +548,7 @@ const viewGroup = (model, address, x, plotHeight) => {
     .y(compose(y, readY));
 
   const desiredPath = svgPath({
-    d: calcLine(Buffer.values(desired)),
+    d: calcLine(FixedBuffer.values(desired)),
     className: 'chart-desired',
     style: {
       stroke: color
@@ -556,7 +556,7 @@ const viewGroup = (model, address, x, plotHeight) => {
   });
 
   const measuredPath = svgPath({
-    d: calcLine(Buffer.values(measured)),
+    d: calcLine(FixedBuffer.values(measured)),
     className: 'chart-measured',
     style: {
       stroke: color
@@ -571,8 +571,8 @@ const viewGroup = (model, address, x, plotHeight) => {
 const renderReadout = (group, xhairTime) => {
   const unit = group.unit;
   const color = group.color;
-  const measured = Buffer.values(group.measured);
-  const desired = Buffer.values(group.desired);
+  const measured = FixedBuffer.values(group.measured);
+  const desired = FixedBuffer.values(group.desired);
   const measuredText = displayYValueFromX(measured, xhairTime, readX, readY, unit);
   const desiredText = displayYValueFromX(desired, xhairTime, readX, readY, unit);
 

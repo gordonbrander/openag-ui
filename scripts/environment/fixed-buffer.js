@@ -1,4 +1,4 @@
-export class Buffer {
+export class FixedBuffer {
   constructor(array, limit) {
     if (limit == null || limit < 1) {
       throw new Error('Buffer limit must be greater than 0');
@@ -22,7 +22,7 @@ export class Buffer {
   advance(datum) {
     // Add datum to end of array.
     const next = advanceBufferMut(this.buffer.slice(), this.limit, datum);
-    return new Buffer(next, this.limit);
+    return new FixedBuffer(next, this.limit);
   }
 
   advanceManyMut(data) {
@@ -35,7 +35,7 @@ export class Buffer {
   advanceMany(data) {
     if (data.length) {
       const next = trimMut(this.buffer.concat(data), this.limit);
-      return new Buffer(next, this.limit);
+      return new FixedBuffer(next, this.limit);
     }
     else {
       return this;
@@ -43,12 +43,12 @@ export class Buffer {
   }
 }
 
-Buffer.from = (array, limit) => new Buffer(trimMut(array.slice(), limit), limit);
+FixedBuffer.from = (array, limit) => new FixedBuffer(trimMut(array.slice(), limit), limit);
 
 // Returns the array from buffer.
 // @NOTE NEVER MUTATE THIS VALUE DIRECTLY. Always use the provided methods
 // on Buffer.
-Buffer.values = buffer => buffer.buffer;
+FixedBuffer.values = buffer => buffer.buffer;
 
 // Advance a sorted buffer and mutate it.
 const advanceBufferMut = (buffer, limit, datum) => {
