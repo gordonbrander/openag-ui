@@ -103,10 +103,11 @@ Group.assemble = (
   unit,
   min,
   max,
-  color
+  color,
+  limit
 ) => new Group(
-  new Buffer(measured),
-  new Buffer(desired),
+  new Buffer(measured, limit),
+  new Buffer(desired, limit),
   variable,
   title,
   unit,

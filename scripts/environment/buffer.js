@@ -1,6 +1,9 @@
 export class Buffer {
   constructor(array, limit) {
-    if (array.length > limit) {
+    if (limit == null || limit < 1) {
+      throw new Error('Buffer limit must be greater than 0');
+    }
+    else if (array.length > limit) {
       throw new Error('Array must be less than or equal to buffer limit');
     }
 
