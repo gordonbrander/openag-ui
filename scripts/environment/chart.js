@@ -17,13 +17,14 @@ import {listByKeys, indexWith} from '../common/indexed';
 import {compose} from '../lang/functional';
 import {onWindow} from '../driver/virtual-dom';
 import {marker, isMarker, isRecipeStart, isRecipeEnd, readX, readY, readVariable} from '../environment/datapoints';
+import {Buffer} from '../environment/buffer';
 import {SeriesView} from '../environment/series';
 
 const S_MS = 1000;
 const MIN_MS = S_MS * 60;
 const HR_MS = MIN_MS * 60;
 const DAY_MS = HR_MS * 24;
-const CHART_DURATION = DAY_MS * 2;
+const CHART_DURATION = DAY_MS * 5;
 
 const SIDEBAR_WIDTH = 256;
 const HEADER_HEIGHT = 72;
@@ -450,7 +451,7 @@ const viewGroup = (model, address, x, plotHeight) => {
     .y(compose(y, readY));
 
   const desiredPath = svgPath({
-    d: calcLine(desired),
+    d: calcLine(Buffer.values(desired)),
     className: 'chart-desired',
     style: {
       stroke: color
@@ -458,7 +459,7 @@ const viewGroup = (model, address, x, plotHeight) => {
   });
 
   const measuredPath = svgPath({
-    d: calcLine(measured),
+    d: calcLine(Buffer.values(measured)),
     className: 'chart-measured',
     style: {
       stroke: color
