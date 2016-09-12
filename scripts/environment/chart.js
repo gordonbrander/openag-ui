@@ -424,11 +424,7 @@ const viewData = (model, address) => {
     }
   }, children);
 
-  const readouts = groups.map(group => {
-    const measured = displayYValueFromX(group.measured, xhairTime, readX, readY, group.unit);
-    const desired = displayYValueFromX(group.desired, xhairTime, readX, readY, group.unit);
-    return renderReadout(group, measured, desired);
-  });
+  const readouts = groups.map(group => renderReadout(group, xhairTime));
 
   return html.div({
     className: 'chart',
@@ -559,14 +555,21 @@ const viewGroup = (model, address, x, plotHeight) => {
   }, [desiredPath, measuredPath]);
 }
 
-const renderReadout = (group, measured, desired) =>
-  html.div({
+const renderReadout = (group, xhairTime) => {
+  const unit = group.unit;
+  const color = group.color;
+  const measured = Buffer.values(group.measured);
+  const desired = Buffer.values(group.desired);
+  const measuredText = displayYValueFromX(measured, xhairTime, readX, readY, unit);
+  const desiredText = displayYValueFromX(desired, xhairTime, readX, readY, unit);
+
+  return html.div({
     className: 'chart-readout'
   }, [
     html.div({
       className: 'chart-readout--legend',
       style: {
-        backgroundColor: group.color
+        backgroundColor: color
       }
     }),
     html.span({
@@ -575,9 +578,9 @@ const renderReadout = (group, measured, desired) =>
     html.span({
       className: 'chart-readout--measured',
       style: {
-        color: group.color
+        color: color
       }
-    }, [measured]),
+    }, [measuredText]),
     html.span({
       className: 'chart-readout--target',
     }, [
@@ -586,10 +589,11 @@ const renderReadout = (group, measured, desired) =>
     html.span({
       className: 'chart-readout--desired',
       style: {
-        color: group.color
+        color: color
       }
-    }, [desired])
+    }, [desiredText])
   ]);
+}
 
 const renderAxisMarker = (x, height, text) =>
   svgG({
