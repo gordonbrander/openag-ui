@@ -8,7 +8,7 @@ import findLast from 'lodash/findLast';
 import {chart as CHART} from '../../openag-config.json';
 import {localize} from '../common/lang';
 import {mapOr} from '../common/maybe';
-import {merge, tag} from '../common/prelude';
+import {tag} from '../common/prelude';
 import {cursor} from '../common/cursor';
 import * as Draggable from '../common/draggable';
 import {classed} from '../common/attr';
@@ -66,61 +66,136 @@ const ReleaseScrubber = ScrubberAction(Draggable.Release);
 
 // Init and update functions
 
-export const Model = (
-  series,
-  recipeStart,
-  recipeEnd,
-  width,
-  height,
-  scrubberAt,
-  xhairAt,
-  isLoading
-) => ({
-  series,
+// Chart Model
+class Model {
+  constructor(
+    series,
+    markers,
+    recipeStart,
+    recipeEnd,
+    width,
+    height,
+    scrubber,
+    xhairAt,
+    isLoading
+  ) {
+    // Series class instance.
+    this.series = series;
+    // Markers array.
+    this.markers = markers;
+    // Recipe Start datapoint
+    this.recipeStart = recipeStart;
+    // Recipe End datapoint
+    this.recipeEnd = recipeEnd;
 
-  recipeStart,
-  recipeEnd,
+    // Dimensions in px
+    this.width = width;
+    this.height = height;
 
-  // Time interval to show within chart viewport (visible area)
-  interval: HR_MS,
+    // Scrubber class instance
+    this.scrubber = scrubber;
 
-  // Define dimensions
-  width,
-  height,
-  tooltipWidth: 424,
+    // Crosshair ratio
+    this.xhairAt = xhairAt;
 
-  // Define chart state
-  scrubber: Draggable.Model(false, scrubberAt),
-  xhairAt,
-  isLoading
-});
+    // Is chart loading? (Boolean)
+    this.isLoading = isLoading;
 
-// Insert datapoint in index, mutating model. We use this function to build
-// up the variable groups index.
-// Returns mutated index.
-const insertDataPoint = (index, dataPoint) => {
-  const variable = readVariable(dataPoint);
-  const group = index[variable];
-  const type = dataPoint.is_desired ? 'desired' : 'measured';
-
-  // Check that this is a known variable in our configuration
-  // File datapoint away in measured or desired, making sure that it is
-  // monotonic (that a new datapoint comes after any older datapoints).
-  if (index[variable]) {
-    index[variable][type].push(dataPoint);
+    // Currently hard-coded instance variables.
+    // Time interval to show within chart viewport (visible area)
+    this.interval =  HR_MS;
+    // Width of the tooltip that shows the readouts.
+    this.tooltipWidth = 424;
   }
-
-  return index;
 }
 
+// Swap Series class instance, returning new Model.
+Model.swapSeries = (model, series) => new Model(
+  series,
+  model.markers,
+  model.recipeStart,
+  model.recipeEnd,
+  model.width,
+  model.height,
+  model.scrubber,
+  model.xhairAt,
+  model.isLoading
+);
+
+// Swap xhair ratio, returning new Model.
+Model.swapXhair = (model, xhairAt) => new Model(
+  model.series,
+  model.markers,
+  model.recipeStart,
+  model.recipeEnd,
+  model.width,
+  model.height,
+  model.scrubber,
+  xhairAt,
+  model.isLoading
+);
+
+// Swap scrubber class instance, returning new Model.
+Model.swapScrubber = (model, scrubber) => new Model(
+  model.series,
+  model.markers,
+  model.recipeStart,
+  model.recipeEnd,
+  model.width,
+  model.height,
+  scrubber,
+  model.xhairAt,
+  model.isLoading
+);
+
+// Swap width and height, returning new Model.
+Model.swapDimensions = (model, width, height) => new Model(
+  model.series,
+  model.markers,
+  model.recipeStart,
+  model.recipeEnd,
+  width,
+  height,
+  model.scrubber,
+  model.xhairAt,
+  model.isLoading
+);
+
+// Swap loading state, returning new Model.
+Model.swapLoading = (model, isLoading) => new Model(
+  model.series,
+  model.markers,
+  model.recipeStart,
+  model.recipeEnd,
+  model.width,
+  model.height,
+  model.scrubber,
+  model.xhairAt,
+  isLoading
+);
+
+// Swap markers array, returning new Model.
+Model.swapMarkers = (model, markers) => new Model(
+  model.series,
+  markers,
+  model.recipeStart,
+  model.recipeEnd,
+  model.width,
+  model.height,
+  model.scrubber,
+  model.xhairAt,
+  model.isLoading
+);
+
 export const init = () => [
-  Model(
+  new Model(
     SeriesView.from([], CHART, MAX_DATAPOINTS),
+    [],
     null,
     null,
     calcChartWidth(window.innerWidth),
     calcChartHeight(window.innerHeight),
-    1.0,
+    Draggable.Model(false, 1.0),
     0.5,
     true
   ),
@@ -131,15 +206,29 @@ export const update = (model, action) =>
   action.type === 'Scrubber' ?
   updateScrub(model, action.source) :
   action.type === 'MoveXhair' ?
-  [merge(model, {xhairAt: action.source}), Effects.none] :
+  [Model.swapXhair(model, action.source), Effects.none] :
   action.type === 'AddData' ?
   addData(model, action.source) :
   action.type === 'Resize' ?
   updateSize(model, action.width, action.height) :
   action.type === 'Loading' ?
-  [merge(model, {isLoading: true}), Effects.none] :
+  [
+    (
+      !model.isLoading ?
+      Model.swapLoading(model, true) :
+      model
+    ),
+    Effects.none
+  ] :
   action.type === 'Ready' ?
-  [merge(model, {isLoading: false}), Effects.none] :
+  [
+    (
+      model.isLoading ?
+      Model.swapLoading(model, false) :
+      model
+    ),
+    Effects.none
+  ] :
   action.type === 'DropMarker' ?
   dropMarker(model) :
   Unknown.update(model, action);
@@ -148,38 +237,38 @@ const addData = (model, data) => {
     // const recipeStart = mapOr(findLast(variables, isRecipeStart), readX, model.recipeStart);
     // const recipeEnd = mapOr(findLast(variables, isRecipeEnd), readX, model.recipeEnd);
 
-    return [
-      merge(model, {
-        series: model.series.advanceMany(data),
-        isLoading: false,
-        // recipeStart,
-        // recipeEnd
-      }),
-      Effects.none
-    ];
+    const next = new Model(
+      model.series.advanceMany(data),
+      model.markers,
+      model.recipeStart,
+      model.recipeEnd,
+      model.width,
+      model.height,
+      model.scrubber,
+      model.xhairAt,
+      false
+    );
+
+    return [next, Effects.none];
 }
 
 const dropMarker = model => {
   const mark = marker(secondsNow(), '');
-  const variables = insertSortedBuffer(model.variables, mark, MAX_DATAPOINTS, readX);
 
   return [
-    merge(model, {variables}),
+    Model.swapMarkers(model, model.markers.concat(mark)),
     Effects.none
   ];
 }
 
 const updateSize = (model, width, height) => [
-  merge(model, {
-    width,
-    height
-  }),
+  Model.swapDimensions(model, width, height),
   Effects.none
 ];
 
 const updateScrub = cursor({
   get: model => model.scrubber,
-  set: (model, scrubber) => merge(model, {scrubber}),
+  set: (model, scrubber) => Model.swapScrubber(model, scrubber),
   update: Draggable.update,
   tag: ScrubberAction
 });
@@ -248,13 +337,12 @@ const viewEmpty = (model, address) => {
 
 const viewData = (model, address) => {
   const {series, interval, width, height, tooltipWidth,
-    scrubber, xhairAt, recipeStart, recipeEnd} = model;
+    scrubber, xhairAt, recipeStart, recipeEnd, markers} = model;
 
   // Read out series class into array.
   const groups = SeriesView.groups(series);
   const now = Date.now();
   const extentX = [now - CHART_DURATION, now];
-  // const markers = variables.filter(isMarker);
 
   const scrubberAt = scrubber.coords;
   const isDragging = scrubber.isDragging;
@@ -303,8 +391,8 @@ const viewData = (model, address) => {
   const axis = renderAxis(x, svgHeight);
   children.push(axis);
 
-  // const userMarkers = renderUserMarkers(markers, x, svgHeight, readX);
-  // children.push(userMarkers);
+  const userMarkers = renderUserMarkers(markers, x, svgHeight, readX);
+  children.push(userMarkers);
 
   if (recipeStart) {
     const recipeStartMarker = renderAxisMarker(
