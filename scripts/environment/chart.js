@@ -234,14 +234,14 @@ export const update = (model, action) =>
   Unknown.update(model, action);
 
 const addData = (model, data) => {
-    // const recipeStart = mapOr(findLast(variables, isRecipeStart), readX, model.recipeStart);
-    // const recipeEnd = mapOr(findLast(variables, isRecipeEnd), readX, model.recipeEnd);
+    const recipeStart = mapOr(findLast(data, isRecipeStart), readX, model.recipeStart);
+    const recipeEnd = mapOr(findLast(data, isRecipeEnd), readX, model.recipeEnd);
 
     const next = new Model(
       model.series.advanceMany(data),
       model.markers,
-      model.recipeStart,
-      model.recipeEnd,
+      recipeStart,
+      recipeEnd,
       model.width,
       model.height,
       model.scrubber,
