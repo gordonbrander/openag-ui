@@ -115,8 +115,8 @@ const renderExport = (origin, environmentID, variable, title) =>
 const templateCsvUrl = (origin, environmentID, variable) =>
   Template.render(Config.environmental_data_point.origin_by_variable_csv, {
     origin_url: origin,
-    startkey: JSON.stringify([environmentID, variable, 'measured', {}]),
-    endkey: JSON.stringify([environmentID, variable, 'measured']),
+    startkey: JSON.stringify([environmentID, 'measured', variable, {}]),
+    endkey: JSON.stringify([environmentID, 'measured', variable]),
     limit: MAX_DATAPOINTS,
     group_level: 4,
     descending: true
