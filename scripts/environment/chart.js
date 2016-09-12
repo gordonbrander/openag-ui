@@ -355,7 +355,9 @@ const viewData = (model, address) => {
   const tickTop = calcXhairTickTop(height, tooltipHeight);
 
   // Calculate scales
-  const x = calcTimeScale(extentX, interval, width);
+  const x = scaleTime()
+    .domain(extentX)
+    .range([0, plotWidth]);
 
   const scrubberRatioToScrubberX = scaleLinear()
     .domain(RATIO_DOMAIN)
@@ -703,13 +705,6 @@ const calcSvgHeight = height => height - SCRUBBER_HEIGHT;
 
 const calcXhairTickTop = (height, tooltipHeight) =>
   height - (tooltipHeight + SCRUBBER_HEIGHT + 10 + 3 + TOOLTIP_SPACE);
-
-// Calculate the x scale over the whole chart series.
-const calcTimeScale = (domain, interval, width) => {
-  return scaleTime()
-    .domain(domain)
-    .range([0, calcPlotWidth(domain, interval, width)]);
-}
 
 const calcTooltipX = (x, width, tooltipWidth) =>
   clamp(x - (tooltipWidth / 2), 0, width - (tooltipWidth));
