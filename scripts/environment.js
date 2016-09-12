@@ -1,5 +1,6 @@
 import * as Config from '../openag-config.json';
 import {html, forward, Effects, Task, thunk} from 'reflex';
+import findLast from 'lodash/findLast';
 import {merge, tagged, tag, batch} from './common/prelude';
 import * as Poll from './common/poll';
 import * as Template from './common/stache';
@@ -10,7 +11,6 @@ import {map as mapMaybe} from './common/maybe';
 import {cursor} from './common/cursor';
 import {localize} from './common/lang';
 import {compose, constant} from './lang/functional';
-import {findRight} from './lang/find';
 import * as Chart from './environment/chart';
 import * as Toolbox from './environment/toolbox';
 import * as Exporter from './environment/exporter';
@@ -366,4 +366,4 @@ const isAirTemperature = dataPoint => dataPoint.variable === AIR_TEMPERATURE;
 const getValue = dataPoint => dataPoint.value;
 
 const findAirTemperature = data =>
-  mapMaybe(findRight(data, isAirTemperature), getValue);
+  mapMaybe(findLast(data, isAirTemperature), getValue);
