@@ -110,7 +110,7 @@ class Model {
 }
 
 // Swap Series class instance, returning new Model.
-Model.swapSeries = (model, series) => new Model(
+Model.changeSeries = (model, series) => new Model(
   series,
   model.markers,
   model.recipeStart,
@@ -123,7 +123,7 @@ Model.swapSeries = (model, series) => new Model(
 );
 
 // Swap xhair ratio, returning new Model.
-Model.swapXhair = (model, xhairAt) => new Model(
+Model.changeXhair = (model, xhairAt) => new Model(
   model.series,
   model.markers,
   model.recipeStart,
@@ -136,7 +136,7 @@ Model.swapXhair = (model, xhairAt) => new Model(
 );
 
 // Swap scrubber class instance, returning new Model.
-Model.swapScrubber = (model, scrubber) => new Model(
+Model.changeScrubber = (model, scrubber) => new Model(
   model.series,
   model.markers,
   model.recipeStart,
@@ -149,7 +149,7 @@ Model.swapScrubber = (model, scrubber) => new Model(
 );
 
 // Swap width and height, returning new Model.
-Model.swapDimensions = (model, width, height) => new Model(
+Model.changeDimensions = (model, width, height) => new Model(
   model.series,
   model.markers,
   model.recipeStart,
@@ -162,7 +162,7 @@ Model.swapDimensions = (model, width, height) => new Model(
 );
 
 // Swap loading state, returning new Model.
-Model.swapLoading = (model, isLoading) => new Model(
+Model.changeLoading = (model, isLoading) => new Model(
   model.series,
   model.markers,
   model.recipeStart,
@@ -175,7 +175,7 @@ Model.swapLoading = (model, isLoading) => new Model(
 );
 
 // Swap markers array, returning new Model.
-Model.swapMarkers = (model, markers) => new Model(
+Model.changeMarkers = (model, markers) => new Model(
   model.series,
   markers,
   model.recipeStart,
@@ -206,7 +206,7 @@ export const update = (model, action) =>
   action.type === 'Scrubber' ?
   updateScrub(model, action.source) :
   action.type === 'MoveXhair' ?
-  [Model.swapXhair(model, action.source), Effects.none] :
+  [Model.changeXhair(model, action.source), Effects.none] :
   action.type === 'AddData' ?
   addData(model, action.source) :
   action.type === 'Resize' ?
@@ -215,7 +215,7 @@ export const update = (model, action) =>
   [
     (
       !model.isLoading ?
-      Model.swapLoading(model, true) :
+      Model.changeLoading(model, true) :
       model
     ),
     Effects.none
@@ -224,7 +224,7 @@ export const update = (model, action) =>
   [
     (
       model.isLoading ?
-      Model.swapLoading(model, false) :
+      Model.changeLoading(model, false) :
       model
     ),
     Effects.none
@@ -256,19 +256,19 @@ const dropMarker = model => {
   const mark = marker(secondsNow(), '');
 
   return [
-    Model.swapMarkers(model, model.markers.concat(mark)),
+    Model.changeMarkers(model, model.markers.concat(mark)),
     Effects.none
   ];
 }
 
 const updateSize = (model, width, height) => [
-  Model.swapDimensions(model, width, height),
+  Model.changeDimensions(model, width, height),
   Effects.none
 ];
 
 const updateScrub = cursor({
   get: model => model.scrubber,
-  set: (model, scrubber) => Model.swapScrubber(model, scrubber),
+  set: (model, scrubber) => Model.changeScrubber(model, scrubber),
   update: Draggable.update,
   tag: ScrubberAction
 });
