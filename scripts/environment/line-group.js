@@ -2,11 +2,11 @@
 Exports the Group class, which is used for chart groups.
 */
 import last from 'lodash/last';
-import {Buffer} from '../environment/buffer';
+import {FixedBuffer} from '../environment/fixed-buffer';
 import {readX} from '../environment/datapoints';
 
 // Construct a chart group
-export class Group {
+export class LineGroup {
   constructor(
     // Measured and desired should ALWAYS be sorted descending by readX.
     measured,
@@ -47,7 +47,7 @@ export class Group {
   }
 
   swap(measured, desired) {
-    return new Group(
+    return new LineGroup(
       measured,
       desired,
       this.variable,
@@ -95,7 +95,7 @@ export class Group {
 
 // Assemble a new group from 2 arrays and config.
 // Returns a new group instance.
-Group.assemble = (
+LineGroup.assemble = (
   measured,
   desired,
   variable,
@@ -105,9 +105,9 @@ Group.assemble = (
   max,
   color,
   limit
-) => new Group(
-  new Buffer(measured, limit),
-  new Buffer(desired, limit),
+) => new LineGroup(
+  new FixedBuffer(measured, limit),
+  new FixedBuffer(desired, limit),
   variable,
   title,
   unit,
@@ -116,7 +116,7 @@ Group.assemble = (
   color
 );
 
-Group.calcLength = group => (
-  Buffer.values(group.measured).length +
-  Buffer.values(group.desired).length
+LineGroup.calcLength = group => (
+  FixedBuffer.values(group.measured).length +
+  FixedBuffer.values(group.desired).length
 );

@@ -1,6 +1,6 @@
 import zipObject from 'lodash/zipObject';
 import defaults from 'lodash/defaults';
-import {Group} from '../environment/group';
+import {LineGroup} from '../environment/line-group';
 
 // Constructs a series of groups.
 // Note that direct construction via constructor function isn't very useful,
@@ -19,7 +19,7 @@ export class Series {
     const group = this.index[datum.variable];
     if (group) {
       const variable = readConfigVariable(group);
-      return new Group(
+      return new LineGroup(
         defaults({[variable]: group.advance(datum)}, group.index),
         group.order
       );
@@ -55,7 +55,7 @@ Series.from = (array, configs, limit) => {
   const keys = configs.map(readConfigVariable);
 
   // Construct an array of empty group instances for each config object.
-  const instances = configs.map(config => Group.assemble(
+  const instances = configs.map(config => LineGroup.assemble(
     [],
     [],
     config.variable,
