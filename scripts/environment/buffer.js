@@ -42,6 +42,11 @@ export class Buffer {
 
 Buffer.from = (array, limit) => new Buffer(trimMut(array.slice(), limit), limit);
 
+// Returns the array from buffer.
+// @NOTE NEVER MUTATE THIS VALUE DIRECTLY. Always use the provided methods
+// on Buffer.
+Buffer.values = buffer => buffer.buffer;
+
 // Advance a sorted buffer and mutate it.
 const advanceBufferMut = (buffer, limit, datum) => {
   // Add datum to end of array.
