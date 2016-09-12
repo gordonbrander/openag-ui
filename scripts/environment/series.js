@@ -119,4 +119,12 @@ SeriesView.groups = seriesView =>
 SeriesView.from = (array, configs, limit) =>
   new SeriesView(Series.from(array, configs, limit));
 
+SeriesView.reduce = (seriesView, step, state) => {
+  const series = seriesView.data;
+  for (var i = 0; i < series.order.length; i++) {
+    state = step(state, series.index[series.order[i]]);
+  }
+  return state;
+}
+
 const readConfigVariable = config => config.variable;

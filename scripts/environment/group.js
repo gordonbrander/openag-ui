@@ -115,3 +115,8 @@ Group.assemble = (
   max,
   color
 );
+
+Group.calcLength = group => (
+  Buffer.values(group.measured).length +
+  Buffer.values(group.desired).length
+);

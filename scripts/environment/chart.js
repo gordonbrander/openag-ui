@@ -18,6 +18,7 @@ import {compose} from '../lang/functional';
 import {onWindow} from '../driver/virtual-dom';
 import {marker, isMarker, isRecipeStart, isRecipeEnd, readX, readY, readVariable} from '../environment/datapoints';
 import {Buffer} from '../environment/buffer';
+import {Group} from '../environment/group';
 import {SeriesView} from '../environment/series';
 
 const S_MS = 1000;
@@ -107,6 +108,16 @@ class Model {
     // Width of the tooltip that shows the readouts.
     this.tooltipWidth = 424;
   }
+}
+
+Model.isEmpty = model => {
+  const tally = SeriesView.reduce(
+    model.series,
+    (state, group) => state + Group.calcLength(group),
+    0
+  );
+
+  return tally < 1;
 }
 
 // Swap Series class instance, returning new Model.
@@ -278,9 +289,9 @@ export const view = (model, address) =>
   // If model is loading, show loading view
   model.isLoading ?
   viewLoading(model, address) :
-  // // If not loading and no data to show, render empty
-  // model.variables.length === 0 ?
-  // viewEmpty(model, address) :
+  // If not loading and no data to show, render empty
+  Model.isEmpty(model) ?
+  viewEmpty(model, address) :
   viewData(model, address);
 
 // Handle the case where there is no data yet.
