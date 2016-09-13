@@ -9,10 +9,12 @@ import * as Template from './common/stache';
 import {readRootUrl} from './common/url';
 import * as Request from './common/request';
 import * as Banner from './common/banner';
+import {classed, toggle} from './common/attr';
 import * as Persistence from './persistence';
 import * as AppNav from './app/nav';  
 import * as Environments from './environments';
 import * as Environment from './environment';
+import * as Dashboard from './dashboard';
 import * as Recipes from './recipes';
 import * as Settings from './first-time-use';
 import {compose} from './lang/functional';
@@ -93,6 +95,11 @@ const TagAppNav = action =>
 
 const ConfigureAppNav = compose(TagAppNav, AppNav.Configure);
 
+const TagDashboard = action => ({
+  type: 'Dashboard',
+  source: action
+});
+
 const TagBanner = tag('Banner');
 const AlertBanner = compose(TagBanner, Banner.Alert);
 const AlertRefreshableBanner = compose(TagBanner, Banner.AlertRefreshable);
@@ -126,9 +133,10 @@ export const init = () => {
   // kept in an environments db instead.
   const activeEnvironment = Config.active_environment;
   const [environment, environmentFx] = Environment.init(activeEnvironment);
+  const [dashboard, dashboardFx] = Dashboard.init();
   const [environments, environmentsFx] = Environments.init();
   const [recipes, recipesFx] = Recipes.init();
-  const [appNav, appNavFx] = AppNav.init();
+  const [appNav, appNavFx] = AppNav.init(AppNav.DASHBOARD);
   const [banner, bannerFx] = Banner.init();
   const [firstTimeUse, firstTimeUseFx] = Settings.init();
 
@@ -149,6 +157,7 @@ export const init = () => {
 
       // Store submodule states.
       environment,
+      dashboard,
       environments,
       recipes,
       appNav,
@@ -159,6 +168,7 @@ export const init = () => {
       Effects.receive(GetState),
       environmentFx.map(TagEnvironment),
       environmentsFx.map(TagEnvironments),
+      dashboardFx.map(TagDashboard),
       recipesFx.map(TagRecipes),
       appNavFx.map(TagAppNav),
       bannerFx.map(TagBanner),
@@ -378,12 +388,28 @@ const viewConfigured = (model, address) =>
       forward(address, TagBanner),
       'global-banner'
     ),
-    thunk(
-      'environment',
-      Environment.view,
-      model.environment,
-      forward(address, TagEnvironment)
-    ),
+    html.div({
+      className: 'app-view',
+      hidden: toggle(AppNav.active(model.appNav) !== AppNav.DASHBOARD, 'hidden')
+    }, [
+      thunk(
+        'dashboard',
+        Dashboard.view,
+        model.dashboard,
+        forward(address, TagDashboard)
+      )
+    ]),
+    html.div({
+      className: 'app-view',
+      hidden: toggle(AppNav.active(model.appNav) !== AppNav.CHART, 'hidden')
+    }, [
+      thunk(
+        'environment',
+        Environment.view,
+        model.environment,
+        forward(address, TagEnvironment)
+      )
+    ]),
     thunk(
       'recipes',
       Recipes.view,
