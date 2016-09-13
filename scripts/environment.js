@@ -74,7 +74,12 @@ const TagPoll = action =>
   tagged('Poll', action);
 
 const FetchLatest = {type: 'FetchLatest'};
-const Latest = tag('Latest');
+
+// The result of fetching latest.
+const Latest = result => ({
+  type: 'Latest',
+  result
+});
 
 // Action for fetching chart backlog.
 const GetBacklog = {type: 'GetBacklog'};
@@ -147,7 +152,7 @@ export const update = (model, action) =>
   action.type === 'FetchLatest' ?
   fetchLatest(model) :
   action.type === 'Latest' ?
-  updateLatest(model, action.source) :
+  updateLatest(model, action.result) :
   action.type === 'GetBacklog' ?
   getBacklog(model) :
   action.type === 'GotBacklog' ?
@@ -312,7 +317,7 @@ const viewReady = (model, address) =>
     )
   ]);
 
-const viewWaiting= (model, address) =>
+const viewWaiting = (model, address) =>
   html.div({
     className: 'environment-main environment-main--has-sidebar'
   }, [
