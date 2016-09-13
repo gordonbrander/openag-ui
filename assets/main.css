@@ -308,9 +308,10 @@ p {
   text-overflow: ellipsis;
 }
 
-.nav-dashboard-icon {
+.nav-dash-icon {
   background: url(./sprite.png) 0 -300px no-repeat;
   background-size: 100px auto;
+  opacity: 0.2;
   cursor: pointer;
   display: block;
   height: 72px;
@@ -319,23 +320,26 @@ p {
   position: absolute;
 }
 
-.nav-dashboard-icon-active {
+.nav-dash-icon-active {
   background-position: 0 -400px;
+  opacity: 1;
 }
 
 
 .nav-chart-icon {
   background: url(./sprite.png) 0 -500px no-repeat;
   background-size: 100px auto;
+  opacity: 0.2;
   cursor: pointer;
   height: 72px;
   width: 72px;
-  left: 288px;
+  left: 376px;
   position: absolute;
 }
 
 .nav-chart-icon-active {
   background-position: 0 -600px;
+  opacity: 1;
 }
 
 
