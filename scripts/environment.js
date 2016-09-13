@@ -1,24 +1,20 @@
 import * as Config from '../openag-config.json';
 import {html, forward, Effects, Task, thunk} from 'reflex';
-import findLast from 'lodash/findLast';
 import {merge, tagged, tag, batch} from './common/prelude';
+import {toggle} from './common/attr';
 import * as Poll from './common/poll';
 import * as Template from './common/stache';
 import * as Request from './common/request';
 import * as Result from './common/result';
 import * as Unknown from './common/unknown';
-import {map as mapMaybe} from './common/maybe';
 import {cursor} from './common/cursor';
-import {localize} from './common/lang';
-import {compose, constant} from './lang/functional';
+import {constant, compose} from './lang/functional';
 import * as Chart from './environment/chart';
-import * as Toolbox from './environment/toolbox';
-import * as Exporter from './environment/exporter';
-import * as Sidebar from './environment/sidebar';
-import {readNumberPoint, findRunningRecipe} from './environment/datapoints';
+import * as Dashboard from './environment/dashboard';
 
-// Variable key for environmental data point that represents temperature.
-const AIR_TEMPERATURE = 'air_temperature';
+// State keys
+const DASHBOARD = 'dashboard';
+const CHART = 'chart';
 
 // Time constants in ms
 const S_MS = 1000;
@@ -41,6 +37,11 @@ const RequestOpenRecipes = {
   type: 'RequestOpenRecipes'
 };
 
+export const ActivateState = id => ({
+  type: 'ActivateState',
+  id
+});
+
 // Configure action received from parent.
 export const Configure = (environmentID, environmentName, origin) => ({
   type: 'Configure',
@@ -49,24 +50,23 @@ export const Configure = (environmentID, environmentName, origin) => ({
   name: environmentName
 });
 
-const TagExporter = tag('Exporter');
-const OpenExporter = TagExporter(Exporter.Open);
-const ConfigureExporter = compose(TagExporter, Exporter.Configure);
-
-const TagSidebar = action =>
+const TagChart = action =>
   action.type === 'RequestOpenRecipes' ?
   RequestOpenRecipes :
-  action.type === 'DropMarker' ?
-  DropMarker :
-  tagged('Sidebar', action);
+  ChartAction(action);
 
-export const SetRecipe = compose(TagSidebar, Sidebar.SetRecipe);
-export const SetAirTemperature = compose(TagSidebar, Sidebar.SetAirTemperature);
+const ChartAction = action => ({
+  type: 'Chart',
+  source: action
+});
 
-const TagToolbox = action =>
-  action.type === 'OpenExporter' ?
-  OpenExporter :
-  tagged('Toolbox', action);
+const AddChartData = compose(ChartAction, Chart.AddData);
+const ConfigureChart = compose(ChartAction, Chart.Configure)
+
+const TagDashboard = action => ({
+  type: 'Dashboard',
+  source: action
+});
 
 const TagPoll = action =>
   action.type === 'Ping' ?
@@ -93,12 +93,6 @@ const GotBacklog = result => ({
 const PongPoll = TagPoll(Poll.Pong);
 const MissPoll = TagPoll(Poll.Miss);
 
-const TagChart = tag('Chart');
-const AddChartData = compose(TagChart, Chart.AddData);
-const ChartLoading = compose(TagChart, Chart.Loading);
-// Drop a marker (in the chart)
-const DropMarker = TagChart(Chart.DropMarker);
-
 // Send an alert. We use this to send up problems to be displayed in banner.
 const AlertBanner = tag('AlertBanner');
 
@@ -109,25 +103,24 @@ const DataPointAction = dataPoint => {
 
 // Model init and update
 
-export const init = id => {
+export const init = (id, state) => {
   const [poll, pollFx] = Poll.init(POLL_TIMEOUT);
-  const [chart, chartFx] = Chart.init();
-  const [exporter, exporterFx] = Exporter.init();
-  const [sidebar, sidebarFx] = Sidebar.init();
+  const [dashboard, dashboardFx] = Dashboard.init();
+  const [chart, chartFx] = Chart.init(id);
 
   return [
     {
       id,
+      name: null,
+      state,
       chart,
-      poll,
-      exporter,
-      sidebar
+      dashboard,
+      poll
     },
     Effects.batch([
       chartFx.map(TagChart),
+      dashboardFx.map(TagDashboard),
       pollFx.map(TagPoll),
-      exporterFx.map(TagExporter),
-      sidebarFx.map(TagSidebar)
     ])
   ];
 };
@@ -143,12 +136,10 @@ export const update = (model, action) =>
   [model, Effects.none] :
   action.type === 'Poll' ?
   updatePoll(model, action.source) :
-  action.type === 'Exporter' ?
-  updateExporter(model, action.source) :
   action.type === 'Chart' ?
   updateChart(model, action.source) :
-  action.type === 'Sidebar' ?
-  updateSidebar(model, action.source) :
+  action.type === 'Dashboard' ?
+  updateDashboard(model, action.source) :
   action.type === 'FetchLatest' ?
   fetchLatest(model) :
   action.type === 'Latest' ?
@@ -157,6 +148,8 @@ export const update = (model, action) =>
   getBacklog(model) :
   action.type === 'GotBacklog' ?
   updateBacklog(model, action.result) :
+  action.type === 'ActivateState' ?
+  activateState(model, action.id) :
   action.type === 'Configure' ?
   configure(model, action) :
   Unknown.update(model, action);
@@ -175,11 +168,9 @@ const fetchLatest = model => {
 const updateLatest = Result.updater(
   (model, record) => {
     const data = readData(record);
-    const airTemperature = findAirTemperature(data);
 
     return batch(update, model, [
       AddChartData(data),
-      SetAirTemperature(airTemperature),
       PongPoll
     ]);
   },
@@ -216,21 +207,11 @@ const getBacklog = model => {
 const updateBacklog = Result.updater(
   (model, record) => {
     const data = readData(record);
-    const airTemperature = findAirTemperature(data);
 
-    const actions = [
+    return batch(update, model, [
       AddChartData(data),
-      SetAirTemperature(airTemperature),
       FetchLatest
-    ];
-
-    const recipeStart = findRunningRecipe(data);
-
-    if (recipeStart) {
-      actions.push(SetRecipe(recipeStart));
-    }
-
-    return batch(update, model, actions);
+    ]);
   },
   (model, error) => {
     const action = AlertBanner(error);
@@ -254,18 +235,23 @@ const configure = (model, {origin, id, name}) => {
   });
 
   return batch(update, next, [
-    // Forward restore down to exporter module.
-    ConfigureExporter(origin),
+    // Forward restore down to chart widget module.
+    ConfigureChart(origin),
     // Now that we have the origin, get the backlog.
     GetBacklog
   ]);
 }
 
-const updateSidebar = cursor({
-  get: model => model.sidebar,
-  set: (model, sidebar) => merge(model, {sidebar}),
-  update: Sidebar.update,
-  tag: TagSidebar
+const activateState = (model, id) => [
+  merge(model, {state: id}),
+  Effects.none
+];
+
+const updatePoll = cursor({
+  get: model => model.poll,
+  set: (model, poll) => merge(model, {poll}),
+  update: Poll.update,
+  tag: TagPoll
 });
 
 const updateChart = cursor({
@@ -275,61 +261,41 @@ const updateChart = cursor({
   tag: TagChart
 });
 
-const updateExporter = cursor({
-  get: model => model.exporter,
-  set: (model, exporter) => merge(model, {exporter}),
-  update: Exporter.update,
-  tag: TagExporter
-});
-
-const updatePoll = cursor({
-  get: model => model.poll,
-  set: (model, poll) => merge(model, {poll}),
-  update: Poll.update,
-  tag: TagPoll
+const updateDashboard = cursor({
+  get: model => model.dashboard,
+  set: (model, dashboard) => merge(model, {dashboard}),
+  update: Dashboard.update,
+  tag: TagDashboard
 });
 
 // View
 
 export const view = (model, address) =>
-  model.id ?
-  viewReady(model, address) :
-  viewWaiting(model, address);
-
-const viewReady = (model, address) =>
   html.div({
-    className: 'environment-main environment-main--has-sidebar'
+    className: 'environment'
   }, [
-    thunk('chart', Chart.view, model.chart, forward(address, TagChart)),
-    thunk(
-      'sidebar',
-      Sidebar.view,
-      model.sidebar,
-      forward(address, TagSidebar)
-    ),
-    thunk('chart-toolbox', Toolbox.view, model, forward(address, TagToolbox)),
-    thunk(
-      'chart-export',
-      Exporter.view,
-      model.exporter,
-      forward(address, TagExporter),
-      model.id
-    )
-  ]);
-
-const viewWaiting = (model, address) =>
-  html.div({
-    className: 'environment-main environment-main--has-sidebar'
-  }, [
-    thunk(
-      'sidebar',
-      Sidebar.view,
-      model.sidebar,
-      forward(address, TagSidebar)
-    ),
     html.div({
-      className: 'environment-content environment-content--loading'
-    })
+      className: 'environment-view',
+      hidden: toggle(model.state !== DASHBOARD, 'hidden')
+    }, [
+      thunk(
+        'dashboard',
+        Dashboard.view,
+        model.dashboard,
+        forward(address, TagDashboard)
+      )
+    ]),
+    html.div({
+      className: 'environment-view',
+      hidden: toggle(model.state !== CHART, 'hidden')
+    }, [
+      thunk(
+        'chart-widget',
+        Chart.view,
+        model.chart,
+        forward(address, TagChart)
+      )
+    ])
   ]);
 
 // Helpers
@@ -365,10 +331,3 @@ const templateRecentUrl = (origin, id) =>
     limit: MAX_DATAPOINTS,
     descending: true
   });
-
-const isAirTemperature = dataPoint => dataPoint.variable === AIR_TEMPERATURE;
-
-const getValue = dataPoint => dataPoint.value;
-
-const findAirTemperature = data =>
-  mapMaybe(findLast(data, isAirTemperature), getValue);

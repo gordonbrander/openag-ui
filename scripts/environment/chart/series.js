@@ -1,6 +1,6 @@
 import zipObject from 'lodash/zipObject';
 import defaults from 'lodash/defaults';
-import {LineGroup} from '../environment/line-group';
+import {LineGroup} from './line-group';
 
 // Constructs a series of groups.
 // Note that direct construction via constructor function isn't very useful,

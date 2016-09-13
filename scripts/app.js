@@ -9,18 +9,18 @@ import * as Template from './common/stache';
 import {readRootUrl} from './common/url';
 import * as Request from './common/request';
 import * as Banner from './common/banner';
-import {classed, toggle} from './common/attr';
 import * as Persistence from './persistence';
 import * as AppNav from './app/nav';  
 import * as Environments from './environments';
 import * as Environment from './environment';
-import * as Dashboard from './dashboard';
 import * as Recipes from './recipes';
 import * as Settings from './first-time-use';
 import {compose} from './lang/functional';
 
 // State ID is the id of the pouch record we use to persist state.
 const STATE_ID = Config.app.state_id;
+
+const DASHBOARD = AppNav.DASHBOARD;
 
 // Actions and tagging functions
 
@@ -85,20 +85,37 @@ const TagEnvironment = action =>
   AlertRefreshableBanner(action.source) :
   action.type === 'RequestOpenRecipes' ?
   OpenRecipes :
-  tagged('Environment', action);
+  EnvironmentAction(action);
 
-const ConfigureEnvironment = compose(TagEnvironment, Environment.Configure);
-const SetRecipeForEnvironment = compose(TagEnvironment, Environment.SetRecipe);
+const EnvironmentAction = action => ({
+  type: 'Environment',
+  source: action
+})
+
+const ConfigureEnvironment = compose(EnvironmentAction, Environment.Configure);
+const SetRecipeForEnvironment = compose(EnvironmentAction, Environment.SetRecipe);
+const ActivateEnvironmentState = compose(EnvironmentAction, Environment.ActivateState);
 
 const TagAppNav = action =>
-  tagged('AppNav', action);
+  action.type === 'ActivateState' ?
+  ActivateState(action.id) :
+  AppNavAction(action);
 
-const ConfigureAppNav = compose(TagAppNav, AppNav.Configure);
-
-const TagDashboard = action => ({
-  type: 'Dashboard',
+const AppNavAction = action => ({
+  type: 'AppNav',
   source: action
 });
+
+const ActivateAppNavState = compose(AppNavAction, AppNav.ActivateState);
+
+// Action sent to configure top level app state.
+// Driven by AppNav.Activate actions.
+const ActivateState = id => ({
+  type: 'ActivateState',
+  id
+});
+
+const ConfigureAppNav = compose(TagAppNav, AppNav.Configure);
 
 const TagBanner = tag('Banner');
 const AlertBanner = compose(TagBanner, Banner.Alert);
@@ -132,11 +149,10 @@ export const init = () => {
   // @FIXME we hardcode active environment for the moment. This should be
   // kept in an environments db instead.
   const activeEnvironment = Config.active_environment;
-  const [environment, environmentFx] = Environment.init(activeEnvironment);
-  const [dashboard, dashboardFx] = Dashboard.init();
+  const [environment, environmentFx] = Environment.init(activeEnvironment, DASHBOARD);
   const [environments, environmentsFx] = Environments.init();
   const [recipes, recipesFx] = Recipes.init();
-  const [appNav, appNavFx] = AppNav.init(AppNav.DASHBOARD);
+  const [appNav, appNavFx] = AppNav.init(DASHBOARD);
   const [banner, bannerFx] = Banner.init();
   const [firstTimeUse, firstTimeUseFx] = Settings.init();
 
@@ -157,7 +173,6 @@ export const init = () => {
 
       // Store submodule states.
       environment,
-      dashboard,
       environments,
       recipes,
       appNav,
@@ -168,7 +183,6 @@ export const init = () => {
       Effects.receive(GetState),
       environmentFx.map(TagEnvironment),
       environmentsFx.map(TagEnvironments),
-      dashboardFx.map(TagDashboard),
       recipesFx.map(TagRecipes),
       appNavFx.map(TagAppNav),
       bannerFx.map(TagBanner),
@@ -194,6 +208,8 @@ export const update = (model, action) =>
   updateEnvironments(model, action.source) :
 
   // Specialized update functions
+  action.type === 'ActivateState' ?
+  activateState(model, action.id) :
   action.type === 'Configure' ?
   configure(model, action.value) :
   action.type === 'ConfigureFirstTime' ?
@@ -258,6 +274,13 @@ const updateEnvironments = cursor({
   update: Environments.update,
   tag: TagEnvironments
 });
+
+const activateState = (model, id) =>
+  // Forward activate action we hijacked to app nav.
+  batch(update, model, [
+    ActivateAppNavState(id),
+    ActivateEnvironmentState(id)
+  ]);
 
 const startRecipe = (model, recipe) =>
   batch(update, model, [
@@ -388,28 +411,12 @@ const viewConfigured = (model, address) =>
       forward(address, TagBanner),
       'global-banner'
     ),
-    html.div({
-      className: 'app-view',
-      hidden: toggle(AppNav.active(model.appNav) !== AppNav.DASHBOARD, 'hidden')
-    }, [
-      thunk(
-        'dashboard',
-        Dashboard.view,
-        model.dashboard,
-        forward(address, TagDashboard)
-      )
-    ]),
-    html.div({
-      className: 'app-view',
-      hidden: toggle(AppNav.active(model.appNav) !== AppNav.CHART, 'hidden')
-    }, [
-      thunk(
-        'environment',
-        Environment.view,
-        model.environment,
-        forward(address, TagEnvironment)
-      )
-    ]),
+    thunk(
+      'environment',
+      Environment.view,
+      model.environment,
+      forward(address, TagEnvironment)
+    ),
     thunk(
       'recipes',
       Recipes.view,

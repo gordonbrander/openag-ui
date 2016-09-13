@@ -9,13 +9,13 @@ import {localize} from '../common/lang';
 export const DASHBOARD = 'dashboard';
 export const CHART = 'chart';
 
-export const Activate = id => ({
-  type: 'Activate',
+export const ActivateState = id => ({
+  type: 'ActivateState',
   id
 });
 
-const ActivateDashboard = Activate(DASHBOARD);
-const ActivateChart = Activate(CHART);
+const ActivateDashboard = ActivateState(DASHBOARD);
+const ActivateChart = ActivateState(CHART);
 
 // Configure settings (usually comes from parent who read it from local DB).
 export const Configure = name => ({
@@ -34,7 +34,7 @@ export const init = (active) => [
 ];
 
 export const update = (model, action) =>
-  action.type === 'Activate' ?
+  action.type === 'ActivateState' ?
   [
     merge(model, {active: action.id}),
     Effects.none

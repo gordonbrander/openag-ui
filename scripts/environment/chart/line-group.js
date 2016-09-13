@@ -2,8 +2,8 @@
 Exports the Group class, which is used for chart groups.
 */
 import last from 'lodash/last';
-import {FixedBuffer} from '../environment/fixed-buffer';
-import {readX} from '../environment/datapoints';
+import {FixedBuffer} from './fixed-buffer';
+import {readX} from '../datapoints';
 
 // Construct a chart group
 export class LineGroup {

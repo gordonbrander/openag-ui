@@ -1,7 +1,9 @@
 import findLast from 'lodash/findLast';
+import {map as mapMaybe} from '../common/maybe';
 
 const RECIPE_START = 'recipe_start';
 const RECIPE_END = 'recipe_end';
+const AIR_TEMPERATURE = 'air_temperature';
 const MARKER = 'marker';
 
 // We have 2 different kinds of datapoint classes so that instances are
@@ -66,6 +68,13 @@ export const readY = dataPoint =>
   Number.parseFloat(dataPoint.value);
 
 export const readVariable = datum => datum.variable;
+
+export const isAirTemperature = dataPoint => dataPoint.variable === AIR_TEMPERATURE;
+
+export const readValue = dataPoint => dataPoint.value;
+
+export const findAirTemperature = data =>
+  mapMaybe(findLast(data, isAirTemperature), readValue);
 
 // @TODO readDataPoint
 // reformat openag-config.json to have a hashmap and a weight field, instead
