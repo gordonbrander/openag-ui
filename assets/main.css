@@ -635,6 +635,12 @@ p {
   background: #222;
 }
 
+.dashboard-video {
+  display: block;
+  height: 100%;
+  width: 100%;
+}
+
 /* Summary sidebar
 ----------------------------------------------------------------------------- */
 

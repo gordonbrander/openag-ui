@@ -70,7 +70,10 @@ export const viewReady = (model, address) =>
       className: 'dashboard-content split-view-content'
     }, [
       html.video({
-        src: templateVideoUrl(model)
+        className: 'dashboard-video',
+        src: templateVideoUrl(model),
+        autoplay: true,
+        loop: true
       })
     ])
   ]);
