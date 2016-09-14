@@ -121,14 +121,18 @@ export const viewReady = (model, address) =>
     html.div({
       className: 'dashboard-content split-view-content'
     }, [
-      html.video({
-        className: 'dashboard-video',
-        src: templateVideoUrl(model),
-        autoplay: true,
-        preload: 'auto',
-        loop: true,
-        muted: true
-      })
+      html.div({
+        className: 'timelapse--mask'
+      }, [
+        html.video({
+          className: 'timelapse--video',
+          src: templateVideoUrl(model),
+          autoplay: true,
+          preload: 'auto',
+          loop: true,
+          muted: true
+        })
+      ])
     ])
   ]);
 
