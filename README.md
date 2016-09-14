@@ -14,6 +14,21 @@ You can use the hosted [web client](http://openaginitiative.github.io/openag_ui/
 [openaginitiative.github.io/openag_ui](http://openaginitiative.github.io/openag_ui/) will host the latest tagged release of the UI. Right now the UI is in-development, so it hosts the latest stable-ish prerelease.
 
 
+Browser Support
+---------------
+
+The UI targets support for the following browsers:
+
+- Firefox 47+
+- Chrome 49+
+- IE 11+
+- Edge 14+
+- Safari 9.1+
+- iOS Safari 9.2
+- Android 51
+- Chrome for Android 51
+
+
 Developing
 ----------
 
