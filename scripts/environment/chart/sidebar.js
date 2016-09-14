@@ -1,11 +1,12 @@
 import {html, forward, Effects, Task, thunk} from 'reflex';
-import {merge, batch, tagged} from '../common/prelude';
-import {localize} from '../common/lang';
-import * as Button from '../common/button';
-import {cursor} from '../common/cursor';
-import {compose} from '../lang/functional';
-import {update as updateUnknown} from '../common/unknown';
-import * as Recipe from './sidebar/recipe';
+import {merge, batch, tagged} from '../../common/prelude';
+import {localize} from '../../common/lang';
+import * as Button from '../../common/button';
+import {cursor} from '../../common/cursor';
+import {compose} from '../../lang/functional';
+import {update as updateUnknown} from '../../common/unknown';
+import * as Recipe from '../sidebar/recipe';
+import * as AirTemperature from '../sidebar/air-temperature';
 
 // Actions
 
@@ -14,11 +15,12 @@ const RequestOpenRecipes = {
   type: 'RequestOpenRecipes'
 };
 
-// Set air temperature in sidebar
-export const SetAirTemperature = value => ({
-  type: 'SetAirTemperature',
-  value
+export const TagAirTemperature = action => ({
+  type: 'AirTemperature',
+  source: action
 });
+
+export const SetAirTemperature = compose(TagAirTemperature, AirTemperature.SetValue);
 
 // Tag sidebar recipe actions so we can forward them down.
 export const TagRecipe = action =>
@@ -48,16 +50,18 @@ export const init = () => {
     false,
     false
   );
+  const [airTemperature, airTemperatureFx] = AirTemperature.init(null);
 
   return [
     {
       recipe,
       markerButton,
-      airTemperature: null
+      airTemperature
     },
     Effects.batch([
       recipeFx.map(TagRecipe),
-      markerButtonFx.map(TagMarkerButton)
+      markerButtonFx.map(TagMarkerButton),
+      airTemperatureFx.map(TagAirTemperature)
     ])
   ];
 }
@@ -67,8 +71,8 @@ export const update = (model, action) =>
   updateRecipe(model, action.source) :
   action.type === 'MarkerButton' ?
   updateMarkerButton(model, action.source) :
-  action.type === 'SetAirTemperature' ?
-  setAirTemperature(model, action.value) :
+  action.type === 'AirTemperature' ?
+  updateAirTemperature(model, action.source) :
   updateUnknown(model, action);
 
 const updateRecipe = cursor({
@@ -85,13 +89,12 @@ const updateMarkerButton = cursor({
   tag: TagMarkerButton
 });
 
-const setAirTemperature = (model, airTemperature) => {
-  return (
-    airTemperature != null ?
-    [merge(model, {airTemperature}), Effects.none] :
-    [model, Effects.none]
-  );
-}
+const updateAirTemperature = cursor({
+  get: model => model.airTemperature,
+  set: (model, airTemperature) => merge(model, {airTemperature}),
+  update: AirTemperature.update,
+  tag: TagAirTemperature
+});
 
 // View
 
@@ -116,9 +119,10 @@ export const view = (model, address) =>
         className: 'sidebar-summary--unit'
       }, [
         thunk(
-          'sidebar-air-temperature',
-          viewAirTemperature,
-          model.airTemperature
+          'chart-sidebar-air-temperature',
+          AirTemperature.view,
+          model.airTemperature,
+          forward(address, TagAirTemperature)
         )
       ]),
       html.div({
@@ -134,26 +138,3 @@ export const view = (model, address) =>
       ])
     ])
   ]);
-
-const UNIT = '\u00B0';
-
-const viewAirTemperature = airTemperature => {
-  if (airTemperature == null) {
-    return html.div({
-      className: 'env-temperature env-temperature--large'
-    }, ['-']);
-  }
-  else {
-    return html.div({
-      className: 'env-temperature env-temperature--large'
-    }, [
-      readTemperature(airTemperature),
-      html.span({
-        className: 'env-temperature--unit'
-      }, [UNIT])
-    ]);
-  }
-}
-
-const readTemperature = value =>
-  (Math.round(value) + '');

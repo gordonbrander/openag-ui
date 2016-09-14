@@ -308,9 +308,10 @@ p {
   text-overflow: ellipsis;
 }
 
-.nav-dashboard-icon {
+.nav-dash-icon {
   background: url(./sprite.png) 0 -300px no-repeat;
   background-size: 100px auto;
+  opacity: 0.2;
   cursor: pointer;
   display: block;
   height: 72px;
@@ -319,25 +320,37 @@ p {
   position: absolute;
 }
 
-.nav-dashboard-icon-active {
+.nav-dash-icon-active {
   background-position: 0 -400px;
+  opacity: 1;
 }
 
 
 .nav-chart-icon {
   background: url(./sprite.png) 0 -500px no-repeat;
   background-size: 100px auto;
+  opacity: 0.2;
   cursor: pointer;
   height: 72px;
   width: 72px;
-  left: 288px;
+  left: 376px;
   position: absolute;
 }
 
 .nav-chart-icon-active {
   background-position: 0 -600px;
+  opacity: 1;
 }
 
+/* Environment (everything beneath nav)
+----------------------------------------------------------------------------- */
+
+.environment {
+  /* @NOTE Giving this "all the content" div triggers layerization
+  in the browser. We see a huge framerate gain for modal dialog animations
+  when this div has a background set. */
+  background: #fff;
+}
 
 /* Modal
 ----------------------------------------------------------------------------- */
@@ -474,6 +487,32 @@ p {
   display: none;
 }
 
+/* Split View - sidebar/content layout
+----------------------------------------------------------------------------- */
+
+.split-view {
+  width: calc(100vw);
+  height: calc(100vh - 72px);
+  position: relative;
+}
+
+.split-view-content {
+  /* Height of viewport - the height of the app header */
+  height: calc(100vh - 72px);
+  width: calc(100vw - 256px);
+  top: 0;
+  left: 256px;
+  position: absolute;
+}
+
+.split-view-sidebar {
+  left: 0;
+  position: absolute;
+  top: 0;
+  height: calc(100vh - 72px);
+  width: 256px;
+}
+
 /* Panel
 ----------------------------------------------------------------------------- */
 
@@ -574,28 +613,44 @@ p {
   padding: 12px;
 }
 
-/* Environment
+/* Chart
 ----------------------------------------------------------------------------- */
 
-.environment-main {
+.chart-view {
   background-color: #f4f4f4;
   /* Full height minus the app header */
   height: calc(100vh - 72px);
   position: relative;
 }
 
-.environment-main--has-sidebar {
-  padding-left: 256px;
-}
-
-.environment-content {
-  height: 100%;
-  width: 100%;
-}
-
-.environment-content--loading {
+.chart-view-content--loading {
   background: url(loading.svg) no-repeat center center;
   background-size: 80px 80px;
+}
+
+/* Dashboard
+----------------------------------------------------------------------------- */
+
+.dashboard-content {
+  background: #222;
+}
+
+.timelapse--mask {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  position: relative;
+}
+
+.timelapse--video {
+  display: block;
+  min-height: 100%;
+  min-width: 100%;
+  /* Center video */
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
 }
 
 /* Summary sidebar

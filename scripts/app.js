@@ -20,6 +20,8 @@ import {compose} from './lang/functional';
 // State ID is the id of the pouch record we use to persist state.
 const STATE_ID = Config.app.state_id;
 
+const DASHBOARD = AppNav.DASHBOARD;
+
 // Actions and tagging functions
 
 const Configure = value => ({
@@ -83,13 +85,35 @@ const TagEnvironment = action =>
   AlertRefreshableBanner(action.source) :
   action.type === 'RequestOpenRecipes' ?
   OpenRecipes :
-  tagged('Environment', action);
+  EnvironmentAction(action);
 
-const ConfigureEnvironment = compose(TagEnvironment, Environment.Configure);
-const SetRecipeForEnvironment = compose(TagEnvironment, Environment.SetRecipe);
+const EnvironmentAction = action => ({
+  type: 'Environment',
+  source: action
+})
+
+const ConfigureEnvironment = compose(EnvironmentAction, Environment.Configure);
+const SetRecipeForEnvironment = compose(EnvironmentAction, Environment.SetRecipe);
+const ActivateEnvironmentState = compose(EnvironmentAction, Environment.ActivateState);
 
 const TagAppNav = action =>
-  tagged('AppNav', action);
+  action.type === 'ActivateState' ?
+  ActivateState(action.id) :
+  AppNavAction(action);
+
+const AppNavAction = action => ({
+  type: 'AppNav',
+  source: action
+});
+
+const ActivateAppNavState = compose(AppNavAction, AppNav.ActivateState);
+
+// Action sent to configure top level app state.
+// Driven by AppNav.Activate actions.
+const ActivateState = id => ({
+  type: 'ActivateState',
+  id
+});
 
 const ConfigureAppNav = compose(TagAppNav, AppNav.Configure);
 
@@ -125,10 +149,10 @@ export const init = () => {
   // @FIXME we hardcode active environment for the moment. This should be
   // kept in an environments db instead.
   const activeEnvironment = Config.active_environment;
-  const [environment, environmentFx] = Environment.init(activeEnvironment);
+  const [environment, environmentFx] = Environment.init(activeEnvironment, DASHBOARD);
   const [environments, environmentsFx] = Environments.init();
   const [recipes, recipesFx] = Recipes.init();
-  const [appNav, appNavFx] = AppNav.init();
+  const [appNav, appNavFx] = AppNav.init(DASHBOARD);
   const [banner, bannerFx] = Banner.init();
   const [firstTimeUse, firstTimeUseFx] = Settings.init();
 
@@ -184,6 +208,8 @@ export const update = (model, action) =>
   updateEnvironments(model, action.source) :
 
   // Specialized update functions
+  action.type === 'ActivateState' ?
+  activateState(model, action.id) :
   action.type === 'Configure' ?
   configure(model, action.value) :
   action.type === 'ConfigureFirstTime' ?
@@ -248,6 +274,13 @@ const updateEnvironments = cursor({
   update: Environments.update,
   tag: TagEnvironments
 });
+
+const activateState = (model, id) =>
+  // Forward activate action we hijacked to app nav.
+  batch(update, model, [
+    ActivateAppNavState(id),
+    ActivateEnvironmentState(id)
+  ]);
 
 const startRecipe = (model, recipe) =>
   batch(update, model, [

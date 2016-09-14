@@ -1,3 +1,7 @@
+/*
+A mutable buffer with a limited size.
+FixedBuffer will drop elements to the left when it overflows.
+*/
 export class FixedBuffer {
   constructor(array, limit) {
     if (limit == null || limit < 1) {
