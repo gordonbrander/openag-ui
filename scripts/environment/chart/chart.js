@@ -439,7 +439,7 @@ const viewData = (model, address) => {
   const readouts = groups.map(group => renderReadout(group, xhairTime));
 
   return html.div({
-    className: 'chart',
+    className: 'chart split-view-content',
     onMouseUp: () => address(ReleaseScrubber),
     onMouseMove: event => {
       const [mouseX, mouseY] = calcRelativeMousePos(

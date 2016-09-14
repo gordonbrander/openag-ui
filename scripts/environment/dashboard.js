@@ -64,16 +64,20 @@ export const view = (model, address) =>
 
 export const viewReady = (model, address) =>
   html.div({
-    className: 'dashboard-view'
+    className: 'dashboard-view split-view'
   }, [
-    html.video({
-      src: templateVideoUrl(model)
-    })
+    html.div({
+      className: 'dashboard-content split-view-content'
+    }, [
+      html.video({
+        src: templateVideoUrl(model)
+      })
+    ])
   ]);
 
 export const viewUnready = (model, address) =>
   html.div({
-    className: 'dashboard-view'
+    className: 'dashboard-view split-view'
   }, [
     'Waiting for configuration'
   ]);

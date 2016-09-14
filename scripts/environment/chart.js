@@ -141,7 +141,7 @@ export const view = (model, address) =>
 
 const viewReady = (model, address) =>
   html.div({
-    className: 'environment-main environment-main--has-sidebar'
+    className: 'chart-view split-view'
   }, [
     thunk(
       'chart',
@@ -167,7 +167,7 @@ const viewReady = (model, address) =>
 
 const viewWaiting = (model, address) =>
   html.div({
-    className: 'environment-main environment-main--has-sidebar'
+    className: 'chart-view split-view'
   }, [
     thunk(
       'sidebar',
@@ -176,6 +176,6 @@ const viewWaiting = (model, address) =>
       forward(address, TagSidebar)
     ),
     html.div({
-      className: 'environment-content environment-content--loading'
+      className: 'chart-view-content chart-view-content--loading'
     })
   ]);
