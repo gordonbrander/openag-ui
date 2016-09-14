@@ -140,7 +140,16 @@ export const viewUnready = (model, address) =>
   html.div({
     className: 'dashboard-view split-view'
   }, [
-    'Waiting for configuration'
+    thunk(
+      'dashboard-sidebar',
+      Sidebar.view,
+      model.sidebar,
+      forward(address, TagSidebar)
+    ),
+    html.div({
+      className: 'dashboard-content split-view-content'
+    }, [
+    ])
   ]);
 
 // Utils
