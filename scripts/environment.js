@@ -9,7 +9,7 @@ import * as Result from './common/result';
 import * as Unknown from './common/unknown';
 import {cursor} from './common/cursor';
 import {constant, compose} from './lang/functional';
-import {findRecipeStart} from './environment/datapoints';
+import {findRecipeStart, findAirTemperature} from './environment/datapoints';
 import * as Chart from './environment/chart';
 import * as Dashboard from './environment/dashboard';
 
@@ -64,13 +64,19 @@ const ChartAction = action => ({
 const AddChartData = compose(ChartAction, Chart.AddData);
 const ConfigureChart = compose(ChartAction, Chart.Configure)
 
-const TagDashboard = action => ({
+const TagDashboard = action =>
+  action.type === 'RequestOpenRecipes' ?
+  RequestOpenRecipes :
+  DashboardAction(action);
+
+const DashboardAction = action => ({
   type: 'Dashboard',
   source: action
 });
 
-const ConfigureDashboard = compose(TagDashboard, Dashboard.Configure);
-const SetDashboardRecipeStartID = compose(TagDashboard, Dashboard.SetRecipeStartID);
+const ConfigureDashboard = compose(DashboardAction, Dashboard.Configure);
+const SetDashboardRecipeStartID = compose(DashboardAction, Dashboard.SetRecipeStartID);
+const SetDashboardAirTemperature = compose(DashboardAction, Dashboard.SetAirTemperature);
 
 const TagPoll = action =>
   action.type === 'Ping' ?
@@ -179,6 +185,12 @@ const updateLatest = Result.updater(
       actions.push(SetDashboardRecipeStartID(recipeStart._id));
     }
 
+    // find air temperature
+    const airTemperature = findAirTemperature(data);
+    if (airTemperature) {
+      actions.push(SetDashboardAirTemperature(airTemperature));
+    }
+
     actions.push(PongPoll);
 
     return batch(update, model, actions);
@@ -226,6 +238,12 @@ const updateBacklog = Result.updater(
     if (recipeStart) {
       // If we found one, send it to dashboard so it can display timelapse video.
       actions.push(SetDashboardRecipeStartID(recipeStart._id));
+    }
+
+    // find air temperature
+    const airTemperature = findAirTemperature(data);
+    if (airTemperature) {
+      actions.push(SetDashboardAirTemperature(airTemperature));
     }
 
     actions.push(FetchLatest);

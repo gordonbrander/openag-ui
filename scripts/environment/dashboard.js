@@ -3,13 +3,18 @@ The dashboard displays the latest camera information from the Food Computer.
 */
 import {html, forward, Effects, thunk} from 'reflex';
 import {environmental_data_point as ENVIRONMENTAL_DATA_POINT} from '../../openag-config';
-import {merge} from '../common/prelude';
+import {compose} from '../lang/functional';
 import {render as renderTemplate} from '../common/stache';
 import {update as updateUnknown} from '../common/unknown';
+import * as Sidebar from './dashboard/sidebar';
 
 const TIMELAPSE_TEMPLATE = ENVIRONMENTAL_DATA_POINT.timelapse;
 
 // Actions
+
+const RequestOpenRecipes = {
+  type: 'RequestOpenRecipes'
+};
 
 export const SetRecipeStartID = id => ({
   type: 'SetRecipeStartID',
@@ -21,24 +26,49 @@ export const Configure = origin => ({
   origin
 });
 
+export const TagSidebar = action =>
+  action.type === 'RequestOpenRecipes' ?
+  RequestOpenRecipes :
+  SidebarAction(action);
+
+const SidebarAction = action => ({
+  type: 'Sidebar',
+  source: action
+});
+
+const SetRecipe = compose(SidebarAction, Sidebar.SetRecipe);
+export const SetAirTemperature = compose(SidebarAction, Sidebar.SetAirTemperature);
+
 // Init and update
 
 class Model {
   constructor(
     origin,
-    recipeStartID
+    recipeStartID,
+    sidebar
   ) {
     this.origin = origin;
     this.recipeStartID = recipeStartID;
+    this.sidebar = sidebar;
   }
 }
 
-export const init = () => [
-  new Model(null, null),
-  Effects.none
-];
+export const init = () => {
+  const [sidebar, sidebarFx] = Sidebar.init();
+
+  return [
+    new Model(
+      null,
+      null,
+      sidebar
+    ),
+    Effects.none
+  ];
+}
 
 export const update = (model, action) =>
+  action.type === 'Sidebar' ?
+  delegateSidebarUpdate(model, action.source) :
   action.type === 'SetRecipeStartID' ?
   setRecipeStartID(model, action.id) :
   action.type === 'Configure' ?
@@ -46,14 +76,30 @@ export const update = (model, action) =>
   updateUnknown(model, action);
 
 const setRecipeStartID = (model, recipeStartID) => [
-  new Model(model.origin, recipeStartID),
+  new Model(
+    model.origin,
+    recipeStartID,
+    model.sidebar
+  ),
   Effects.none
 ];
 
 const configure = (model, origin) => [
-  new Model(origin, model.recipeStartID),
+  new Model(
+    origin,
+    model.recipeStartID,
+    model.sidebar
+  ),
   Effects.none
 ];
+
+const swapSidebar = (model, [sidebar, fx]) => [
+  new Model(model.origin, model.recipeStartID, sidebar),
+  fx.map(TagSidebar)
+];
+
+const delegateSidebarUpdate = (model, action) =>
+  swapSidebar(model, Sidebar.update(model.sidebar, action));
 
 // View
 
@@ -66,6 +112,12 @@ export const viewReady = (model, address) =>
   html.div({
     className: 'dashboard-view split-view'
   }, [
+    thunk(
+      'dashboard-sidebar',
+      Sidebar.view,
+      model.sidebar,
+      forward(address, TagSidebar)
+    ),
     html.div({
       className: 'dashboard-content split-view-content'
     }, [
