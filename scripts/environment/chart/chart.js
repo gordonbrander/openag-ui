@@ -4,7 +4,6 @@ import {line} from 'd3-shape';
 import {timeHour} from 'd3-time';
 import {timeFormat} from 'd3-time-format';
 import {html, forward, Effects, thunk} from 'reflex';
-import findLast from 'lodash/findLast';
 import {chart as CHART} from '../../../openag-config.json';
 import {localize} from '../../common/lang';
 import {mapOr} from '../../common/maybe';
@@ -16,7 +15,7 @@ import * as Unknown from '../../common/unknown';
 import {listByKeys, indexWith} from '../../common/indexed';
 import {compose} from '../../lang/functional';
 import {onWindow} from '../../driver/virtual-dom';
-import {marker, isMarker, isRecipeStart, isRecipeEnd, readX, readY, readVariable} from '../datapoints';
+import {marker, isMarker, findRecipeStart, findRecipeEnd, readX, readY, readVariable} from '../datapoints';
 import {FixedBuffer} from './fixed-buffer';
 import {LineGroup} from './line-group';
 import {SeriesView} from './series';
@@ -245,8 +244,8 @@ export const update = (model, action) =>
   Unknown.update(model, action);
 
 const addData = (model, data) => {
-    const recipeStart = mapOr(findLast(data, isRecipeStart), readX, model.recipeStart);
-    const recipeEnd = mapOr(findLast(data, isRecipeEnd), readX, model.recipeEnd);
+    const recipeStart = mapOr(findRecipeStart(data), readX, model.recipeStart);
+    const recipeEnd = mapOr(findRecipeEnd(data), readX, model.recipeEnd);
 
     const next = new Model(
       model.series.advanceMany(data),
