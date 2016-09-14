@@ -1,11 +1,11 @@
 import {html, forward, Effects, Task, thunk} from 'reflex';
-import {merge, batch, tagged} from '../common/prelude';
-import {localize} from '../common/lang';
-import * as Button from '../common/button';
-import {cursor} from '../common/cursor';
-import {compose} from '../lang/functional';
-import {update as updateUnknown} from '../common/unknown';
-import * as Recipe from './sidebar/recipe';
+import {merge, batch, tagged} from '../../common/prelude';
+import {localize} from '../../common/lang';
+import * as Button from '../../common/button';
+import {cursor} from '../../common/cursor';
+import {compose} from '../../lang/functional';
+import {update as updateUnknown} from '../../common/unknown';
+import * as Recipe from '../sidebar/recipe';
 
 // Actions
 

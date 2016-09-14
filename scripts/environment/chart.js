@@ -14,11 +14,11 @@ import {findRunningRecipe, findAirTemperature} from './datapoints';
 
 // Import Chart d3 widget
 import * as Chart from './chart/chart';
+import * as Sidebar from './chart/sidebar';
 
 // Import shared environment widgets
 import * as Toolbox from '../environment/toolbox';
 import * as Exporter from '../environment/exporter';
-import * as Sidebar from '../environment/sidebar';
 
 // Action and tagging functions
 
