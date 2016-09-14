@@ -342,6 +342,15 @@ p {
   opacity: 1;
 }
 
+/* Environment (everything beneath nav)
+----------------------------------------------------------------------------- */
+
+.environment {
+  /* @NOTE Giving this "all the content" div triggers layerization
+  in the browser. We see a huge framerate gain for modal dialog animations
+  when this div has a background set. */
+  background: #fff;
+}
 
 /* Modal
 ----------------------------------------------------------------------------- */
@@ -478,6 +487,32 @@ p {
   display: none;
 }
 
+/* Split View - sidebar/content layout
+----------------------------------------------------------------------------- */
+
+.split-view {
+  width: calc(100vw);
+  height: calc(100vh - 72px);
+  position: relative;
+}
+
+.split-view-content {
+  /* Height of viewport - the height of the app header */
+  height: calc(100vh - 72px);
+  width: calc(100vw - 256px);
+  top: 0;
+  left: 256px;
+  position: absolute;
+}
+
+.split-view-sidebar {
+  left: 0;
+  position: absolute;
+  top: 0;
+  height: calc(100vh - 72px);
+  width: 256px;
+}
+
 /* Panel
 ----------------------------------------------------------------------------- */
 
@@ -578,28 +613,26 @@ p {
   padding: 12px;
 }
 
-/* Environment
+/* Chart
 ----------------------------------------------------------------------------- */
 
-.environment-main {
+.chart-view {
   background-color: #f4f4f4;
   /* Full height minus the app header */
   height: calc(100vh - 72px);
   position: relative;
 }
 
-.environment-main--has-sidebar {
-  padding-left: 256px;
-}
-
-.environment-content {
-  height: 100%;
-  width: 100%;
-}
-
-.environment-content--loading {
+.chart-view-content--loading {
   background: url(loading.svg) no-repeat center center;
   background-size: 80px 80px;
+}
+
+/* Dashboard
+----------------------------------------------------------------------------- */
+
+.dashboard-content {
+  background: #222;
 }
 
 /* Summary sidebar
