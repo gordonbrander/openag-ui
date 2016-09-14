@@ -49,9 +49,16 @@ export const isRecipeRunning = (recipeStart, recipeEnd) => {
   }
 }
 
+// Find most recent recipe start or recipe end.
+// These functions start traversing the list from the end, which is much
+// more efficient, given our list is sorted.
+export const findRecipeStart = data => findLast(data, isRecipeStart);
+export const findRecipeEnd = data => findLast(data, isRecipeEnd);
+
+// Given a list of datapoints, find a running recipe (if any) within them.
 export const findRunningRecipe = data => {
-  const recipeStart = findLast(data, isRecipeStart);
-  const recipeEnd = findLast(data, isRecipeEnd);
+  const recipeStart = findRecipeStart(data);
+  const recipeEnd = findRecipeEnd(data);
 
   return (
     isRecipeRunning(recipeStart, recipeEnd) ?
