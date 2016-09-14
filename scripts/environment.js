@@ -9,6 +9,7 @@ import * as Result from './common/result';
 import * as Unknown from './common/unknown';
 import {cursor} from './common/cursor';
 import {constant, compose} from './lang/functional';
+import {findRecipeStart} from './environment/datapoints';
 import * as Chart from './environment/chart';
 import * as Dashboard from './environment/dashboard';
 
@@ -68,6 +69,9 @@ const TagDashboard = action => ({
   source: action
 });
 
+const ConfigureDashboard = compose(TagDashboard, Dashboard.Configure);
+const SetDashboardRecipeStartID = compose(TagDashboard, Dashboard.SetRecipeStartID);
+
 const TagPoll = action =>
   action.type === 'Ping' ?
   FetchLatest :
@@ -95,11 +99,6 @@ const MissPoll = TagPoll(Poll.Miss);
 
 // Send an alert. We use this to send up problems to be displayed in banner.
 const AlertBanner = tag('AlertBanner');
-
-// Map an incoming datapoint into an action
-const DataPointAction = dataPoint => {
-  console.log(DataPoint);
-}
 
 // Model init and update
 
@@ -169,10 +168,20 @@ const updateLatest = Result.updater(
   (model, record) => {
     const data = readData(record);
 
-    return batch(update, model, [
-      AddChartData(data),
-      PongPoll
-    ]);
+    const actions = [
+      AddChartData(data)
+    ];
+
+    // Find the most recent recipe start.
+    const recipeStart = findRecipeStart(data);
+    if (recipeStart) {
+      // If we found one, send it to dashboard so it can display timelapse video.
+      actions.push(SetDashboardRecipeStartID(recipeStart._id));
+    }
+
+    actions.push(PongPoll);
+
+    return batch(update, model, actions);
   },
   (model, error) => {
     // Send miss poll
@@ -208,10 +217,20 @@ const updateBacklog = Result.updater(
   (model, record) => {
     const data = readData(record);
 
-    return batch(update, model, [
-      AddChartData(data),
-      FetchLatest
-    ]);
+    const actions = [
+      AddChartData(data)
+    ];
+
+    // Find the most recent recipe start.
+    const recipeStart = findRecipeStart(data);
+    if (recipeStart) {
+      // If we found one, send it to dashboard so it can display timelapse video.
+      actions.push(SetDashboardRecipeStartID(recipeStart._id));
+    }
+
+    actions.push(FetchLatest);
+
+    return batch(update, model, actions);
   },
   (model, error) => {
     const action = AlertBanner(error);
@@ -237,6 +256,7 @@ const configure = (model, {origin, id, name}) => {
   return batch(update, next, [
     // Forward restore down to chart widget module.
     ConfigureChart(origin),
+    ConfigureDashboard(origin),
     // Now that we have the origin, get the backlog.
     GetBacklog
   ]);
