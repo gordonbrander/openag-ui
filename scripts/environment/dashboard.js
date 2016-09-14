@@ -73,7 +73,9 @@ export const viewReady = (model, address) =>
         className: 'dashboard-video',
         src: templateVideoUrl(model),
         autoplay: true,
-        loop: true
+        preload: 'auto',
+        loop: true,
+        muted: true
       })
     ])
   ]);
