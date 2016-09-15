@@ -100,7 +100,7 @@ const updateAirTemperature = cursor({
 
 export const view = (model, address) =>
   html.aside({
-    className: 'sidebar-summary'
+    className: 'sidebar-summary split-view-sidebar'
   }, [
     html.div({
       className: 'sidebar-summary--in'

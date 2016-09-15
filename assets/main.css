@@ -505,6 +505,13 @@ p {
   position: absolute;
 }
 
+.split-view-content--loading {
+  background-image: url(loading.svg);
+  background-size: 80px 80px;
+  background-repeat: no-repeat;
+  background-position: center center;
+}
+
 .split-view-sidebar {
   left: 0;
   position: absolute;
@@ -632,7 +639,7 @@ p {
 ----------------------------------------------------------------------------- */
 
 .dashboard-content {
-  background: #222;
+  background-color: #222;
 }
 
 .timelapse--mask {
@@ -658,11 +665,6 @@ p {
 
 .sidebar-summary {
   background-color: #fff;
-  height: 100%;
-  width: 256px;
-  position: absolute;
-  left: 0;
-  top: 0;
 }
 
 .sidebar-summary--in {
