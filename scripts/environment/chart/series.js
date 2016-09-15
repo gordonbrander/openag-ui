@@ -1,6 +1,8 @@
 import zipObject from 'lodash/zipObject';
-import defaults from 'lodash/defaults';
+import last from 'lodash/last';
 import {LineGroup} from './line-group';
+import {FixedBuffer} from './fixed-buffer';
+import {isNullish} from '../../common/maybe';
 
 // Constructs a series of groups.
 // Note that direct construction via constructor function isn't very useful,
@@ -13,20 +15,6 @@ export class Series {
     this.order = order;
     this.index = index;
     this._mut = 0;
-  }
-
-  advance(datum) {
-    const group = this.index[datum.variable];
-    if (group) {
-      const variable = readConfigVariable(group);
-      return new LineGroup(
-        defaults({[variable]: group.advance(datum)}, group.index),
-        group.order
-      );
-    }
-    else {
-      return this;
-    }
   }
 
   advanceMut(datum) {
@@ -42,7 +30,47 @@ export class Series {
 
     return this;
   }
+
+  reduce(step, state) {
+    for (var i = 0; i < this.order.length; i++) {
+      state = step(state, this.index[this.order[i]]);
+    }
+    return state;
+  }
 }
+
+// Measure the extent (min and max) across the entire series.
+// Includes measured and desired datapoints.
+// Returns a 2-array with min on left and max on right.
+Series.extent = (series, readX) =>
+  series.reduce((extent, group) => {
+    // Note that for these sorted buffers, left = old, right = new.
+    const measured = FixedBuffer.values(group.measured);
+    const desired = FixedBuffer.values(group.desired);
+
+    if (measured.length > 0) {
+      // Choose smaller and assign
+      extent[0] = minNumber(extent[0], readX(measured[0]));
+      // Choose larger and assign
+      extent[1] = maxNumber(extent[1], readX(last(measured)));
+    }
+
+    // Do the same for desired.
+    if (desired.length > 0) {
+      extent[0] = minNumber(extent[0], readX(desired[0]));
+      extent[1] = maxNumber(extent[1], readX(last(desired)));
+    }
+
+    return extent;
+  }, []);
+
+// Get the minimum of two numbers (which may be nullish).
+// Null values are treated as "greater than", favoring numbers.
+const minNumber = (x, y) => (isNullish(x) || x > y ? y : x);
+
+// Get the max of two numbers (which may be nullish).
+// Null values are treated as "less than", favoring numbers.
+const maxNumber = (x, y) => (isNullish(x) || x < y ? y : x);
 
 // Return a list of groups in series.
 // @NOTE Don't mutate these groups. Treat them as read-only. Seriously.
@@ -111,6 +139,10 @@ export class SeriesView {
       return this;
     }
   }
+
+  reduce(step, state) {
+    return this.data.reduce(step, state);
+  }
 }
 
 SeriesView.groups = seriesView =>
@@ -119,12 +151,6 @@ SeriesView.groups = seriesView =>
 SeriesView.from = (array, configs, limit) =>
   new SeriesView(Series.from(array, configs, limit));
 
-SeriesView.reduce = (seriesView, step, state) => {
-  const series = seriesView.data;
-  for (var i = 0; i < series.order.length; i++) {
-    state = step(state, series.index[series.order[i]]);
-  }
-  return state;
-}
+SeriesView.extent = (seriesView, readX) => Series.extent(seriesView.data, readX);
 
 const readConfigVariable = config => config.variable;

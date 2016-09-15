@@ -110,8 +110,7 @@ class Model {
 }
 
 Model.isEmpty = model => {
-  const tally = SeriesView.reduce(
-    model.series,
+  const tally = model.series.reduce(
     (state, group) => state + LineGroup.calcLength(group),
     0
   );
@@ -244,11 +243,20 @@ export const update = (model, action) =>
   Unknown.update(model, action);
 
 const addData = (model, data) => {
-    const recipeStart = mapOr(findRecipeStart(data), readX, model.recipeStart);
-    const recipeEnd = mapOr(findRecipeEnd(data), readX, model.recipeEnd);
+  const recipeStart = mapOr(findRecipeStart(data), readX, model.recipeStart);
+  const recipeEnd = mapOr(findRecipeEnd(data), readX, model.recipeEnd);
+  const series = model.series.advanceMany(data);
 
+  // If anything has changed, we should return a new model.
+  const shouldUpdate = (
+    recipeStart !== model.recipeStart ||
+    recipeEnd !== model.recipeEnd ||
+    series !== model.series
+  );
+
+  if (shouldUpdate) {
     const next = new Model(
-      model.series.advanceMany(data),
+      series,
       model.markers,
       recipeStart,
       recipeEnd,
@@ -256,10 +264,15 @@ const addData = (model, data) => {
       model.height,
       model.scrubber,
       model.xhairAt,
+      // Mark isLoading false
       false
     );
 
-    return [next, Effects.none];
+    return[next, Effects.none]
+  }
+  else {
+    return [model, Effects.none];
+  }
 }
 
 const dropMarker = model => {
@@ -297,7 +310,7 @@ export const view = (model, address) =>
 const viewLoading = (model, address) => {
   const {width, height} = model;
   return html.div({
-    className: 'chart',
+    className: 'chart split-view-content',
     style: {
       width: px(width),
       height: px(height)
@@ -351,8 +364,8 @@ const viewData = (model, address) => {
 
   // Read out series class into array.
   const groups = SeriesView.groups(series);
-  const now = Date.now();
-  const extentX = [now - CHART_DURATION, now];
+  const [seriesMin, seriesMax] = SeriesView.extent(series, readX);
+  const extentX = [seriesMin, Date.now()];
 
   const scrubberAt = scrubber.coords;
   const isDragging = scrubber.isDragging;
@@ -535,8 +548,11 @@ const viewData = (model, address) => {
 const viewGroup = (model, address, x, plotHeight) => {
   const {color, min, max, measured, desired} = model;
 
+  const measuredValues = FixedBuffer.values(measured);
+  const desiredValues = FixedBuffer.values(desired);
+
   const domain = isNumber(min) && isNumber(max) ?
-    [min, max] : extent(measured, readY);
+    [min, max] : extent(measuredValues, readY);
 
   const y = scaleLinear()
     .range([plotHeight, 0])
@@ -547,7 +563,7 @@ const viewGroup = (model, address, x, plotHeight) => {
     .y(compose(y, readY));
 
   const desiredPath = svgPath({
-    d: calcLine(FixedBuffer.values(desired)),
+    d: calcLine(desiredValues),
     className: 'chart-desired',
     style: {
       stroke: color
@@ -555,7 +571,7 @@ const viewGroup = (model, address, x, plotHeight) => {
   });
 
   const measuredPath = svgPath({
-    d: calcLine(FixedBuffer.values(measured)),
+    d: calcLine(measuredValues),
     className: 'chart-measured',
     style: {
       stroke: color
@@ -690,9 +706,6 @@ const isNumber = x => (typeof x === 'number');
 
 // Round to 2 decimal places.
 const round2x = float => Math.round(float * 100) / 100;
-
-// Given 2 extents, test to see whether they are the same range.
-const isSameExtent = (a, b) => (a[0] === b[0]) && (a[1] === b[1]);
 
 const calcChartWidth = (width) =>
   width - SIDEBAR_WIDTH;
