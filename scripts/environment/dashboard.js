@@ -147,7 +147,7 @@ export const viewUnready = (model, address) =>
       forward(address, TagSidebar)
     ),
     html.div({
-      className: 'dashboard-content split-view-content'
+      className: 'dashboard-content split-view-content split-view-content--loading'
     }, [
     ])
   ]);

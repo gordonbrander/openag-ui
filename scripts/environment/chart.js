@@ -137,7 +137,7 @@ const addData = (model, data) => {
 export const view = (model, address) =>
   model.id ?
   viewReady(model, address) :
-  viewWaiting(model, address);
+  viewUnready(model, address);
 
 const viewReady = (model, address) =>
   html.div({
@@ -165,7 +165,7 @@ const viewReady = (model, address) =>
     )
   ]);
 
-const viewWaiting = (model, address) =>
+const viewUnready = (model, address) =>
   html.div({
     className: 'chart-view split-view'
   }, [
@@ -176,6 +176,6 @@ const viewWaiting = (model, address) =>
       forward(address, TagSidebar)
     ),
     html.div({
-      className: 'chart-view-content chart-view-content--loading'
+      className: 'chart-view-content chart-view-content--loading split-view-content'
     })
   ]);
