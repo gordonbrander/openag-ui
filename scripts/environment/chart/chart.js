@@ -22,9 +22,9 @@ import {SeriesView} from './series';
 
 const S_MS = 1000;
 const MIN_MS = S_MS * 60;
-const HR_MS = MIN_MS * 60;
-const DAY_MS = HR_MS * 24;
-const CHART_DURATION = DAY_MS * 5;
+// The number of pixels to show on the chart per ms.
+// We show the equivalent of 12px per minute.
+const PX_PER_MS = (12 / MIN_MS);
 
 const SIDEBAR_WIDTH = 256;
 const HEADER_HEIGHT = 72;
@@ -101,9 +101,6 @@ class Model {
     // Is chart loading? (Boolean)
     this.isLoading = isLoading;
 
-    // Currently hard-coded instance variables.
-    // Time interval to show within chart viewport (visible area)
-    this.interval =  HR_MS;
     // Width of the tooltip that shows the readouts.
     this.tooltipWidth = 424;
   }
@@ -359,7 +356,7 @@ const viewEmpty = (model, address) => {
 }
 
 const viewData = (model, address) => {
-  const {series, interval, width, height, tooltipWidth,
+  const {series, width, height, tooltipWidth,
     scrubber, xhairAt, recipeStart, recipeEnd, markers} = model;
 
   // Read out series class into array.
@@ -372,7 +369,7 @@ const viewData = (model, address) => {
 
   // Calculate dimensions
   const tooltipHeight = (groups.length * READOUT_HEIGHT) + (TOOLTIP_PADDING * 2);
-  const plotWidth = calcPlotWidth(extentX, interval, width);
+  const plotWidth = calcPlotWidth(extentX);
   const plotHeight = calcPlotHeight(height, tooltipHeight);
   const svgHeight = calcSvgHeight(height);
   const tickTop = calcXhairTickTop(height, tooltipHeight);
@@ -713,10 +710,9 @@ const calcChartWidth = (width) =>
 const calcChartHeight = (height) =>
   height - HEADER_HEIGHT;
 
-const calcPlotWidth = (extent, interval, width) => {
+const calcPlotWidth = (extent) => {
   const durationMs = extent[1] - extent[0];
-  const pxPerMs = (width / interval);
-  const plotWidth = durationMs * pxPerMs;
+  const plotWidth = durationMs * PX_PER_MS;
   return Math.round(plotWidth);
 }
 
