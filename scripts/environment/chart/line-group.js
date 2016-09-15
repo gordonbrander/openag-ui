@@ -46,19 +46,6 @@ export class LineGroup {
     }
   }
 
-  swap(measured, desired) {
-    return new LineGroup(
-      measured,
-      desired,
-      this.variable,
-      this.title,
-      this.unit,
-      this.min,
-      this.max,
-      this.color
-    );
-  }
-
   // Advance group buffers, mutating group.
   // Returns mutated group instance.
   advanceMut(datum) {
@@ -74,22 +61,6 @@ export class LineGroup {
       }
     }
     return this;
-  }
-
-  // Advance group buffer, returning new group.
-  // Returns new group instance.
-  advance(datum) {
-    if (this.shouldUpdate(datum)) {
-      if (datum.is_desired) {
-        return this.swap(this.measured, this.desired.advance(datum));
-      }
-      else {
-        return this.swap(this.measured.advance(datum));
-      }
-    }
-    else {    
-      return this;
-    }
   }
 }
 
