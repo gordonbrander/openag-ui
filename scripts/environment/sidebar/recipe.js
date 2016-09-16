@@ -10,9 +10,10 @@ export const RequestOpenRecipes = {
 };
 
 // Set the recipe
-export const SetRecipe = recipe => ({
+export const SetRecipe = (id, name) => ({
   type: 'SetRecipe',
-  recipe
+  id,
+  name
 });
 
 // Model, init, update
@@ -31,13 +32,13 @@ export const init = () => [
 
 export const update = (model, action) =>
   action.type === 'SetRecipe' ?
-  setRecipe(model, action.recipe) :
+  setRecipe(model, action.id, action.name) :
   updateUnknown(model, action);
 
-const setRecipe = (model, recipe) => [
+const setRecipe = (model, id, name) => [
   merge(model, {
-    id: recipe._id,
-    name: (recipe.value || recipe._id)
+    id,
+    name
   }),
   Effects.none
 ];

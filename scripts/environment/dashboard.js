@@ -16,9 +16,10 @@ const RequestOpenRecipes = {
   type: 'RequestOpenRecipes'
 };
 
-export const SetRecipeStartID = id => ({
-  type: 'SetRecipeStartID',
-  id
+export const SetRecipe = (id, name) => ({
+  type: 'SetRecipe',
+  id,
+  name
 });
 
 export const Configure = origin => ({
@@ -36,7 +37,7 @@ const SidebarAction = action => ({
   source: action
 });
 
-const SetRecipe = compose(SidebarAction, Sidebar.SetRecipe);
+const SetSidebarRecipe = compose(SidebarAction, Sidebar.SetRecipe);
 export const SetAirTemperature = compose(SidebarAction, Sidebar.SetAirTemperature);
 
 // Init and update
@@ -69,20 +70,29 @@ export const init = () => {
 export const update = (model, action) =>
   action.type === 'Sidebar' ?
   delegateSidebarUpdate(model, action.source) :
-  action.type === 'SetRecipeStartID' ?
-  setRecipeStartID(model, action.id) :
+  action.type === 'SetRecipe' ?
+  setRecipe(model, action.id, action.name) :
   action.type === 'Configure' ?
   configure(model, action.origin) :
   updateUnknown(model, action);
 
-const setRecipeStartID = (model, recipeStartID) => [
-  new Model(
+const setRecipe = (model, id, name) => {
+  // Update sidebar model with id and name
+  const [sidebar, sidebarFx] = Sidebar.update(
+    model.sidebar,
+    Sidebar.SetRecipe(id, name)
+  );
+
+  // Create new model with id and new sidebar model
+  const next = new Model(
     model.origin,
-    recipeStartID,
-    model.sidebar
-  ),
-  Effects.none
-];
+    id,
+    sidebar
+  );
+
+  // return next model and make sure to map sidebarFx.
+  return [next, sidebarFx.map(TagSidebar)];
+}
 
 const configure = (model, origin) => [
   new Model(
