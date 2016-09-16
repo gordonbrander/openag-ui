@@ -67,7 +67,7 @@ const SaveState = {type: 'SaveState'};
 
 const TagRecipes = action =>
   action.type === 'RequestStart' ?
-  StartRecipe(action.value) :
+  StartRecipe(action.id, action.name) :
   tagged('Recipes', action);
 
 const ConfigureRecipes = compose(TagRecipes, Recipes.Configure);
@@ -122,9 +122,10 @@ const AlertBanner = compose(TagBanner, Banner.Alert);
 const AlertRefreshableBanner = compose(TagBanner, Banner.AlertRefreshable);
 const AlertDismissableBanner = compose(TagBanner, Banner.AlertDismissable);
 
-const StartRecipe = value => ({
+const StartRecipe = (id, name) => ({
   type: 'StartRecipe',
-  value
+  id,
+  name
 });
 
 const CreateRecipe = recipe => ({
@@ -215,7 +216,7 @@ export const update = (model, action) =>
   action.type === 'ConfigureFirstTime' ?
   configureFirstTime(model, action.form) :
   action.type === 'StartRecipe' ?
-  startRecipe(model, action.value) :
+  startRecipe(model, action.id, action.name) :
   action.type === 'PostRecipe' ?
   postRecipe(model, action.environmentID, action.recipeID) :
   action.type === 'RecipePosted' ?
@@ -282,10 +283,10 @@ const activateState = (model, id) =>
     ActivateEnvironmentState(id)
   ]);
 
-const startRecipe = (model, recipe) =>
+const startRecipe = (model, id, name) =>
   batch(update, model, [
-    SetRecipeForEnvironment(recipe),
-    PostRecipe(model.environment.id, recipe._id),
+    SetRecipeForEnvironment(id, name),
+    PostRecipe(model.environment.id, id),
     CloseRecipes
   ]);
 

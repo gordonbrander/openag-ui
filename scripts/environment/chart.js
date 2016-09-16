@@ -42,7 +42,7 @@ const TagSidebar = action =>
   DropMarker :
   tagged('Sidebar', action);
 
-const SetRecipe = compose(TagSidebar, Sidebar.SetRecipe);
+export const SetRecipe = compose(TagSidebar, Sidebar.SetRecipe);
 const SetAirTemperature = compose(TagSidebar, Sidebar.SetAirTemperature);
 
 const TagToolbox = action =>
@@ -126,7 +126,9 @@ const addData = (model, data) => {
 
   const recipeStart = findRunningRecipe(data);
   if (recipeStart) {
-    actions.push(SetRecipe(recipeStart));
+    const id = recipeStart._id;
+    const name = readRecipeName(recipeStart);
+    actions.push(SetRecipe(id, name));
   }
 
   return batch(update, model, actions);
@@ -179,3 +181,5 @@ const viewUnready = (model, address) =>
       className: 'chart-view-content chart-view-content--loading split-view-content'
     })
   ]);
+
+const readRecipeName = recipe => (recipe.name ? recipe.name : recipe.value);
