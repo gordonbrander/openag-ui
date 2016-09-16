@@ -17,8 +17,6 @@ import * as RecipesForm from './recipes/form';
 import * as Recipe from './recipe';
 
 const DB = new PouchDB(Config.recipes.local);
-// Export for debugging
-window.RecipesDB = DB;
 
 const getPouchID = Indexed.getter('_id');
 
@@ -93,9 +91,10 @@ export const StartByID = id => ({
   id
 });
 
-export const RequestStart = value => ({
+export const RequestStart = (id, name) => ({
   type: 'RequestStart',
-  value
+  id,
+  name
 });
 
 const ActivatePanel = id => ({
@@ -157,9 +156,6 @@ const updateRecipesForm = cursor({
   tag: RecipesFormAction
 });
 
-const updateByID = (model, id, action) =>
-  Indexed.updateWithID(Recipe.update, ByID(id), model, id, action);
-
 const sync = model => {
   if (model.origin) {
     const origin = templateRecipesDatabase(model.origin);
@@ -200,12 +196,13 @@ const restoredRecipes = Result.updater(
 // Activate recipe by id
 const startByID = (model, id) => {
   const [next, fx] = update(model, Activate(id));
+  const name = readRecipeName(next.entries[id]);
 
   return [
     next,
     Effects.batch([
       fx,
-      Effects.receive(RequestStart(merge({}, model.entries[id])))
+      Effects.receive(RequestStart(id, name))
     ])
   ];
 }
@@ -266,8 +263,6 @@ export const update = (model, action) =>
     syncedOk(model) :
     syncedError(model)
   ) :
-  action.type === 'Recipe' ?
-  updateByID(model, action.id, action.source) :
   action.type === 'Configure' ?
   configure(model, action.origin) :
   Unknown.update(model, action);
@@ -351,6 +346,8 @@ export const view = (model, address) =>
   ]);
 
 // Helpers
+
+const readRecipeName = recipe => (recipe.name || recipe.value || recipe._id);
 
 const templateRecipesDatabase = origin =>
   Template.render(Config.recipes.origin, {

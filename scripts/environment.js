@@ -9,7 +9,7 @@ import * as Result from './common/result';
 import * as Unknown from './common/unknown';
 import {cursor} from './common/cursor';
 import {constant, compose} from './lang/functional';
-import {findRecipeStart, findAirTemperature} from './environment/datapoints';
+import {findRunningRecipe, findAirTemperature} from './environment/datapoints';
 import * as Chart from './environment/chart';
 import * as Dashboard from './environment/dashboard';
 
@@ -51,6 +51,14 @@ export const Configure = (environmentID, environmentName, origin) => ({
   name: environmentName
 });
 
+// Set a recipe. This action is generally called "from above" by app after
+// starting a recipe via the UI.
+export const SetRecipe = (id, name) => ({
+  type: 'SetRecipe',
+  id,
+  name
+});
+
 const TagChart = action =>
   action.type === 'RequestOpenRecipes' ?
   RequestOpenRecipes :
@@ -62,7 +70,8 @@ const ChartAction = action => ({
 });
 
 const AddChartData = compose(ChartAction, Chart.AddData);
-const ConfigureChart = compose(ChartAction, Chart.Configure)
+const SetChartRecipe = compose(ChartAction, Chart.SetRecipe);
+const ConfigureChart = compose(ChartAction, Chart.Configure);
 
 const TagDashboard = action =>
   action.type === 'RequestOpenRecipes' ?
@@ -75,7 +84,7 @@ const DashboardAction = action => ({
 });
 
 const ConfigureDashboard = compose(DashboardAction, Dashboard.Configure);
-const SetDashboardRecipeStartID = compose(DashboardAction, Dashboard.SetRecipeStartID);
+const SetDashboardRecipe = compose(DashboardAction, Dashboard.SetRecipe);
 const SetDashboardAirTemperature = compose(DashboardAction, Dashboard.SetAirTemperature);
 
 const TagPoll = action =>
@@ -152,6 +161,8 @@ export const update = (model, action) =>
     gotChangesOk(model, action.result.value) :
     gotChangesError(model, action.result.error)
   ) :
+  action.type === 'SetRecipe' ?
+  setRecipe(model, action.id, action.name) :
   action.type === 'GetBacklog' ?
   getBacklog(model) :
   action.type === 'GotBacklog' ?
@@ -179,14 +190,18 @@ const updateBacklog = Result.updater(
     const data = readData(record);
 
     const actions = [
+      // This will also automatically handle setting any new RecipeStart
       AddChartData(data)
     ];
 
     // Find the most recent recipe start.
-    const recipeStart = findRecipeStart(data);
+    const recipeStart = findRunningRecipe(data);
     if (recipeStart) {
       // If we found one, send it to dashboard so it can display timelapse video.
-      actions.push(SetDashboardRecipeStartID(recipeStart._id));
+      actions.push(SetDashboardRecipe(
+        recipeStart._id,
+        readRecipeName(recipeStart)
+      ));
     }
 
     // find air temperature
@@ -228,14 +243,18 @@ const gotChangesOk = (model, record) => {
   const data = readChanges(record);
 
   const actions = [
+    // This will also handle adding any recipe start
     AddChartData(data)
   ];
 
   // Find the most recent recipe start.
-  const recipeStart = findRecipeStart(data);
+  const recipeStart = findRunningRecipe(data);
   if (recipeStart) {
     // If we found one, send it to dashboard so it can display timelapse video.
-    actions.push(SetDashboardRecipeStartID(recipeStart._id));
+    actions.push(SetDashboardRecipe(
+      recipeStart._id,
+      readRecipeName(recipeStart)
+    ));
   }
 
   // find air temperature
@@ -289,6 +308,13 @@ const activateState = (model, id) => [
   Effects.none
 ];
 
+const setRecipe = (model, id, name) => {
+  return batch(update, model, [
+    SetChartRecipe(id, name),
+    SetDashboardRecipe(id, name)
+  ]);
+}
+
 const updatePoll = cursor({
   get: model => model.poll,
   set: (model, poll) => merge(model, {poll}),
@@ -341,6 +367,8 @@ export const view = (model, address) =>
   ]);
 
 // Helpers
+
+const readRecipeName = recipe => recipe.name || recipe.value || recipe._id;
 
 const readRow = row => row.value;
 // @FIXME must check that the value returned from http call is JSON and has
