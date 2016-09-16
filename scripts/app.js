@@ -120,7 +120,7 @@ const ConfigureAppNav = compose(TagAppNav, AppNav.Configure);
 const TagBanner = tag('Banner');
 const AlertBanner = compose(TagBanner, Banner.Alert);
 const AlertRefreshableBanner = compose(TagBanner, Banner.AlertRefreshable);
-const AlertDismissableBanner = compose(TagBanner, Banner.AlertRefreshable);
+const AlertDismissableBanner = compose(TagBanner, Banner.AlertDismissable);
 
 const StartRecipe = value => ({
   type: 'StartRecipe',
