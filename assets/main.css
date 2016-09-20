@@ -660,6 +660,24 @@ p {
   transform: translate(-50%, -50%);
 }
 
+.dashboard-camera-plug {
+  color: rgba(255, 255, 255, 0.25);
+  text-align: center;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 200px;
+}
+
+.dashboard-camera-plug--icon {
+  display: block;
+  margin: 0 auto 8px auto;
+  width: 140px;
+  height: auto;
+  opacity: 0.25;
+}
+
 /* Summary sidebar
 ----------------------------------------------------------------------------- */
 

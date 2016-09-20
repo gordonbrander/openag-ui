@@ -6,15 +6,19 @@ import {environmental_data_point as ENVIRONMENTAL_DATA_POINT} from '../../openag
 import {compose} from '../lang/functional';
 import {render as renderTemplate} from '../common/stache';
 import {update as updateUnknown} from '../common/unknown';
+import {localize} from '../common/lang';
 import * as Sidebar from './dashboard/sidebar';
-
-const TIMELAPSE_TEMPLATE = ENVIRONMENTAL_DATA_POINT.timelapse;
 
 // Actions
 
 const RequestOpenRecipes = {
   type: 'RequestOpenRecipes'
 };
+
+// Signal that the component has finished loading.
+// This can be used by the parent component to tell the dashboard that an update
+// will not be coming.
+export const FinishLoading = {type: 'FinishLoading'};
 
 export const SetRecipe = (id, name) => ({
   type: 'SetRecipe',
@@ -46,10 +50,17 @@ class Model {
   constructor(
     origin,
     recipeStartID,
+    isLoading,
     sidebar
   ) {
     this.origin = origin;
     this.recipeStartID = recipeStartID;
+    // We have to deal with 3 states:
+    //
+    // 1. Loading (waiting for data to come back). Show a spinner.
+    // 2. Loaded, but no recipe start exists.
+    // 3. Loaded recipe start, but no video attached.
+    this.isLoading = isLoading;
     this.sidebar = sidebar;
   }
 }
@@ -61,6 +72,7 @@ export const init = () => {
     new Model(
       null,
       null,
+      true,
       sidebar
     ),
     Effects.none
@@ -74,6 +86,8 @@ export const update = (model, action) =>
   setRecipe(model, action.id, action.name) :
   action.type === 'Configure' ?
   configure(model, action.origin) :
+  action.type === 'FinishLoading' ?
+  finishLoading(model) :
   updateUnknown(model, action);
 
 const setRecipe = (model, id, name) => {
@@ -87,6 +101,8 @@ const setRecipe = (model, id, name) => {
   const next = new Model(
     model.origin,
     id,
+    // Set isLoading to false
+    false,
     sidebar
   );
 
@@ -94,17 +110,35 @@ const setRecipe = (model, id, name) => {
   return [next, sidebarFx.map(TagSidebar)];
 }
 
+// Configure origin url on model
 const configure = (model, origin) => [
   new Model(
     origin,
     model.recipeStartID,
+    model.isLoading,
+    model.sidebar
+  ),
+  Effects.none
+];
+
+// Flag initial loading state as finished.
+const finishLoading = model => [
+  new Model(
+    model.origin,
+    model.recipeStartID,
+    false,
     model.sidebar
   ),
   Effects.none
 ];
 
 const swapSidebar = (model, [sidebar, fx]) => [
-  new Model(model.origin, model.recipeStartID, sidebar),
+  new Model(
+    model.origin,
+    model.recipeStartID,
+    model.isLoading,
+    sidebar
+  ),
   fx.map(TagSidebar)
 ];
 
@@ -114,11 +148,13 @@ const delegateSidebarUpdate = (model, action) =>
 // View
 
 export const view = (model, address) =>
-  isReady(model) ?
-  viewReady(model, address) :
-  viewUnready(model, address);
+  model.isLoading ?
+  viewLoading(model, address) :
+  !isReady(model) ?
+  viewEmpty(model, address) :
+  viewReady(model, address);
 
-export const viewReady = (model, address) =>
+const viewReady = (model, address) =>
   html.div({
     className: 'dashboard-view split-view'
   }, [
@@ -146,7 +182,7 @@ export const viewReady = (model, address) =>
     ])
   ]);
 
-export const viewUnready = (model, address) =>
+const viewLoading = (model, address) =>
   html.div({
     className: 'dashboard-view split-view'
   }, [
@@ -162,6 +198,33 @@ export const viewUnready = (model, address) =>
     ])
   ]);
 
+const viewEmpty = (model, address) =>
+  html.div({
+    className: 'dashboard-view split-view'
+  }, [
+    thunk(
+      'dashboard-sidebar',
+      Sidebar.view,
+      model.sidebar,
+      forward(address, TagSidebar)
+    ),
+    html.div({
+      className: 'dashboard-content split-view-content'
+    }, [
+      html.div({
+        className: 'dashboard-camera-plug'
+      }, [
+        html.img({
+          src: 'assets/camera.svg',
+          className: 'dashboard-camera-plug--icon'
+        }),
+        html.span({}, [
+          localize('No camera data yet')
+        ])
+      ])
+    ])
+  ]);
+
 // Utils
 
 const isReady = model => (
@@ -170,7 +233,7 @@ const isReady = model => (
 );
 
 const templateVideoUrl = model =>
-  renderTemplate(TIMELAPSE_TEMPLATE, {
+  renderTemplate(ENVIRONMENTAL_DATA_POINT.timelapse, {
     origin_url: model.origin,
     recipe_start_id: model.recipeStartID
   });
