@@ -85,6 +85,7 @@ const DashboardAction = action => ({
 
 const ConfigureDashboard = compose(DashboardAction, Dashboard.Configure);
 const SetDashboardRecipe = compose(DashboardAction, Dashboard.SetRecipe);
+const FinishDashboardLoading = DashboardAction(Dashboard.FinishLoading);
 const SetDashboardAirTemperature = compose(DashboardAction, Dashboard.SetAirTemperature);
 
 const TagPoll = action =>
@@ -196,12 +197,16 @@ const updateBacklog = Result.updater(
 
     // Find the most recent recipe start.
     const recipeStart = findRunningRecipe(data);
+    // If we found one, send it to dashboard so it can display timelapse video.
     if (recipeStart) {
-      // If we found one, send it to dashboard so it can display timelapse video.
       actions.push(SetDashboardRecipe(
         recipeStart._id,
         readRecipeName(recipeStart)
       ));
+    }
+    // If we didn't, let dashboard know it can stop showing the loading spinner.
+    else {
+      actions.push(FinishDashboardLoading);
     }
 
     // find air temperature
@@ -255,6 +260,10 @@ const gotChangesOk = (model, record) => {
       recipeStart._id,
       readRecipeName(recipeStart)
     ));
+  }
+  // If we didn't, let dashboard know it can stop showing the loading spinner.
+  else {
+    actions.push(FinishDashboardLoading);
   }
 
   // find air temperature
