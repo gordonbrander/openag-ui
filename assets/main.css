@@ -453,7 +453,6 @@ p {
 .banner {
   background: #ffc500;
   font-size: 13px;
-  font-weight: bold;
   height: 40px;
   line-height: 40px;
   padding: 0 24px;
@@ -464,6 +463,11 @@ p {
   /* We deliberately avoid setting top, so it sits in the regular flow position */
 }
 
+.banner--notification {
+  background: #0052B3;
+  color: #fff;
+}
+
 /* Hide banner */
 .banner--close {
   opacity: 0;
@@ -472,6 +476,7 @@ p {
 }
 
 .banner--text {
+  font-weight: bold;
   padding-right: 250px;
 }
 

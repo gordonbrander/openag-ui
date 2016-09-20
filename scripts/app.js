@@ -121,6 +121,7 @@ const TagBanner = tag('Banner');
 const AlertBanner = compose(TagBanner, Banner.Alert);
 const AlertRefreshableBanner = compose(TagBanner, Banner.AlertRefreshable);
 const AlertDismissableBanner = compose(TagBanner, Banner.AlertDismissable);
+const NotifyBanner = compose(TagBanner, Banner.Notify);
 
 const StartRecipe = (id, name) => ({
   type: 'StartRecipe',
@@ -302,9 +303,10 @@ const postRecipe = (model, environmentID, recipeID) => {
   ];
 }
 
-// We do nothing for successful recipe posts. This may change in future.
-const recipePostedOk = (model, value) =>
-  [model, Effects.none];
+const recipePostedOk = (model, value) => {
+  const message = localize('Recipe Started!');
+  return update(model, NotifyBanner(message));
+}
 
 const recipePostedError = (model, error) => {
   const message = localize('Food computer was unable to start recipe');
