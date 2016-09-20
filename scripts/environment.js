@@ -83,6 +83,7 @@ const DashboardAction = action => ({
 
 const ConfigureDashboard = compose(DashboardAction, Dashboard.Configure);
 const SetDashboardRecipe = compose(DashboardAction, Dashboard.SetRecipe);
+const decodeDashboardRecipe = compose(DashboardAction, Dashboard.decodeRecipe);
 const FinishDashboardLoading = DashboardAction(Dashboard.FinishLoading);
 const SetDashboardAirTemperature = compose(DashboardAction, Dashboard.SetAirTemperature);
 
@@ -184,10 +185,7 @@ const updateBacklog = Result.updater(
     const recipeStart = findRunningRecipe(data);
     // If we found one, send it to dashboard so it can display timelapse video.
     if (recipeStart) {
-      actions.push(SetDashboardRecipe(
-        recipeStart._id,
-        readRecipeName(recipeStart)
-      ));
+      actions.push(decodeDashboardRecipe(recipeStart));
     }
     // If we didn't, let dashboard know it can stop showing the loading spinner.
     else {
@@ -241,10 +239,7 @@ const gotChangesOk = (model, record) => {
   const recipeStart = findRunningRecipe(data);
   if (recipeStart) {
     // If we found one, send it to dashboard so it can display timelapse video.
-    actions.push(SetDashboardRecipe(
-      recipeStart._id,
-      readRecipeName(recipeStart)
-    ));
+    actions.push(decodeDashboardRecipe(recipeStart));
   }
   // If we didn't, let dashboard know it can stop showing the loading spinner.
   else {
@@ -296,9 +291,14 @@ const activateState = (model, id) => [
 ];
 
 const setRecipe = (model, id, name) => {
+  const hasTimelapseAttachment = false;
+
   return batch(update, model, [
     SetChartRecipe(id, name),
-    SetDashboardRecipe(id, name)
+    // This action comes "from above" when activating a recipe in the UI, before
+    // we get an http response. That means we don't yet have a timelapse
+    // attachment to show.
+    SetDashboardRecipe(id, name, hasTimelapseAttachment)
   ]);
 }
 
@@ -347,8 +347,6 @@ export const view = (model, address) =>
   ]);
 
 // Helpers
-
-const readRecipeName = recipe => recipe.name || recipe.value || recipe._id;
 
 const readRow = row => row.value;
 // @FIXME must check that the value returned from http call is JSON and has

@@ -20,11 +20,26 @@ const RequestOpenRecipes = {
 // will not be coming.
 export const FinishLoading = {type: 'FinishLoading'};
 
-export const SetRecipe = (id, name) => ({
+export const SetRecipe = (id, name, hasTimelapse) => ({
   type: 'SetRecipe',
   id,
-  name
+  name,
+  hasTimelapse
 });
+
+const hasTimelapseAttachment = doc => (
+  doc._attachments &&
+  doc._attachments.timelapse &&
+  doc._attachments.timelapse.content_type
+);
+
+// Decode recipe document into SetRecipe action
+export const decodeRecipe = doc =>
+  SetRecipe(
+    doc._id,
+    (doc.name || doc.value || doc._id),
+    hasTimelapseAttachment(doc)
+  );
 
 export const Configure = origin => ({
   type: 'Configure',
@@ -50,6 +65,7 @@ class Model {
   constructor(
     origin,
     recipeStartID,
+    hasTimelapse,
     isLoading,
     sidebar
   ) {
@@ -60,6 +76,7 @@ class Model {
     // 1. Loading (waiting for data to come back). Show a spinner.
     // 2. Loaded, but no recipe start exists.
     // 3. Loaded recipe start, but no video attached.
+    this.hasTimelapse = hasTimelapse;
     this.isLoading = isLoading;
     this.sidebar = sidebar;
   }
@@ -67,12 +84,15 @@ class Model {
 
 export const init = () => {
   const [sidebar, sidebarFx] = Sidebar.init();
+  const hasTimelapse = false;
+  const isLoading = true;
 
   return [
     new Model(
       null,
       null,
-      true,
+      hasTimelapse,
+      isLoading,
       sidebar
     ),
     Effects.none
@@ -83,26 +103,28 @@ export const update = (model, action) =>
   action.type === 'Sidebar' ?
   delegateSidebarUpdate(model, action.source) :
   action.type === 'SetRecipe' ?
-  setRecipe(model, action.id, action.name) :
+  setRecipe(model, action.id, action.name, action.hasTimelapse) :
   action.type === 'Configure' ?
   configure(model, action.origin) :
   action.type === 'FinishLoading' ?
   finishLoading(model) :
   updateUnknown(model, action);
 
-const setRecipe = (model, id, name) => {
+const setRecipe = (model, id, name, hasTimelapse) => {
   // Update sidebar model with id and name
   const [sidebar, sidebarFx] = Sidebar.update(
     model.sidebar,
     Sidebar.SetRecipe(id, name)
   );
 
+  const isLoading = false;
+
   // Create new model with id and new sidebar model
   const next = new Model(
     model.origin,
     id,
-    // Set isLoading to false
-    false,
+    hasTimelapse,
+    isLoading,
     sidebar
   );
 
@@ -115,6 +137,7 @@ const configure = (model, origin) => [
   new Model(
     origin,
     model.recipeStartID,
+    model.hasTimelapse,
     model.isLoading,
     model.sidebar
   ),
@@ -126,6 +149,8 @@ const finishLoading = model => [
   new Model(
     model.origin,
     model.recipeStartID,
+    model.hasTimelapse,
+    // Set loading to false.
     false,
     model.sidebar
   ),
@@ -136,6 +161,7 @@ const swapSidebar = (model, [sidebar, fx]) => [
   new Model(
     model.origin,
     model.recipeStartID,
+    model.hasTimelapse,
     model.isLoading,
     sidebar
   ),
@@ -150,7 +176,7 @@ const delegateSidebarUpdate = (model, action) =>
 export const view = (model, address) =>
   model.isLoading ?
   viewLoading(model, address) :
-  !isReady(model) ?
+  !model.hasTimelapse ?
   viewEmpty(model, address) :
   viewReady(model, address);
 
@@ -226,11 +252,6 @@ const viewEmpty = (model, address) =>
   ]);
 
 // Utils
-
-const isReady = model => (
-  model.origin != null &&
-  model.recipeStartID != null
-);
 
 const templateVideoUrl = model =>
   renderTemplate(ENVIRONMENTAL_DATA_POINT.timelapse, {
