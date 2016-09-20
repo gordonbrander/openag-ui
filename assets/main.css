@@ -507,6 +507,7 @@ p {
   width: calc(100vw - 256px);
   top: 0;
   left: 256px;
+  overflow: hidden;
   position: absolute;
 }
 
