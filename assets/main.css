@@ -325,7 +325,6 @@ p {
   opacity: 1;
 }
 
-
 .nav-chart-icon {
   background: url(./sprite.png) 0 -500px no-repeat;
   background-size: 100px auto;
@@ -339,6 +338,22 @@ p {
 
 .nav-chart-icon-active {
   background-position: 0 -600px;
+  opacity: 1;
+}
+
+.nav-ctl-icon {
+  background: url(./sprite.png) 0 -1200px no-repeat;
+  background-size: 100px auto;
+  opacity: 0.2;
+  cursor: pointer;
+  height: 72px;
+  width: 72px;
+  left: 464px;
+  position: absolute;
+}
+
+.nav-ctl-icon-active {
+  background-position: 0 -1300px;
   opacity: 1;
 }
 
