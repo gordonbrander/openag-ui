@@ -11,6 +11,7 @@ import {constant, compose} from './lang/functional';
 import {findRunningRecipe, findAirTemperature} from './environment/datapoints';
 import * as Chart from './environment/chart';
 import * as Dashboard from './environment/dashboard';
+import * as Controls from './environment/controls';
 
 // State keys
 const DASHBOARD = 'dashboard';
@@ -87,6 +88,13 @@ const decodeDashboardRecipe = compose(DashboardAction, Dashboard.decodeRecipe);
 const FinishDashboardLoading = DashboardAction(Dashboard.FinishLoading);
 const SetDashboardAirTemperature = compose(DashboardAction, Dashboard.SetAirTemperature);
 
+const TagControls = action => ({
+  type: 'Controls',
+  source: action
+});
+
+const ConfigureControls = compose(TagControls, Controls.Configure);
+
 const GetChanges = {type: 'GetChanges'};
 
 const GotChanges = result => ({
@@ -111,6 +119,7 @@ const AlertBanner = tag('AlertBanner');
 export const init = (id, state) => {
   const [dashboard, dashboardFx] = Dashboard.init();
   const [chart, chartFx] = Chart.init(id);
+  const [controls, controlsFx] = Controls.init();
 
   return [
     {
@@ -118,11 +127,13 @@ export const init = (id, state) => {
       name: null,
       state,
       chart,
-      dashboard
+      dashboard,
+      controls
     },
     Effects.batch([
       chartFx.map(TagChart),
-      dashboardFx.map(TagDashboard)
+      dashboardFx.map(TagDashboard),
+      controlsFx.map(TagControls)
     ])
   ];
 };
@@ -140,6 +151,8 @@ export const update = (model, action) =>
   updateChart(model, action.source) :
   action.type === 'Dashboard' ?
   updateDashboard(model, action.source) :
+  action.type === 'Controls' ?
+  updateControls(model, action.source) :
   action.type === 'GetChanges' ?
   getChanges(model) :
   action.type === 'GotChanges' ?
@@ -277,9 +290,10 @@ const configure = (model, {origin, id, name}) => {
   });
 
   return batch(update, next, [
-    // Forward restore down to chart widget module.
+    // Forward configuration down to submodules.
     ConfigureChart(origin),
     ConfigureDashboard(origin),
+    ConfigureControls(origin),
     // Now that we have the origin, get the backlog.
     GetBacklog
   ]);
@@ -314,6 +328,13 @@ const updateDashboard = cursor({
   set: (model, dashboard) => merge(model, {dashboard}),
   update: Dashboard.update,
   tag: TagDashboard
+});
+
+const updateControls = cursor({
+  get: model => model.controls,
+  set: (model, controls) => merge(model, {controls}),
+  update: Controls.update,
+  tag: TagControls
 });
 
 // View
