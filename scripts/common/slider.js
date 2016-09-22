@@ -34,28 +34,38 @@ export class Model {
   constructor(
     focus,
     control,
+    value,
     min,
     max,
-    value
+    step
   ) {
     this.focus = focus
     this.control = control
+    this.value = value
     this.min = min
     this.max = max
-    this.value = value
+    this.step = step
   }
 }
 
-export const init = (min, max, value, isDisabled = false, isFocused = false) => {
+export const init = (
+  value,
+  min,
+  max,
+  step,
+  isFocused = false,
+  isDisabled = false
+) => {
   const [focus, focusFx] = Focus.init(isFocused);
   const [control, controlFx] = Control.init(isDisabled);
 
   const model = new Model(
     focus,
     control,
+    value,
     min,
     max,
-    value
+    step
   );
 
   return [
@@ -84,9 +94,10 @@ const change = (model, value) => [
   new Model(
     model.focus,
     model.control,
+    value,
     model.min,
     model.max,
-    value
+    model.step
   ),
   Effects.none
 ];
@@ -101,7 +112,7 @@ const delegateControlUpdate = (model, action) =>
   swapControl(model, Control.update(model.control, action));
 
 const swapControl = (model, [control, fx]) => [
-  new Model(model.edit, model.focus, control, model.min, model.max, model.value),
+  new Model(model.focus, control, model.value, model.min, model.max, model.step),
   fx.map(ControlAction)
 ];
 
@@ -109,7 +120,7 @@ const delegateFocusUpdate = (model, action) =>
   swapFocus(model, Focus.update(model.focus, action));
 
 const swapFocus = (model, [focus, fx]) => [
-  new Model(focus, model.control, model.min, model.max, model.value),
+  new Model(focus, model.control, model.value, model.min, model.max, model.step),
   fx.map(FocusAction)
 ];
 
@@ -122,6 +133,7 @@ export const view = (model, address, className) =>
     min: model.min,
     max: model.max,
     value: model.desired,
+    step: model.step,
     disabled:
       ( model.control.isDisabled
       ? true

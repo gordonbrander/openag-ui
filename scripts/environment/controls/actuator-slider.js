@@ -2,7 +2,7 @@ import {html, forward, Effects, thunk} from 'reflex';
 import {compose} from '../../lang/functional';
 import {update as updateUnknown} from '../../common/unknown';
 import * as Slider from '../../common/slider';
-import {round2x} from '../../lang/number';
+import {round2x, isNumber} from '../../lang/number';
 
 // Actions
 
@@ -24,30 +24,32 @@ export class Model {
   constructor(
     slider,
     label,
-    measured,
-    unit
+    unit,
+    measured
   ) {
     this.slider = slider
     this.label = label
+    this.unit = unit
     this.measured = measured
-    this.unit = unit;
   }
 }
 
 export const init = (
   label,
-  min,
-  max,
+  unit,
   measured,
   desired,
-  unit,
+  min,
+  max,
+  step,
   isDisabled = false,
   isFocused = false
 ) => {
   const [slider, sliderFx] = Slider.init(
+    desired,
     min,
     max,
-    desired,
+    step,
     isDisabled = false,
     isFocused = false
   );
@@ -55,8 +57,8 @@ export const init = (
   const model = new Model(
     slider,
     label,
-    measured,
-    unit
+    unit,
+    measured
   );
 
   return [model, sliderFx.map(TagSlider)];
@@ -73,6 +75,7 @@ const changeMeasured = (model, measured) => [
   new Model(
     model.slider,
     model.label,
+    model.unit,
     measured
   ),
   Effects.none
@@ -82,15 +85,15 @@ const delegateSliderUpdate = (model, action) =>
   swapSlider(model, Slider.update(model.slider, action));
 
 const swapSlider = (model, [slider, fx]) => [
-  new Model(slider, model.label, model.measured, model.unit),
+  new Model(slider, model.label, model.unit, model.measured),
   fx.map(TagSlider)
 ];
 
 // View
 
-export const view = (model, address, className) =>
+export const view = (model, address) =>
   html.div({
-    className: ('actuator ' + className)
+    className: 'actuator'
   }, [
     html.label({
       className: 'actuator-label'
@@ -122,4 +125,4 @@ export const view = (model, address, className) =>
 // Utils
 
 const templateUnit = (value, unit) =>
-  value ? round2x(value) + ' ' + unit : '-';
+  isNumber(value) ? round2x(value) + ' ' + unit : '-';
