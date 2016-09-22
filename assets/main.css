@@ -273,6 +273,7 @@ p {
 .range {
   display: block;
   -webkit-appearance: none;
+  -moz-appearance: none;
 }
 
 .range:focus {
@@ -288,7 +289,7 @@ p {
 }
 
 .range::-webkit-slider-thumb {
-  background-color: #d5d5d5;
+  background-color: #00A5ED;
   transition: background-color 250ms ease-out;
   border: 4px solid white;
   box-sizing: border-box;
@@ -301,10 +302,6 @@ p {
   -webkit-appearance: none;
 }
 
-.range:active::-webkit-slider-thumb {
-  background-color: #00A5ED;
-}
-
 .range::-moz-range-track {
   background: #d5d5d5;
   border-radius: 8px;
@@ -313,8 +310,12 @@ p {
   height: 16px;
 }
 
+.range:-moz-focusring {
+  outline: none;
+}
+
 .range::-moz-range-thumb {
-  background-color: #d5d5d5;
+  background-color: #00A5ED;
   transition: background-color 250ms ease-out;
   border: 4px solid white;
   border-radius: 100%;
@@ -324,10 +325,6 @@ p {
   height: 24px;
   /* Offset to center the thumb vertically */
   margin-top: -4px;
-}
-
-.range:active::-moz-range-thumb {
-  background-color: #00A5ED;
 }
 
 .range::-ms-track {
@@ -339,7 +336,7 @@ p {
 }
 
 .range::-ms-thumb {
-  background-color: #d5d5d5;
+  background-color: #00A5ED;
   transition: background-color 250ms ease-out;
   border: 4px solid white;
   box-sizing: border-box;
@@ -350,11 +347,6 @@ p {
   /* Offset to center the thumb vertically */
   margin-top: -4px;
 }
-
-.range:active::-ms-thumb {
-  background-color: #00A5ED;
-}
-
 
 /* App
 ----------------------------------------------------------------------------- */
@@ -635,8 +627,9 @@ p {
 
 .full-view {
   width: calc(100vw);
-  height: calc(100vh);
+  height: calc(100vh - 72px);
   position: relative;
+  overflow: auto;
 }
 
 /* Panel
@@ -940,4 +933,36 @@ p {
 
 .env-temperature--unit {
   margin-right: -0.3em;
+}
+
+/* Actuators for controls view
+----------------------------------------------------------------------------- */
+
+.actuator {
+  background-color: #F4F4F4;
+  padding: 48px;
+}
+
+.actuator:nth-child(even) {
+  background-color: #EDEDED;
+}
+
+.actuator-label {
+  font-size: 13px;
+  line-height: 24px;
+  color: #989898;
+  text-transform: uppercase;
+}
+
+.actuator-range {
+  display: block;
+  width: 100%;
+}
+
+.actuator-readings {
+
+}
+
+.actuator-value {
+  font-weight: bold;
 }
