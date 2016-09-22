@@ -4,9 +4,9 @@ import {update as updateUnknown} from '../common/unknown';
 import {merge} from '../common/prelude';
 import {cursor} from '../common/cursor';
 import {localize} from '../common/lang';
-import * as Slider from '../common/slider';
+import * as Slider from './controls/actuator-slider';
 
-const LIGHT_PANEL = ACTUATORS.light_panel;
+const LIGHT_ILLUMINANCE = ACTUATORS.light_illuminance;
 
 // Actions
 
@@ -15,29 +15,32 @@ export const Configure = origin => ({
   origin
 });
 
-export const TagLightPanel = action => ({
-  type: 'LightPanel',
+export const TagLightIlluminance = action => ({
+  type: 'LightIlluminance',
   source: action
 });
 
 // Update, init
 
 export const init = () => {
-  const [lightPanel, lightPanelFx] = Slider.init(
-    LIGHT_PANEL.min,
-    LIGHT_PANEL.max,
-    null
+  const [lightIlluminance, lightIlluminanceFx] = Slider.init(
+    localize('Light'),
+    LIGHT_ILLUMINANCE.min,
+    LIGHT_ILLUMINANCE.max,
+    null,
+    null,
+    LIGHT_ILLUMINANCE.unit
   );
 
   const model = {
     origin: null,
-    lightPanel
+    lightIlluminance
   };
 
   return [
     model,
     Effects.batch([
-      lightPanelFx.map(TagLightPanel)
+      lightIlluminanceFx.map(TagLightIlluminance)
     ])
   ];
 }
@@ -45,8 +48,8 @@ export const init = () => {
 export const update = (model, action) =>
   action.type === 'Configure' ?
   configure(model, action.origin) :
-  action.type === 'LightPanel' ?
-  updateLightPanel(model, action.source) :
+  action.type === 'LightIlluminance' ?
+  updateLightIlluminance(model, action.source) :
   updateUnknown(model, action);
 
 const configure = (model, origin) => [
@@ -54,11 +57,11 @@ const configure = (model, origin) => [
   Effects.none
 ];
 
-const updateLightPanel = cursor({
-  get: model => model.lightPanel,
-  set: (model, lightPanel) => merge(model, {lightPanel}),
+const updateLightIlluminance = cursor({
+  get: model => model.lightIlluminance,
+  set: (model, lightIlluminance) => merge(model, {lightIlluminance}),
   update: Slider.update,
-  tag: TagLightPanel
+  tag: TagLightIlluminance
 });
 
 // View
@@ -68,10 +71,10 @@ export const view = (model, address) =>
     className: 'full-view'
   }, [
     thunk(
-      'light-panel-control',
+      'light-illuminance-control',
       Slider.view,
-      model.lightPanel,
-      forward(address, TagLightPanel),
-      'range light-panel-range'
+      model.lightIlluminance,
+      forward(address, TagLightIlluminance),
+      'range light-illuminance-range'
     )
   ]);
