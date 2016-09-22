@@ -271,6 +271,7 @@ p {
 ----------------------------------------------------------------------------- */
 
 .range {
+  background-color: transparent;
   display: block;
   -webkit-appearance: none;
   -moz-appearance: none;
@@ -957,6 +958,7 @@ p {
 .actuator-range {
   display: block;
   width: 100%;
+  margin: 12px 0;
 }
 
 .actuator-readings {
