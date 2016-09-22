@@ -11,12 +11,23 @@ export const ChangeMeasured = measured => ({
   measured
 });
 
-const TagSlider = action => ({
+export const ChangeDesired = desired => ({
+  type: 'ChangeDesired',
+  desired
+});
+
+const TagSlider = action =>
+  action.type === 'Change' ?
+  // Re-box change actions as "Desired Change" actions.
+  ChangeDesired(action.value) :
+  SliderAction(action);
+
+const SliderAction = action => ({
   type: 'Slider',
   source: action
 });
 
-export const ChangeDesired = compose(TagSlider, Slider.Change);
+const ChangeSlider = compose(TagSlider, Slider.Change);
 
 // Model, init, update
 
@@ -67,9 +78,14 @@ export const init = (
 export const update = (model, action) =>
   action.type === 'Slider' ?
   delegateSliderUpdate(model, action.source) :
+  action.type === 'ChangeDesired' ?
+  changeDesired(model, action.desired) :
   action.type === 'ChangeMeasured' ?
   changeMeasured(model, action.measured) :
   updateUnknown(model, action);
+
+const changeDesired = (model, desired) =>
+  delegateSliderUpdate(model, Slider.Change(desired));
 
 const changeMeasured = (model, measured) => [
   new Model(
