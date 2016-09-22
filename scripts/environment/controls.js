@@ -64,11 +64,14 @@ const updateLightPanel = cursor({
 // View
 
 export const view = (model, address) =>
-  html.div({}, [
+  html.div({
+    className: 'full-view'
+  }, [
     thunk(
       'light-panel-control',
       Slider.view,
       model.lightPanel,
-      forward(address, TagLightPanel)
+      forward(address, TagLightPanel),
+      'range light-panel-range'
     )
   ]);

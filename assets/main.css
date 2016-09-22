@@ -267,6 +267,95 @@ p {
   border: 0;
 }
 
+/* Range
+----------------------------------------------------------------------------- */
+
+.range {
+  display: block;
+  -webkit-appearance: none;
+}
+
+.range:focus {
+  outline: none;
+}
+
+.range::-webkit-slider-runnable-track {
+  background: #d5d5d5;
+  border-radius: 8px;
+  cursor: pointer;
+  width: 100%;
+  height: 16px;
+}
+
+.range::-webkit-slider-thumb {
+  background-color: #d5d5d5;
+  transition: background-color 250ms ease-out;
+  border: 4px solid white;
+  box-sizing: border-box;
+  border-radius: 100%;
+  box-shadow: 0 0 3px rgba(0, 0, 0, 0.35);
+  width: 24px;
+  height: 24px;
+  /* Offset to center the thumb vertically */
+  margin-top: -4px;
+  -webkit-appearance: none;
+}
+
+.range:active::-webkit-slider-thumb {
+  background-color: #00A5ED;
+}
+
+.range::-moz-range-track {
+  background: #d5d5d5;
+  border-radius: 8px;
+  cursor: pointer;
+  width: 100%;
+  height: 16px;
+}
+
+.range::-moz-range-thumb {
+  background-color: #d5d5d5;
+  transition: background-color 250ms ease-out;
+  border: 4px solid white;
+  border-radius: 100%;
+  box-shadow: 0 0 3px rgba(0, 0, 0, 0.35);
+  box-sizing: border-box;
+  width: 24px;
+  height: 24px;
+  /* Offset to center the thumb vertically */
+  margin-top: -4px;
+}
+
+.range:active::-moz-range-thumb {
+  background-color: #00A5ED;
+}
+
+.range::-ms-track {
+  background: #d5d5d5;
+  border-radius: 8px;
+  cursor: pointer;
+  width: 100%;
+  height: 16px;
+}
+
+.range::-ms-thumb {
+  background-color: #d5d5d5;
+  transition: background-color 250ms ease-out;
+  border: 4px solid white;
+  box-sizing: border-box;
+  border-radius: 100%;
+  box-shadow: 0 0 3px rgba(0, 0, 0, 0.35);
+  width: 24px;
+  height: 24px;
+  /* Offset to center the thumb vertically */
+  margin-top: -4px;
+}
+
+.range:active::-ms-thumb {
+  background-color: #00A5ED;
+}
+
+
 /* App
 ----------------------------------------------------------------------------- */
 
@@ -539,6 +628,15 @@ p {
   top: 0;
   height: calc(100vh - 72px);
   width: 256px;
+}
+
+/* Full View - content only layout
+----------------------------------------------------------------------------- */
+
+.full-view {
+  width: calc(100vw);
+  height: calc(100vh);
+  position: relative;
 }
 
 /* Panel
