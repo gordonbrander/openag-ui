@@ -16,6 +16,7 @@ import * as Controls from './environment/controls';
 // State keys
 const DASHBOARD = 'dashboard';
 const CHART = 'chart';
+const CONTROLS = 'controls';
 
 // Time constants in ms
 const S_MS = 1000;
@@ -348,7 +349,7 @@ export const view = (model, address) =>
       hidden: toggle(model.state !== DASHBOARD, 'hidden')
     }, [
       thunk(
-        'dashboard',
+        'environment-dashboard',
         Dashboard.view,
         model.dashboard,
         forward(address, TagDashboard)
@@ -359,10 +360,21 @@ export const view = (model, address) =>
       hidden: toggle(model.state !== CHART, 'hidden')
     }, [
       thunk(
-        'chart-widget',
+        'environment-chart',
         Chart.view,
         model.chart,
         forward(address, TagChart)
+      )
+    ]),
+    html.div({
+      className: 'environment-view',
+      hidden: toggle(model.state !== CONTROLS, 'hidden')
+    }, [
+      thunk(
+        'environment-controls',
+        Controls.view,
+        model.controls,
+        forward(address, TagControls)
       )
     ])
   ]);

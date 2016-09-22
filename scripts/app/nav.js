@@ -8,6 +8,7 @@ import {localize} from '../common/lang';
 
 export const DASHBOARD = 'dashboard';
 export const CHART = 'chart';
+export const CONTROLS = 'controls';
 
 export const ActivateState = id => ({
   type: 'ActivateState',
@@ -16,6 +17,7 @@ export const ActivateState = id => ({
 
 const ActivateDashboard = ActivateState(DASHBOARD);
 const ActivateChart = ActivateState(CHART);
+const ActivateControls = ActivateState(CONTROLS);
 
 // Configure settings (usually comes from parent who read it from local DB).
 export const Configure = name => ({
@@ -70,7 +72,8 @@ export const view = (model, address) =>
           'ir': true,
           'nav-dash-icon': true,
           'nav-dash-icon-active': model.active === DASHBOARD
-        })
+        }),
+        title: localize('Dashboard')
       }, [
         localize('Dashboard')
       ]),
@@ -80,9 +83,21 @@ export const view = (model, address) =>
           'ir': true,
           'nav-chart-icon': true,
           'nav-chart-icon-active': model.active === CHART
-        })
+        }),
+        title: localize('Chart')
       }, [
         localize('Chart')
+      ]),
+      html.a({
+        onClick: () => address(ActivateControls),
+        className: classed({
+          'ir': true,
+          'nav-ctl-icon': true,
+          'nav-ctl-icon-active': model.active === CONTROLS
+        }),
+        title: localize('Manual Controls')
+      }, [
+        localize('Manual Controls')
       ])
     ])
   ]);
