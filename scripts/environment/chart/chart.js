@@ -14,6 +14,7 @@ import {classed} from '../../common/attr';
 import * as Unknown from '../../common/unknown';
 import {listByKeys, indexWith} from '../../common/indexed';
 import {compose} from '../../lang/functional';
+import {clamp, isNumber, round2x} from '../../lang/number';
 import {onWindow} from '../../driver/virtual-dom';
 import {marker, isMarker, findRecipeStart, findRecipeEnd, readX, readY, readVariable} from '../datapoints';
 import {FixedBuffer} from './fixed-buffer';
@@ -697,12 +698,6 @@ const svgG = compose(svgNS, html.g);
 const svgCircle = compose(svgNS, html.circle);
 const svgLine = compose(svgNS, html.line);
 const svgText = compose(svgNS, html.text);
-
-const clamp = (v, min, max) => Math.max(Math.min(v, max), min);
-const isNumber = x => (typeof x === 'number');
-
-// Round to 2 decimal places.
-const round2x = float => Math.round(float * 100) / 100;
 
 const calcChartWidth = (width) =>
   width - SIDEBAR_WIDTH;
