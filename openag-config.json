@@ -88,5 +88,11 @@
       "max": 100,
       "color": "#00a5ed"
     }
-  ]
+  ],
+  "actuators": {
+    "light_panel": {
+      "min": 0.0001,
+      "max": 100000
+    }
+  }
 }
