@@ -10,7 +10,7 @@ import {readRootUrl} from './common/url';
 import * as Request from './common/request';
 import * as Banner from './common/banner';
 import * as Persistence from './persistence';
-import * as AppNav from './app/nav';  
+import * as AppNav from './app/nav';
 import * as Environments from './environments';
 import * as Environment from './environment';
 import * as Recipes from './recipes';
@@ -134,9 +134,14 @@ const CreateRecipe = recipe => ({
   recipe
 });
 
-const PostRecipe = (environmentID, recipeID) => ({
-  type: 'PostRecipe',
+const PostStartRecipe = (environmentID, recipeID) => ({
+  type: 'PostStartRecipe',
   recipeID,
+  environmentID
+});
+
+const PostStopRecipe = (environmentID) => ({
+  type: 'PostStopRecipe',
   environmentID
 });
 
@@ -218,13 +223,15 @@ export const update = (model, action) =>
   configureFirstTime(model, action.form) :
   action.type === 'StartRecipe' ?
   startRecipe(model, action.id, action.name) :
-  action.type === 'PostRecipe' ?
-  postRecipe(model, action.environmentID, action.recipeID) :
-  action.type === 'RecipePosted' ?
+  action.type === 'PostStartRecipe' ?
+  postStartRecipe(model, action.environmentID, action.recipeID) :
+  action.type === 'PostStopRecipe' ?
+  postStopRecipe(model, action.environmentID) :
+  action.type === 'RecipeStartPosted' ?
   (
     action.result.isOk ?
-    recipePostedOk(model, action.result.value) :
-    recipePostedError(model, action.result.error)
+    recipeStartPostedOk(model, action.result.value) :
+    recipeStartPostedError(model, action.result.error)
   ) :
   action.type === 'SaveState' ?
   saveState(model) :
@@ -286,12 +293,13 @@ const activateState = (model, id) =>
 
 const startRecipe = (model, id, name) =>
   batch(update, model, [
+    PostStopRecipe(model.environment.id),
     SetRecipeForEnvironment(id, name),
-    PostRecipe(model.environment.id, id),
+    PostStartRecipe(model.environment.id, id),
     CloseRecipes
   ]);
 
-const postRecipe = (model, environmentID, recipeID) => {
+const postStartRecipe = (model, environmentID, recipeID) => {
   const url = Template.render(Config.start_recipe_url, {
     api_url: model.api,
     environment: environmentID
@@ -299,16 +307,28 @@ const postRecipe = (model, environmentID, recipeID) => {
 
   return [
     model,
-    Request.post(url, {recipe_id: recipeID}).map(RecipePosted)
+    Request.post(url, {recipe_id: recipeID}).map(RecipeStartPosted)
   ];
 }
 
-const recipePostedOk = (model, value) => {
+const postStopRecipe = (model, environmentID) => {
+  const url = Template.render(Config.stop_recipe_url, {
+    api_url: model.api,
+    environment: environmentID
+  });
+
+  return [
+    model,
+    Request.post(url, {})
+  ];
+}
+
+const recipeStartPostedOk = (model, value) => {
   const message = localize('Recipe Started!');
   return update(model, NotifyBanner(message));
 }
 
-const recipePostedError = (model, error) => {
+const recipeStartPostedError = (model, error) => {
   const message = localize('Food computer was unable to start recipe');
   return update(model, AlertRefreshableBanner(message));
 }
