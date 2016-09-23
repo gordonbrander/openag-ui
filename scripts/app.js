@@ -150,6 +150,11 @@ const RecipeStartPosted = (result) => ({
   result
 });
 
+const RecipeStopPosted = (result) => ({
+  type: 'RecipeStopPosted',
+  result
+});
+
 // Init and update
 
 export const init = () => {
@@ -227,11 +232,17 @@ export const update = (model, action) =>
   postStartRecipe(model, action.environmentID, action.recipeID) :
   action.type === 'PostStopRecipe' ?
   postStopRecipe(model, action.environmentID) :
+  action.type === 'RecipeStopPosted' ?
+  (
+    action.result.isOk ?
+    recipePostedOk(model, action.result.value, 'Stopped!') :
+    recipePostedError(model, action.result.error, 'stop')
+  ) :
   action.type === 'RecipeStartPosted' ?
   (
     action.result.isOk ?
-    recipeStartPostedOk(model, action.result.value) :
-    recipeStartPostedError(model, action.result.error)
+    recipePostedOk(model, action.result.value, 'Started!') :
+    recipePostedError(model, action.result.error, 'start')
   ) :
   action.type === 'SaveState' ?
   saveState(model) :
@@ -295,7 +306,8 @@ const startRecipe = (model, id, name) =>
   batch(update, model, [
     PostStopRecipe(model.environment.id),
     SetRecipeForEnvironment(id, name),
-    PostStartRecipe(model.environment.id, id),
+    setTimeout(() => { PostStartRecipe(model.environment.id, id) },
+    100),
     CloseRecipes
   ]);
 
@@ -319,17 +331,17 @@ const postStopRecipe = (model, environmentID) => {
 
   return [
     model,
-    Request.post(url, {})
+    Request.post(url, {}).map(RecipeStopPosted)
   ];
 }
 
-const recipeStartPostedOk = (model, value) => {
-  const message = localize('Recipe Started!');
+const recipePostedOk = (model, value, action) => {
+  const message = localize('Recipe '+action+'!');
   return update(model, NotifyBanner(message));
 }
 
-const recipeStartPostedError = (model, error) => {
-  const message = localize('Food computer was unable to start recipe');
+const recipePostedError = (model, error, action) => {
+  const message = localize('Food computer was unable to '+action+' recipe');
   return update(model, AlertRefreshableBanner(message));
 }
 
