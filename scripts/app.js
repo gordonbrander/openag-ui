@@ -145,8 +145,8 @@ const PostStopRecipe = (environmentID) => ({
   environmentID
 });
 
-const RecipePosted = (result) => ({
-  type: 'RecipePosted',
+const RecipeStartPosted = (result) => ({
+  type: 'RecipeStartPosted',
   result
 });
 
