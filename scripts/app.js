@@ -356,7 +356,7 @@ const configure = (model, {api, origin, environment}) => {
 
   return batch(update, next, [
     ConfigureAppNav(environment.name),
-    ConfigureEnvironment(environment.id, environment.name, origin),
+    ConfigureEnvironment(environment.id, environment.name, api, origin),
     ConfigureEnvironments(origin),
     ConfigureRecipes(origin)
   ]);

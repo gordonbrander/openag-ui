@@ -89,20 +89,14 @@
       "color": "#00a5ed"
     }
   ],
+
   "actuators": {
-    "light_illuminance": {
-      "title": "Light",
-      "min": 0.0001,
-      "max": 100000,
-      "unit": " Lux",
-      "step": 1.0
-    },
-    "water_electrical_conductivity": {
-      "title": "Nutrients",
-      "unit": " mS/cm",
-      "min": 0.0,
-      "max": 4.0,
-      "step": 0.01
+    "url": "{{api}}/topic/{{environment}}/{{input}}",
+    "items": {
+      "red_light": {
+        "input": "red_light",
+        "title": "Light"
+      }
     }
   }
 }

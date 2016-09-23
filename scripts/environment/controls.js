@@ -4,92 +4,56 @@ import {update as updateUnknown} from '../common/unknown';
 import {merge} from '../common/prelude';
 import {cursor} from '../common/cursor';
 import {localize} from '../common/lang';
-import * as Slider from './controls/actuator-slider';
-
-const LIGHT_ILLUMINANCE = ACTUATORS.light_illuminance;
-const EC = ACTUATORS.water_electrical_conductivity;
+import * as Toggle from '../common/toggle';
 
 // Actions
 
-export const Configure = origin => ({
+// Configure module (usually just after startup)
+export const Configure = api => ({
   type: 'Configure',
-  origin
+  api
 });
 
-export const TagLightIlluminance = action => ({
-  type: 'LightIlluminance',
-  source: action
-});
-
-export const TagWaterElectricalConductivity = action => ({
-  type: 'WaterElectricalConductivity',
+const TagRedPin = action => ({
+  type: 'RedPin',
   source: action
 });
 
 // Update, init
 
 export const init = () => {
-  const [lightIlluminance, lightIlluminanceFx] = Slider.init(
-    LIGHT_ILLUMINANCE.title,
-    LIGHT_ILLUMINANCE.unit,
-    null,
-    null,
-    LIGHT_ILLUMINANCE.min,
-    LIGHT_ILLUMINANCE.max,
-    LIGHT_ILLUMINANCE.step
-  );
-
-  const [waterElectricalConductivity, waterElectricalConductivityFx] = Slider.init(
-    EC.title,
-    EC.unit,
-    null,
-    null,
-    EC.min,
-    EC.max,
-    EC.step
-  );
+  const [redPin, redPinFx] = Toggle.init('red_pin', false);
 
   const model = {
-    origin: null,
-    lightIlluminance,
-    waterElectricalConductivity
+    api: null,
+    redPin
   };
 
   return [
     model,
     Effects.batch([
-      lightIlluminanceFx.map(TagLightIlluminance),
-      waterElectricalConductivityFx.map(TagWaterElectricalConductivity)
+      redPinFx.map(TagRedPin)
     ])
   ];
 }
 
 export const update = (model, action) =>
+  action.type === 'RedPin' ?
+  updateRedPin(model, action.source) :
   action.type === 'Configure' ?
-  configure(model, action.origin) :
-  action.type === 'LightIlluminance' ?
-  updateLightIlluminance(model, action.source) :
-  action.type === 'WaterElectricalConductivity' ?
-  updateWaterElectricalConductivity(model, action.source) :
+  configure(model, action.api) :
   updateUnknown(model, action);
 
-const configure = (model, origin) => [
-  merge(model, {origin}),
+const configure = (model, api) => [
+  merge(model, {api}),
   Effects.none
 ];
 
-const updateLightIlluminance = cursor({
-  get: model => model.lightIlluminance,
-  set: (model, lightIlluminance) => merge(model, {lightIlluminance}),
-  update: Slider.update,
-  tag: TagLightIlluminance
-});
-
-const updateWaterElectricalConductivity = cursor({
-  get: model => model.waterElectricalConductivity,
-  set: (model, waterElectricalConductivity) => merge(model, {waterElectricalConductivity}),
-  update: Slider.update,
-  tag: TagWaterElectricalConductivity
+const updateRedPin = cursor({
+  get: model => model.redPin,
+  set: (model, redPin) => merge(model, {redPin}),
+  update: Toggle.update,
+  tag: TagRedPin
 });
 
 // View
@@ -99,15 +63,9 @@ export const view = (model, address) =>
     className: 'full-view'
   }, [
     thunk(
-      'light-illuminance-control',
-      Slider.view,
-      model.lightIlluminance,
-      forward(address, TagLightIlluminance)
-    ),
-    thunk(
-      'water-electrical-conductivity-control',
-      Slider.view,
-      model.waterElectricalConductivity,
-      forward(address, TagWaterElectricalConductivity)
+      'controls-red-pin-toggle',
+      Toggle.view,
+      model.redPin,
+      forward(address, TagRedPin)
     )
   ]);

@@ -44,9 +44,10 @@ export const ActivateState = id => ({
 });
 
 // Configure action received from parent.
-export const Configure = (environmentID, environmentName, origin) => ({
+export const Configure = (environmentID, environmentName, api, origin) => ({
   type: 'Configure',
-  origin: origin,
+  api,
+  origin,
   id: environmentID,
   name: environmentName
 });
@@ -281,7 +282,7 @@ const gotChangesError = (model, error) => {
   ];
 }
 
-const configure = (model, {origin, id, name}) => {
+const configure = (model, {api, origin, id, name}) => {
   const next = merge(model, {
     origin,
     id,
@@ -294,7 +295,7 @@ const configure = (model, {origin, id, name}) => {
     // Forward configuration down to submodules.
     ConfigureChart(origin),
     ConfigureDashboard(origin),
-    ConfigureControls(origin),
+    ConfigureControls(api),
     // Now that we have the origin, get the backlog.
     GetBacklog
   ]);
