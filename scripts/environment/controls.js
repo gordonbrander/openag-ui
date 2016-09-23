@@ -1,31 +1,37 @@
 import {html, forward, Effects, thunk} from 'reflex';
 import {actuators as ACTUATORS} from '../../openag-config.json';
 import {update as updateUnknown} from '../common/unknown';
-import {merge} from '../common/prelude';
+import {merge, batch} from '../common/prelude';
 import {cursor} from '../common/cursor';
 import {localize} from '../common/lang';
-import * as Toggle from '../common/toggle';
+import {compose} from '../lang/functional';
+import * as Toggle from './controls/actuator-toggle';
 
 // Actions
 
 // Configure module (usually just after startup)
-export const Configure = api => ({
+export const Configure = (api, environment) => ({
   type: 'Configure',
-  api
+  api,
+  environment
 });
 
-const TagRedPin = action => ({
-  type: 'RedPin',
+const Tag = type => action => ({
+  type,
   source: action
 });
+
+const TagRedPin = Tag('RedPin');
+const ConfigureRedPin = compose(TagRedPin, Toggle.Configure);
 
 // Update, init
 
 export const init = () => {
-  const [redPin, redPinFx] = Toggle.init('red_pin', false);
+  const [redPin, redPinFx] = Toggle.init('red_pin');
 
   const model = {
     api: null,
+    environment: null,
     redPin
   };
 
@@ -38,20 +44,26 @@ export const init = () => {
 }
 
 export const update = (model, action) =>
+  action.type === 'Configure' ?
+  configure(model, action.api, action.environment) :
   action.type === 'RedPin' ?
   updateRedPin(model, action.source) :
-  action.type === 'Configure' ?
-  configure(model, action.api) :
   updateUnknown(model, action);
 
-const configure = (model, api) => [
-  merge(model, {api}),
-  Effects.none
-];
+const configure = (model, api, environment) => {
+  const next = merge(model, {
+    api,
+    environment
+  });
+
+  return batch(update, model, [
+    ConfigureRedPin(api, environment)
+  ]);
+}
 
 const updateRedPin = cursor({
   get: model => model.redPin,
-  set: (model, redPin) => merge(model, {redPin}),
+  set: (model, redPin) => merge({redPin}),
   update: Toggle.update,
   tag: TagRedPin
 });

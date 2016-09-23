@@ -91,7 +91,7 @@
   ],
 
   "actuators": {
-    "url": "{{api}}/topic/{{environment}}/{{input}}",
+    "url": "{{api}}/topic/{{environment}}/{{topic}}",
     "items": {
       "red_light": {
         "input": "red_light",

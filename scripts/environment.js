@@ -295,7 +295,7 @@ const configure = (model, {api, origin, id, name}) => {
     // Forward configuration down to submodules.
     ConfigureChart(origin),
     ConfigureDashboard(origin),
-    ConfigureControls(api),
+    ConfigureControls(api, id),
     // Now that we have the origin, get the backlog.
     GetBacklog
   ]);
