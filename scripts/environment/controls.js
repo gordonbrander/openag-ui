@@ -6,6 +6,9 @@ import {cursor} from '../common/cursor';
 import {localize} from '../common/lang';
 import {compose} from '../lang/functional';
 import * as Toggle from './controls/actuator-toggle';
+import * as Slider from './controls/actuator-slider';
+
+const RED_LIGHT = ACTUATORS.items.red_light;
 
 // Actions
 
@@ -21,24 +24,31 @@ const Tag = type => action => ({
   source: action
 });
 
-const TagRedPin = Tag('RedPin');
-const ConfigureRedPin = compose(TagRedPin, Toggle.Configure);
+const TagRedLight = Tag('RedLight');
+const ConfigureRedLight = compose(TagRedLight, Toggle.Configure);
 
 // Update, init
 
 export const init = () => {
-  const [redPin, redPinFx] = Toggle.init('red_pin');
+  const [redLight, redLightFx] = Slider.init(
+    RED_LIGHT.topic,
+    RED_LIGHT.title,
+    0.5,
+    0,
+    1,
+    0.1
+  );
 
   const model = {
     api: null,
     environment: null,
-    redPin
+    redLight
   };
 
   return [
     model,
     Effects.batch([
-      redPinFx.map(TagRedPin)
+      redLightFx.map(TagRedLight)
     ])
   ];
 }
@@ -46,8 +56,8 @@ export const init = () => {
 export const update = (model, action) =>
   action.type === 'Configure' ?
   configure(model, action.api, action.environment) :
-  action.type === 'RedPin' ?
-  updateRedPin(model, action.source) :
+  action.type === 'RedLight' ?
+  updateRedLight(model, action.source) :
   updateUnknown(model, action);
 
 const configure = (model, api, environment) => {
@@ -57,15 +67,15 @@ const configure = (model, api, environment) => {
   });
 
   return batch(update, model, [
-    ConfigureRedPin(api, environment)
+    ConfigureRedLight(api)
   ]);
 }
 
-const updateRedPin = cursor({
-  get: model => model.redPin,
-  set: (model, redPin) => merge({redPin}),
-  update: Toggle.update,
-  tag: TagRedPin
+const updateRedLight = cursor({
+  get: model => model.redLight,
+  set: (model, redLight) => merge({redLight}),
+  update: Slider.update,
+  tag: TagRedLight
 });
 
 // View
@@ -75,9 +85,9 @@ export const view = (model, address) =>
     className: 'full-view'
   }, [
     thunk(
-      'controls-red-pin-toggle',
-      Toggle.view,
-      model.redPin,
-      forward(address, TagRedPin)
+      'controls-red-light',
+      Slider.view,
+      model.redLight,
+      forward(address, TagRedLight)
     )
   ]);
