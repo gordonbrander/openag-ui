@@ -106,7 +106,7 @@ const postedChangeError = (model, value) => {
 }
 
 const configure = (model, api, environment) => {
-  const url = templateTopicUrl(api, environment, model.topic);
+  const url = templateTopicUrl(api, model.topic);
   return [
     merge(model, {url}),
     Effects.none
@@ -131,9 +131,8 @@ export const view = (model, address) =>
 
 // Utils
 
-const templateTopicUrl = (api, environment, topic) =>
+const templateTopicUrl = (api, topic) =>
   renderTemplate(ACTUATORS.url, {
     api,
-    environment,
     topic
   });
