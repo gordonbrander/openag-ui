@@ -91,11 +91,11 @@
   ],
 
   "actuators": {
-    "url": "{{api}}/topic/{{environment}}/{{topic}}",
+    "url": "{{api}}/topic/{{topic}}",
     "items": {
       "red_light": {
-        "input": "red_light",
-        "title": "Light"
+        "topic": "actuators/red_light_1/cmd",
+        "title": "Red Light"
       }
     }
   }
