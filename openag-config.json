@@ -96,6 +96,14 @@
       "red_light": {
         "topic": "actuators/red_light_1/cmd",
         "title": "Red Light"
+      },
+      "blue_light": {
+        "topic": "actuators/blue_light_1/cmd",
+        "title": "Blue Light"
+      },
+      "white_light": {
+        "topic": "actuators/white_light_1/cmd",
+        "title": "White Light"
       }
     }
   }
