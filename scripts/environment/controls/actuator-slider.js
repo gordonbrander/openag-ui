@@ -47,19 +47,20 @@ const ChangeSlider = compose(SliderAction, Slider.Change);
 export class Model {
   constructor(
     slider,
-    topic,
-    title,
-    url
+    id,
+    url,
+    title
   ) {
     this.slider = slider
-    this.topic = topic
-    this.title = title
+    this.id = id
     this.url = url
+    this.title = title
   }
 }
 
 export const init = (
-  topic,
+  id,
+  url,
   title,
   value,
   min,
@@ -79,13 +80,33 @@ export const init = (
 
   const model = new Model(
     slider,
-    topic,
-    title,
-    null
+    id,
+    url,
+    title
   );
 
   return [model, sliderFx.map(TagSlider)];
 }
+
+// Initialize as PWM
+export const initPwm = (
+  id,
+  url,
+  title,
+  value,
+  isDisabled,
+  isFocused
+) => init(
+  id,
+  url,
+  title,
+  value,
+  0.0,
+  1.0,
+  0.1,
+  isDisabled,
+  isFocused
+);
 
 export const update = (model, action) =>
   action.type === 'Slider' ?
@@ -114,22 +135,14 @@ const delegateSliderUpdate = (model, action) =>
   swapSlider(model, Slider.update(model.slider, action));
 
 const swapSlider = (model, [slider, fx]) => [
-  new Model(slider, model.topic, model.title, model.url),
+  new Model(slider, model.id, model.url, model.title),
   fx.map(TagSlider)
 ];
 
-const postChange = (model, value) => {
-  if (typeof model.url === 'string') {
-    return [
-      model,
-      post(model.url, [value]).map(PostedChange)
-    ];
-  }
-  else {
-    console.warn('PostChange was sent before model url was configured. This should never happen.');
-    return [model, Effects.none];
-  }
-}
+const postChange = (model, value) => [
+  model,
+  post(model.url, [value]).map(PostedChange)
+];
 
 const postedChangeOk = (model, value) =>
   [model, Effects.none];
@@ -137,17 +150,6 @@ const postedChangeOk = (model, value) =>
 const postedChangeError = (model, value) => {
   console.warn('Post to slider actuator failed.');
   return [model, Effects.none];
-}
-
-const configure = (model, api) => {
-  const url = templateTopicUrl(api, model.topic);
-  const next = new Model(
-    model.slider,
-    model.topic,
-    model.title,
-    url
-  );
-  return [next, Effects.none];
 }
 
 // View
@@ -165,11 +167,3 @@ export const view = (model, address) =>
       'range actuator-range'
     )
   ]);
-
-// Utils
-
-const templateTopicUrl = (api, topic) =>
-  renderTemplate(ACTUATORS.url, {
-    api,
-    topic
-  });

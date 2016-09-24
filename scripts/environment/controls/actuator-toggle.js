@@ -5,7 +5,6 @@ import {post} from '../../common/request';
 import {merge, batch} from '../../common/prelude';
 import {cursor} from '../../common/cursor';
 import {update as updateUnknown} from '../../common/unknown';
-import {render as renderTemplate} from '../../common/stache';
 import {compose} from '../../lang/functional';
 
 // Actions
@@ -46,12 +45,14 @@ const ChangeToggle = compose(ToggleAction, Toggle.Change);
 
 // Update, init
 
-export const init = (topic) => {
-  const [toggle, toggleFx] = Toggle.init(topic, false);
+export const init = (id, url, title) => {
+  const toggleID = 'toggle_' + id;
+  const [toggle, toggleFx] = Toggle.init(toggleID, false);
 
   const model = {
-    url: null,
-    topic,
+    id,
+    url,
+    title,
     toggle
   };
 
@@ -124,15 +125,10 @@ const updateToggle = cursor({
 
 export const view = (model, address) =>
   html.div({
-
+    className: 'actuator'
   }, [
+    html.div({
+      className: 'actuator-title'
+    }, [model.title]),
     Toggle.view(model, forward(address, TagToggle))
   ]);
-
-// Utils
-
-const templateTopicUrl = (api, topic) =>
-  renderTemplate(ACTUATORS.url, {
-    api,
-    topic
-  });

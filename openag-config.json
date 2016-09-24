@@ -90,21 +90,60 @@
     }
   ],
 
-  "actuators": {
-    "url": "{{api}}/topic/{{topic}}",
-    "items": {
-      "red_light": {
-        "topic": "actuators/red_light_1/cmd",
-        "title": "Red Light"
-      },
-      "blue_light": {
-        "topic": "actuators/blue_light_1/cmd",
-        "title": "Blue Light"
-      },
-      "white_light": {
-        "topic": "actuators/white_light_1/cmd",
-        "title": "White Light"
-      }
+  "actuators": [
+    {
+      "id": "red_light",
+      "topic": "{{api}}/topic/actuators/red_light_1/cmd",
+      "title": "Red Light",
+      "type": "pwm_actuator"
+    },
+    {
+      "id": "blue_light",
+      "topic": "{{api}}/topic/actuators/blue_light_1/cmd",
+      "title": "Blue Light",
+      "type": "pwm_actuator"
+    },
+    {
+      "id": "white_light",
+      "topic": "{{api}}/topic/actuators/white_light_1/cmd",
+      "title": "White Light",
+      "type": "pwm_actuator"
+    },
+    {
+      "id": "pump_1",
+      "topic": "{{api}}/topic/actuators/pump_1/cmd",
+      "title": "Pump 1",
+      "type": "binary_actuator"
+    },
+    {
+      "id": "pump_2",
+      "topic": "{{api}}/topic/actuators/pump_2/cmd",
+      "title": "Pump 2",
+      "type": "binary_actuator"
+    },
+    {
+      "id": "pump_3",
+      "topic": "{{api}}/topic/actuators/pump_3/cmd",
+      "title": "Pump 3",
+      "type": "binary_actuator"
+    },
+    {
+      "id": "pump_4",
+      "topic": "{{api}}/topic/actuators/pump_4/cmd",
+      "title": "Pump 5",
+      "type": "binary_actuator"
+    },
+    {
+      "id": "pump_5",
+      "topic": "{{api}}/topic/actuators/pump_5/cmd",
+      "title": "Pump 5",
+      "type": "binary_actuator"
+    },
+    {
+      "id": "humidifier",
+      "topic": "{{api}}/topic/actuators/humidifier/cmd",
+      "title": "Humidifier",
+      "type": "binary_actuator"
     }
-  }
+  ]
 }
