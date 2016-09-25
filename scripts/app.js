@@ -241,8 +241,8 @@ export const update = (model, action) =>
   action.type === 'RecipeStartPosted' ?
   (
     action.result.isOk ?
-    recipePostedOk(model, action.result.value, 'Started!') :
-    recipePostedError(model, action.result.error, 'start')
+    recipePostedOk(model, action.result.value) :
+    recipePostedError(model, action.result.error)
   ) :
   action.type === 'SaveState' ?
   saveState(model) :
@@ -334,12 +334,12 @@ const postStopStartRecipe = (model, environmentID, id) => {
 }
 
 const recipePostedOk = (model, value, action) => {
-  const message = localize('Recipe '+action+'!');
+  const message = localize('Recipe started!');
   return update(model, NotifyBanner(message));
 }
 
 const recipePostedError = (model, error, action) => {
-  const message = localize('Food computer was unable to '+action+' recipe');
+  const message = localize('Food computer was unable to start recipe');
   return update(model, AlertRefreshableBanner(message));
 }
 
