@@ -271,17 +271,6 @@ p {
 ----------------------------------------------------------------------------- */
 
 .toggle {
-  position: relative;
-}
-
-.toggle > input {
-  position: absolute;
-  visibility: hidden;
-  pointer-events: none;
-  z-index: 1;
-}
-
-.toggle > label {
   background: #d5d5d5;
   border-radius: 18px;
   display: block;
@@ -290,10 +279,9 @@ p {
   cursor: pointer;
   outline: none;
   position: relative;
-  z-index: 2;
 }
 
-.toggle > label::before {
+.toggle::before {
   background-color: #989898;
   box-shadow: 0 0 3px rgba(0, 0, 0, 0.35);
   border: 4px solid white;
@@ -311,7 +299,7 @@ p {
     background-color 150ms ease-out;
 }
 
-.toggle > input:checked + label::before {
+.toggle--checked::before {
   background-color: #00A5ED;
   left: 38px;
 }
@@ -332,10 +320,10 @@ p {
 
 .slider::-webkit-slider-runnable-track {
   background: #d5d5d5;
-  border-radius: 8px;
+  border-radius: 12px;
   cursor: pointer;
   width: 100%;
-  height: 16px;
+  height: 24px;
 }
 
 .slider::-webkit-slider-thumb {
@@ -344,8 +332,8 @@ p {
   box-sizing: border-box;
   border-radius: 100%;
   box-shadow: 0 0 3px rgba(0, 0, 0, 0.35);
-  width: 24px;
-  height: 24px;
+  width: 32px;
+  height: 32px;
   /* Offset to center the thumb vertically */
   margin-top: -4px;
   -webkit-appearance: none;
@@ -353,10 +341,10 @@ p {
 
 .slider::-moz-range-track {
   background: #d5d5d5;
-  border-radius: 8px;
+  border-radius: 12px;
   cursor: pointer;
   width: 100%;
-  height: 16px;
+  height: 24px;
 }
 
 .slider:-moz-focusring {
@@ -370,18 +358,18 @@ p {
   border-radius: 100%;
   box-shadow: 0 0 3px rgba(0, 0, 0, 0.35);
   box-sizing: border-box;
-  width: 24px;
-  height: 24px;
+  width: 32px;
+  height: 32px;
   /* Offset to center the thumb vertically */
   margin-top: -4px;
 }
 
 .slider::-ms-track {
   background: #d5d5d5;
-  border-radius: 8px;
+  border-radius: 12px;
   cursor: pointer;
   width: 100%;
-  height: 16px;
+  height: 24px;
 }
 
 .slider::-ms-thumb {
@@ -391,8 +379,8 @@ p {
   box-sizing: border-box;
   border-radius: 100%;
   box-shadow: 0 0 3px rgba(0, 0, 0, 0.35);
-  width: 24px;
-  height: 24px;
+  width: 32px;
+  height: 32px;
   /* Offset to center the thumb vertically */
   margin-top: -4px;
 }
