@@ -140,18 +140,19 @@ const PostStartRecipe = (environmentID, recipeID) => ({
   environmentID
 });
 
-const PostStopRecipe = (environmentID) => ({
-  type: 'PostStopRecipe',
+const PostStopStartRecipe = (environmentID, recipeID) => ({
+  type: 'PostStopStartRecipe',
+  recipeID,
   environmentID
 });
 
 const RecipeStartPosted = (result) => ({
   type: 'RecipeStartPosted',
-  result
+  result,
 });
 
-const RecipeStopPosted = (result) => ({
-  type: 'RecipeStopPosted',
+const RecipeStopStartPosted = (result) => ({
+  type: 'RecipeStopStartPosted',
   result
 });
 
@@ -230,13 +231,12 @@ export const update = (model, action) =>
   startRecipe(model, action.id, action.name) :
   action.type === 'PostStartRecipe' ?
   postStartRecipe(model, action.environmentID, action.recipeID) :
-  action.type === 'PostStopRecipe' ?
-  postStopRecipe(model, action.environmentID) :
-  action.type === 'RecipeStopPosted' ?
+  action.type === 'PostStopStartRecipe' ?
+  postStopStartRecipe(model, action.environmentID, action.recipeID) :
+  action.type === 'RecipeStopStartPosted' ?
   (
-    action.result.isOk ?
-    recipePostedOk(model, action.result.value, 'Stopped!') :
-    recipePostedError(model, action.result.error, 'stop')
+    // don't care for stop_recipe results, just try to start a new one
+    postStartRecipe(model, model.environment.id, model.recipes.active)
   ) :
   action.type === 'RecipeStartPosted' ?
   (
@@ -304,10 +304,8 @@ const activateState = (model, id) =>
 
 const startRecipe = (model, id, name) =>
   batch(update, model, [
-    PostStopRecipe(model.environment.id),
     SetRecipeForEnvironment(id, name),
-    setTimeout(() => { PostStartRecipe(model.environment.id, id) },
-    100),
+    PostStopStartRecipe(model.environment.id, id),
     CloseRecipes
   ]);
 
@@ -323,7 +321,7 @@ const postStartRecipe = (model, environmentID, recipeID) => {
   ];
 }
 
-const postStopRecipe = (model, environmentID) => {
+const postStopStartRecipe = (model, environmentID, id) => {
   const url = Template.render(Config.stop_recipe_url, {
     api_url: model.api,
     environment: environmentID
@@ -331,7 +329,7 @@ const postStopRecipe = (model, environmentID) => {
 
   return [
     model,
-    Request.post(url, {}).map(RecipeStopPosted)
+    Request.post(url, {}).map(RecipeStopStartPosted)
   ];
 }
 
