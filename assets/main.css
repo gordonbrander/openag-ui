@@ -271,7 +271,7 @@ p {
 ----------------------------------------------------------------------------- */
 
 .toggle {
-  background: #d5d5d5;
+  background-color: #d5d5d5;
   border-radius: 18px;
   display: block;
   height: 36px;
@@ -279,6 +279,7 @@ p {
   cursor: pointer;
   outline: none;
   position: relative;
+  transition: background-color 150ms ease-out;
 }
 
 .toggle::before {
@@ -297,6 +298,10 @@ p {
   transition:
     left 150ms ease-out,
     background-color 150ms ease-out;
+}
+
+.toggle--checked {
+  background-color: #00A5ED;
 }
 
 .toggle--checked::before {
