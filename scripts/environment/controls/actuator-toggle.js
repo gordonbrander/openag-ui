@@ -130,5 +130,9 @@ export const view = (model, address) =>
     html.div({
       className: 'actuator-title'
     }, [model.title]),
-    Toggle.view(model, forward(address, TagToggle))
+    Toggle.view(
+      model.toggle,
+      forward(address, TagToggle),
+      'toggle actuator-toggle'
+    )
   ]);

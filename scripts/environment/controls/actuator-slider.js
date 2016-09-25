@@ -164,6 +164,6 @@ export const view = (model, address) =>
     Slider.view(
       model.slider,
       forward(address, TagSlider),
-      'range actuator-range'
+      'slider actuator-slider'
     )
   ]);

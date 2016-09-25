@@ -267,21 +267,70 @@ p {
   border: 0;
 }
 
-/* Range
+/* Toggle input
 ----------------------------------------------------------------------------- */
 
-.range {
+.toggle {
+  position: relative;
+}
+
+.toggle > input {
+  position: absolute;
+  visibility: hidden;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.toggle > label {
+  background: #d5d5d5;
+  border-radius: 18px;
+  display: block;
+  height: 36px;
+  width: 72px;
+  cursor: pointer;
+  outline: none;
+  position: relative;
+  z-index: 2;
+}
+
+.toggle > label::before {
+  background-color: #989898;
+  box-shadow: 0 0 3px rgba(0, 0, 0, 0.35);
+  border: 4px solid white;
+  border-radius: 16px;
+  box-sizing: border-box;
+  display: block;
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  content: "";
+  width: 32px;
+  height: 32px;
+  transition:
+    left 150ms ease-out,
+    background-color 150ms ease-out;
+}
+
+.toggle > input:checked + label::before {
+  background-color: #00A5ED;
+  left: 38px;
+}
+
+/* Range slider
+----------------------------------------------------------------------------- */
+
+.slider {
   background-color: transparent;
   display: block;
   -webkit-appearance: none;
   -moz-appearance: none;
 }
 
-.range:focus {
+.slider:focus {
   outline: none;
 }
 
-.range::-webkit-slider-runnable-track {
+.slider::-webkit-slider-runnable-track {
   background: #d5d5d5;
   border-radius: 8px;
   cursor: pointer;
@@ -289,9 +338,8 @@ p {
   height: 16px;
 }
 
-.range::-webkit-slider-thumb {
+.slider::-webkit-slider-thumb {
   background-color: #00A5ED;
-  transition: background-color 250ms ease-out;
   border: 4px solid white;
   box-sizing: border-box;
   border-radius: 100%;
@@ -303,7 +351,7 @@ p {
   -webkit-appearance: none;
 }
 
-.range::-moz-range-track {
+.slider::-moz-range-track {
   background: #d5d5d5;
   border-radius: 8px;
   cursor: pointer;
@@ -311,11 +359,11 @@ p {
   height: 16px;
 }
 
-.range:-moz-focusring {
+.slider:-moz-focusring {
   outline: none;
 }
 
-.range::-moz-range-thumb {
+.slider::-moz-range-thumb {
   background-color: #00A5ED;
   transition: background-color 250ms ease-out;
   border: 4px solid white;
@@ -328,7 +376,7 @@ p {
   margin-top: -4px;
 }
 
-.range::-ms-track {
+.slider::-ms-track {
   background: #d5d5d5;
   border-radius: 8px;
   cursor: pointer;
@@ -336,7 +384,7 @@ p {
   height: 16px;
 }
 
-.range::-ms-thumb {
+.slider::-ms-thumb {
   background-color: #00A5ED;
   transition: background-color 250ms ease-out;
   border: 4px solid white;
@@ -955,16 +1003,8 @@ p {
   text-transform: uppercase;
 }
 
-.actuator-range {
+.actuator-slider {
   display: block;
   width: 100%;
   margin: 12px 0;
-}
-
-.actuator-readings {
-
-}
-
-.actuator-value {
-  font-weight: bold;
 }
