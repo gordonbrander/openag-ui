@@ -87,7 +87,9 @@ const updateByID = (model, id, action) => {
   if (control) {
     const [next, fx] = Control.update(control, action);
     return [
-      merge(model, {[id]: control}),
+      merge(model, {
+        items: merge(model.items, {[id]: next})
+      }),
       fx.map(TagFor(id))
     ];
   }
