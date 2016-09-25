@@ -333,12 +333,12 @@ const postStopStartRecipe = (model, environmentID, id) => {
   ];
 }
 
-const recipePostedOk = (model, value, action) => {
+const recipePostedOk = (model, value) => {
   const message = localize('Recipe started!');
   return update(model, NotifyBanner(message));
 }
 
-const recipePostedError = (model, error, action) => {
+const recipePostedError = (model, error) => {
   const message = localize('Food computer was unable to start recipe');
   return update(model, AlertRefreshableBanner(message));
 }
