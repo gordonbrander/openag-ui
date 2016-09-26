@@ -130,7 +130,7 @@
     {
       "id": "pump_4",
       "topic": "{{api}}/topic/actuators/pump_4/cmd",
-      "title": "Pump 5",
+      "title": "Pump 4",
       "type": "binary_actuator"
     },
     {
