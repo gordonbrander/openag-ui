@@ -1,12 +1,23 @@
-import {html, forward, Effects, thunk} from 'reflex';
+import {app as APP} from '../../openag-config.json';
+import {html, Effects, Task} from 'reflex';
+import PouchDB from 'pouchdb-browser';
 import {merge} from '../common/prelude';
 import {cursor} from '../common/cursor';
 import * as Modal from '../common/modal';
-import {unknown as updateUnknown} from '../common/unknown';
+import {update as updateUnknown} from '../common/unknown';
 import {classed} from '../common/attr';
 import {localize} from '../common/lang';
 
 // Actions
+
+export const ResetApp = {
+  type: 'ResetApp'
+};
+
+export const RefreshApp = {type: 'RefreshApp'};
+const AlwaysRefresh = () => RefreshApp;
+
+const NoOp = {type: 'NoOp'};
 
 export const TagModal = (action) => ({
   type: 'Modal',
@@ -30,6 +41,12 @@ export const init = () => {
 export const update = (model, action) =>
   action.type === 'Modal' ?
   updateModal(model, action.source) :
+  action.type === 'ResetApp' ?
+  resetApp(model) :
+  action.type === 'RefreshApp' ?
+  refreshApp(model) :
+  action.type === 'NoOp' ?
+  [model, Effects.none] :
   updateUnknown(model, action);
 
 const updateModal = cursor({
@@ -39,14 +56,40 @@ const updateModal = cursor({
   tag: TagModal
 });
 
+const resetApp = model => {
+  const task = new Task(succeed => {
+    // Create a pouchDB instance (the database already exists, but we need
+    // an interface to it that will kill it).
+    const db = new PouchDB(APP.local);
+    db.destroy().then(succeed);
+  });
+  // Map task to refresh action. When db finishes deleting, it will trigger
+  // an app refresh.
+  const fx = Effects.perform(task).map(AlwaysRefresh);
+  return [model, fx];
+}
+
+const refreshApp = (model) => {
+  const task = new Task(succeed => {
+    document.location.reload(true);
+    succeed(NoOp);
+  });
+  return [model, Effects.perform(task)];
+}
+
 // View
 
 export const view = (model, address) =>
   html.div({
     className: classed({
       'settings': true,
-      'settings--closed': !model.isOpen
-    })
+      'settings--close': !model.isOpen
+    }),
+    hidden: (
+      !model.isOpen ?
+      'hidden' :
+      void(0)
+    )
   }, [
     html.div({
       className: 'settings-modal modal-overlay',
@@ -57,4 +100,4 @@ export const view = (model, address) =>
     }, [
       'hello'
     ])
-  ])
+  ]);
