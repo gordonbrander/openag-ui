@@ -132,14 +132,17 @@ export const view = (model, address, className) =>
     type: 'range',
     min: model.min,
     max: model.max,
-    value: model.desired,
+    value: model.value,
     step: model.step,
     disabled:
       ( model.control.isDisabled
       ? true
       : void(0)
       ),
-    onChange: event => address(decodeChangeEvent(event)),
+    onChange: event => {
+      event.preventDefault();
+      address(decodeChangeEvent(event));
+    },
     onFocus: onFocus(address),
     onBlur: onBlur(address)
   });

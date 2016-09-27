@@ -64,7 +64,7 @@ const initForType = ({id, api, type, title, topic}) => {
   }
   else if (type === PWM) {
     const url = templateTopicUrl(api, topic);
-    return Slider.initPwm(id, url, title, 0.5);
+    return Slider.initPwm(id, url, title, 0.0);
   }
   else {
     throw Error(`Module type ${type} not supported by Control module`);
