@@ -480,6 +480,22 @@ p {
   opacity: 1;
 }
 
+.nav-hamburger-icon {
+  background: url(./sprite.png) 0 -1400px no-repeat;
+  background-size: 100px auto;
+  opacity: 0.6;
+  cursor: pointer;
+  height: 72px;
+  width: 72px;
+  right: 0;
+  position: absolute;
+}
+
+.nav-hamburger-icon--active {
+  background-position: 0 -1300px;
+  opacity: 1;
+}
+
 /* Environment (everything beneath nav)
 ----------------------------------------------------------------------------- */
 
@@ -554,6 +570,59 @@ p {
   opacity: 0;
   transform: translate(-50%, -35%) scale(0.95);
   pointer-events: none;
+}
+
+/* Dropdown
+----------------------------------------------------------------------------- */
+
+.dropdown {
+  position: fixed;
+  width: 100vw;
+  height: 100vh;
+  top: 0;
+  left: 0;
+  z-index: 9;
+}
+
+.dropdown[hidden] {
+  display: block;
+  pointer-events: none;
+}
+
+.dropdown-main {
+  background-color: #fff;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.20);
+  border-radius: 3px;
+  min-height: 152px;
+  width: 232px;
+  position: absolute;
+  transition:
+    opacity 200ms ease-out;
+}
+
+.dropdown[hidden] .dropdown-main {
+  opacity: 0;
+}
+
+.dropdown-main::before {
+  border: 10px solid #fff;
+  border-color: transparent transparent #fff transparent;
+  content: '';
+  position: absolute;
+  top: -20px;
+  right: 14px;
+}
+
+.dropdown-main {
+  padding: 12px;
+}
+
+.dropdown-overlay {
+  height: 100vh;
+  position: absolute;
+  width: 100vw;
+  top: 0;
+  left: 0;
 }
 
 /* Menu list
