@@ -520,7 +520,7 @@ const viewData = (model, address) => {
         }
       }),
       html.div({
-        onMouseDown: () => {
+        onMouseDown: (event) => {
           event.preventDefault();
           address(HoldScrubber);
         },
