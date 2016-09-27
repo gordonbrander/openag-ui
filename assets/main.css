@@ -613,8 +613,9 @@ p {
   right: 14px;
 }
 
-.dropdown-main {
-  padding: 12px;
+.dropdown-main > .menu-list {
+  padding-top: 6px;
+  padding-bottom: 6px;
 }
 
 .dropdown-overlay {
@@ -643,6 +644,7 @@ p {
 
 .menu-list a {
   color: #00a5ed;
+  cursor: pointer;
   display: block;
   line-height: 48px;
   text-decoration: none;
@@ -652,6 +654,10 @@ p {
 
 .menu-list a:hover {
   background-color: #f4f4f4;
+}
+
+.menu-list a.menu-list--destructive {
+  color: #FF3912; /* red */
 }
 
 /* Banner
