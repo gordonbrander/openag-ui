@@ -14,7 +14,7 @@ import * as AppNav from './app/nav';
 import * as Environments from './environments';
 import * as Environment from './environment';
 import * as Recipes from './recipes';
-import * as Settings from './first-time-use';
+import * as FirstTimeUse from './first-time-use';
 import {compose} from './lang/functional';
 
 // State ID is the id of the pouch record we use to persist state.
@@ -46,8 +46,8 @@ const TagFirstTimeUse = action =>
   ConfigureFirstTime(action.form) :
   tagged('FirstTimeUse', action);
 
-const OpenFirstTimeUse = TagFirstTimeUse(Settings.Open);
-const CloseFirstTimeUse = TagFirstTimeUse(Settings.Close);
+const OpenFirstTimeUse = TagFirstTimeUse(FirstTimeUse.Open);
+const CloseFirstTimeUse = TagFirstTimeUse(FirstTimeUse.Close);
 
 const TagPersistence = action =>
   action.type === 'NotifyRestore' ?
@@ -156,7 +156,7 @@ export const init = () => {
   const [recipes, recipesFx] = Recipes.init();
   const [appNav, appNavFx] = AppNav.init(DASHBOARD);
   const [banner, bannerFx] = Banner.init();
-  const [firstTimeUse, firstTimeUseFx] = Settings.init();
+  const [firstTimeUse, firstTimeUseFx] = FirstTimeUse.init();
 
   return [
     {
@@ -238,7 +238,7 @@ const updatePersistence = cursor({
 const updateFirstTimeUse = cursor({
   get: model => model.firstTimeUse,
   set: (model, firstTimeUse) => merge(model, {firstTimeUse}),
-  update: Settings.update,
+  update: FirstTimeUse.update,
   tag: TagFirstTimeUse
 });
 
@@ -391,7 +391,7 @@ const viewFTU = (model, address) =>
   }, [
     thunk(
       'first-time-use',
-      Settings.viewFTU,
+      FirstTimeUse.viewFTU,
       model.firstTimeUse,
       forward(address, TagFirstTimeUse)
     )
