@@ -11,6 +11,10 @@ export const Close = {
   type: 'Close'
 };
 
+export const Toggle = {
+  type: 'Toggle'
+};
+
 export const open = model =>
   update(model, Open);
 
@@ -22,4 +26,6 @@ export const update = (model, action) =>
   [merge(model, {isOpen: true}), Effects.none] :
   action.type === 'Close' ?
   [merge(model, {isOpen: false}), Effects.none] :
+  action.type === 'Toggle' ?
+  [merge(model, {isOpen: !model.isOpen}), Effects.none] :
   Unknown.update(model, action);

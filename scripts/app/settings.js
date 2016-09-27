@@ -82,8 +82,8 @@ const refreshApp = (model) => {
 export const view = (model, address) =>
   html.div({
     className: classed({
-      'settings': true,
-      'settings--close': !model.isOpen
+      'dropdown': true,
+      'dropdown--close': !model.isOpen
     }),
     hidden: (
       !model.isOpen ?
@@ -92,12 +92,30 @@ export const view = (model, address) =>
     )
   }, [
     html.div({
-      className: 'settings-modal modal-overlay',
+      className: 'dropdown-overlay',
       onClick: () => address(Close)
     }),
     html.div({
-      className: 'settings-main'
+      className: 'dropdown-main',
+      style: {
+        top: '66px',
+        right: '12px'
+      }
     }, [
-      'hello'
+      html.ul({
+        className: 'menu-list'
+      }, [
+        html.li(null, [
+          html.a({
+            className: 'menu-list--destructive',
+            onClick: (event) => {
+              event.preventDefault();
+              address(ResetApp)
+            }
+          }, [
+            'Reset App'
+          ])
+        ])
+      ])
     ])
   ]);
