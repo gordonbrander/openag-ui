@@ -1,8 +1,7 @@
-import {html, forward, Effects} from 'reflex';
-import {compose} from '../lang/functional';
-import {tag, tagged, annotate} from '../common/prelude';
+import {html, forward, Effects, Task} from 'reflex';
+import {compose, constant} from '../lang/functional';
+import {annotate, port} from '../common/prelude';
 import {update as updateUnknown} from '../common/unknown';
-import * as Focus from '../common/focusable';
 import * as Edit from '../common/editable';
 import * as Control from '../common/control';
 
@@ -18,11 +17,6 @@ const EditAction = (action) => ({
   edit: action
 });
 
-const FocusAction = (action) => ({
-  type: "Focus",
-  focus: action
-});
-
 const ControlAction = action => ({
   type: "Control",
   control: action
@@ -32,14 +26,12 @@ const ControlAction = action => ({
 
 export class Model {
   constructor(
-    focus,
     control,
     value,
     min,
     max,
     step
   ) {
-    this.focus = focus
     this.control = control
     this.value = value
     this.min = min
@@ -53,14 +45,11 @@ export const init = (
   min,
   max,
   step,
-  isFocused = false,
   isDisabled = false
 ) => {
-  const [focus, focusFx] = Focus.init(isFocused);
   const [control, controlFx] = Control.init(isDisabled);
 
   const model = new Model(
-    focus,
     control,
     value,
     min,
@@ -70,10 +59,7 @@ export const init = (
 
   return [
     model,
-    Effects.batch([
-      focusFx,
-      controlFx
-    ])
+    controlFx.map(ControlAction)
   ]
 }
 
@@ -81,8 +67,6 @@ export const update = (model, action) => {
   switch (action.type) {
     case 'Change':
       return change(model, action.value)
-    case 'Focus':
-      return delegateFocusUpdate(model, action.focus)
     case 'Control':
       return delegateControlUpdate(model, action.control)
     default:
@@ -92,7 +76,6 @@ export const update = (model, action) => {
 
 const change = (model, value) => [
   new Model(
-    model.focus,
     model.control,
     value,
     model.min,
@@ -112,16 +95,8 @@ const delegateControlUpdate = (model, action) =>
   swapControl(model, Control.update(model.control, action));
 
 const swapControl = (model, [control, fx]) => [
-  new Model(model.focus, control, model.value, model.min, model.max, model.step),
+  new Model(control, model.value, model.min, model.max, model.step),
   fx.map(ControlAction)
-];
-
-const delegateFocusUpdate = (model, action) =>
-  swapFocus(model, Focus.update(model.focus, action));
-
-const swapFocus = (model, [focus, fx]) => [
-  new Model(focus, model.control, model.value, model.min, model.max, model.step),
-  fx.map(FocusAction)
 ];
 
 // View
@@ -142,14 +117,10 @@ export const view = (model, address, className) =>
     onChange: event => {
       event.preventDefault();
       address(decodeChangeEvent(event));
-    },
-    onFocus: onFocus(address),
-    onBlur: onBlur(address)
+    }
   });
 
 export const decodeChangeEvent = (event) => {
   const number = Number.parseFloat(event.target.value);
   return Change(number);
 }
-export const onFocus = annotate(Focus.onFocus, FocusAction);
-export const onBlur = annotate(Focus.onBlur, FocusAction);

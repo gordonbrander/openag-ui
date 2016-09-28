@@ -73,9 +73,7 @@ export const init = (
     value,
     min,
     max,
-    step,
-    isDisabled = false,
-    isFocused = false
+    step
   );
 
   const model = new Model(
