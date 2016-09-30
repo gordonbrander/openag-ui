@@ -170,10 +170,15 @@ p {
 .input {
   background: transparent;
   border: 0;
+  /* Override border radius on iOS */
+  border-radius: 0;
   box-shadow: 0 1px 0 #d8d8d8;
   box-sizing: border-box;
   display: block;
   width: 100%;
+  /* Override padding in iOS */
+  padding-left: 0;
+  padding-right: 0;
   -webkit-appearance: none;
   -moz-appearance: none; 
 }
@@ -252,6 +257,8 @@ p {
   box-sizing: border-box;
   display: block;
   width: 100%;
+  /* Override iOS select */
+  padding-left: 0;
   -webkit-appearance: none;
   -moz-appearance: none;
   -ms-appearance: none;
