@@ -7,7 +7,7 @@ import * as Indexed from './common/indexed';
 import * as Unknown from './common/unknown';
 import * as Result from './common/result';
 import * as Banner from './common/banner';
-import {merge, tag, tagged, batch} from './common/prelude';
+import {merge, tag, tagged, batch, annotate} from './common/prelude';
 import * as Modal from './common/modal';
 import {cursor} from './common/cursor';
 import {classed, toggle} from './common/attr';
@@ -269,15 +269,17 @@ export const update = (model, action) =>
 
 // View
 
-export const view = (model, address) =>
-  html.div({
+export const view = (model, address) => {
+  const sendModalClose = onModalClose(address);
+  return html.div({
     id: 'recipes-modal',
     className: 'modal',
     hidden: toggle(!model.isOpen, 'hidden')
   }, [
     html.div({
       className: 'modal-overlay',
-      onClick: () => address(Close)
+      onTouchStart: sendModalClose,
+      onMouseDown: sendModalClose
     }),
     html.dialog({
       className: classed({
@@ -344,6 +346,9 @@ export const view = (model, address) =>
       ])
     ])
   ]);
+}
+
+const onModalClose = annotate(Modal.onClose, TagModal);
 
 // Helpers
 
