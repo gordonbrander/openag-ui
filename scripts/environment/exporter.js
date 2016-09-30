@@ -1,7 +1,7 @@
 import {html, Effects} from 'reflex';
 import * as Config from '../../openag-config.json';
 import * as Template from '../common/stache';
-import {merge, tag, nofx} from '../common/prelude';
+import {merge, tag, nofx, annotate} from '../common/prelude';
 import {classed, toggle} from '../common/attr';
 import * as Modal from '../common/modal';
 import {cursor} from '../common/cursor';
@@ -52,13 +52,15 @@ const updateModal = cursor({
 // View
 
 export const view = (model, address, environmentID) => {
+  const sendCloseModal = onCloseModal(address);
   return html.div({
     className: 'modal',
     hidden: toggle(!model.isOpen, 'hidden')
   }, [
     html.div({
       className: 'modal-overlay',
-      onClick: () => address(Close)
+      onTouchStart: sendCloseModal,
+      onMouseDown: sendCloseModal
     }),
     html.dialog({
       className: 'modal-main modal-main--menu',
@@ -99,6 +101,8 @@ export const view = (model, address, environmentID) => {
     ])
   ])
 }
+
+const onCloseModal = annotate(Modal.onClose, TagModal);
 
 const renderExport = (origin, environmentID, variable, title) =>
   html.li({
