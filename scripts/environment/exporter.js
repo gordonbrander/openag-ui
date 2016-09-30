@@ -105,9 +105,7 @@ export const view = (model, address, environmentID) => {
 const onCloseModal = annotate(Modal.onClose, TagModal);
 
 const renderExport = (origin, environmentID, variable, title) =>
-  html.li({
-
-  }, [
+  html.li(null, [
     html.a({
       target: '_blank',
       href: templateCsvUrl(origin, environmentID, variable)
