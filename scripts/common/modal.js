@@ -1,6 +1,6 @@
 // Helper functions for showing and hiding model components.
 import {Effects} from 'reflex';
-import {merge} from '../common/prelude';
+import {merge, port} from '../common/prelude';
 import * as Unknown from '../common/unknown';
 
 export const Open = {
@@ -23,3 +23,13 @@ export const update = (model, action) =>
   action.type === 'Close' ?
   [merge(model, {isOpen: false}), Effects.none] :
   Unknown.update(model, action);
+
+export const onOpen = port(event => {
+  event.preventDefault();
+  return Open;
+});
+
+export const onClose = port(event => {
+  event.preventDefault();
+  return Close;
+})
