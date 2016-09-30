@@ -3,7 +3,7 @@ An error banner for notifying the user of edge-case conditions.
 */
 import {html, Effects, Task, forward} from 'reflex';
 import {localize} from '../common/lang';
-import {tag} from '../common/prelude';
+import {port} from '../common/prelude';
 import {classed} from '../common/attr';
 import * as Unknown from '../common/unknown';
 
@@ -118,8 +118,10 @@ const suppress = model => [
 
 // View
 
-export const view = (model, address, className) =>
-  html.div({
+export const view = (model, address, className) => {
+  const sendClose = onClose(address);
+
+  return html.div({
     className: classed({
       'banner': true,
       'banner--notification': !model.isWarning,
@@ -138,10 +140,8 @@ export const view = (model, address, className) =>
         'banner-action--dismiss': true,
         'banner-action--close': model.mode !== DISMISSABLE
       }),
-      onClick: event => {
-        event.preventDefault();
-        address(Suppress);
-      }
+      onTouchStart: sendClose,
+      onMouseDown: sendClose
     }, [
       localize('Close')
     ]),
@@ -151,12 +151,21 @@ export const view = (model, address, className) =>
         'banner-action--refresh': true,
         'banner-action--close': model.mode !== REFRESHABLE
       }),
-      onClick: event => {
-        event.preventDefault();
-        // Refresh and flip boolean to bypass page cache.
-        document.location.reload(true);
-      }
+      onTouchStart: onRefresh,
+      onMouseDown: onRefresh
     }, [
       localize('Refresh')
     ])
   ]);
+}
+
+export const onClose = port(event => {
+  event.preventDefault();
+  return Suppress;
+});
+
+const onRefresh = event => {
+  event.preventDefault();
+  // Refresh and flip boolean to bypass page cache.
+  document.location.reload(true);
+};
