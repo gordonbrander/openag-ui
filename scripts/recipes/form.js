@@ -106,8 +106,9 @@ const updateBanner = cursor({
 
 // View
 
-export const view = (model, address, isActive) =>
-  html.div({
+export const view = (model, address, isActive) => {
+  const sendBack = onBack(address);
+  return html.div({
     className: classed({
       'panel--main': true,
       'panel--lv1': true,
@@ -127,7 +128,8 @@ export const view = (model, address, isActive) =>
       }, [
         html.a({
           className: 'recipes-back-icon',
-          onClick: () => address(Back)
+          onTouchStart: sendBack,
+          onMouseDown: sendBack
         })
       ]),
       html.div({
@@ -179,3 +181,9 @@ export const view = (model, address, isActive) =>
       ])
     ])
   ]);
+}
+
+const onBack = port(event => {
+  event.preventDefault();
+  return Back;
+})
