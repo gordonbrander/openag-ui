@@ -52,14 +52,6 @@ export const MoveXhair = tag('MoveXhair');
 export const SetData = tag('SetData');
 export const AddData = tag('AddData');
 
-// Put chart into "loading" mode. Note that chart is dumb about whether it is
-// loading or simply lacking data. You have to tell it via actions. Giving the
-// chart data via the Data action will also automatically flip `isLoading` to
-// false.
-export const Loading = tag('Loading');
-// Put chart into "not loading" mode.
-export const Ready = tag('Ready');
-
 const ScrubberAction = tag('Scrubber');
 const MoveScrubber = compose(ScrubberAction, Draggable.Move);
 const HoldScrubber = ScrubberAction(Draggable.Hold);
@@ -77,8 +69,7 @@ class Model {
     width,
     height,
     scrubber,
-    xhairAt,
-    isLoading
+    xhairAt
   ) {
     // Series class instance.
     this.series = series;
@@ -98,9 +89,6 @@ class Model {
 
     // Crosshair ratio
     this.xhairAt = xhairAt;
-
-    // Is chart loading? (Boolean)
-    this.isLoading = isLoading;
 
     // Width of the tooltip that shows the readouts.
     this.tooltipWidth = 424;
@@ -125,8 +113,7 @@ Model.changeSeries = (model, series) => new Model(
   model.width,
   model.height,
   model.scrubber,
-  model.xhairAt,
-  model.isLoading
+  model.xhairAt
 );
 
 // Swap xhair ratio, returning new Model.
@@ -138,8 +125,7 @@ Model.changeXhair = (model, xhairAt) => new Model(
   model.width,
   model.height,
   model.scrubber,
-  xhairAt,
-  model.isLoading
+  xhairAt
 );
 
 // Swap scrubber class instance, returning new Model.
@@ -151,8 +137,7 @@ Model.changeScrubber = (model, scrubber) => new Model(
   model.width,
   model.height,
   scrubber,
-  model.xhairAt,
-  model.isLoading
+  model.xhairAt
 );
 
 // Swap width and height, returning new Model.
@@ -164,21 +149,7 @@ Model.changeDimensions = (model, width, height) => new Model(
   width,
   height,
   model.scrubber,
-  model.xhairAt,
-  model.isLoading
-);
-
-// Swap loading state, returning new Model.
-Model.changeLoading = (model, isLoading) => new Model(
-  model.series,
-  model.markers,
-  model.recipeStart,
-  model.recipeEnd,
-  model.width,
-  model.height,
-  model.scrubber,
-  model.xhairAt,
-  isLoading
+  model.xhairAt
 );
 
 // Swap markers array, returning new Model.
@@ -190,8 +161,7 @@ Model.changeMarkers = (model, markers) => new Model(
   model.width,
   model.height,
   model.scrubber,
-  model.xhairAt,
-  model.isLoading
+  model.xhairAt
 );
 
 export const init = () => [
@@ -218,24 +188,6 @@ export const update = (model, action) =>
   addData(model, action.source) :
   action.type === 'Resize' ?
   updateSize(model, action.width, action.height) :
-  action.type === 'Loading' ?
-  [
-    (
-      !model.isLoading ?
-      Model.changeLoading(model, true) :
-      model
-    ),
-    Effects.none
-  ] :
-  action.type === 'Ready' ?
-  [
-    (
-      model.isLoading ?
-      Model.changeLoading(model, false) :
-      model
-    ),
-    Effects.none
-  ] :
   action.type === 'DropMarker' ?
   dropMarker(model) :
   Unknown.update(model, action);
@@ -261,9 +213,7 @@ const addData = (model, data) => {
       model.width,
       model.height,
       model.scrubber,
-      model.xhairAt,
-      // Mark isLoading false
-      false
+      model.xhairAt
     );
 
     return[next, Effects.none]
@@ -296,43 +246,15 @@ const updateScrub = cursor({
 
 // View function
 export const view = (model, address) =>
-  // If model is loading, show loading view
-  model.isLoading ?
-  viewLoading(model, address) :
-  // If not loading and no data to show, render empty
+  // If no data to show, render empty
   Model.isEmpty(model) ?
   viewEmpty(model, address) :
   viewData(model, address);
 
-// Handle the case where there is no data yet.
-const viewLoading = (model, address) => {
-  const {width, height} = model;
-  return html.div({
-    className: 'chart split-view-content',
-    style: {
-      width: px(width),
-      height: px(height)
-    },
-    onResize: onWindow(address, () => {
-      return Resize(
-        calcChartWidth(window.innerWidth),
-        calcChartHeight(window.innerHeight)
-      );
-    })
-  }, [
-    html.img({
-      className: 'chart-loading--img',
-      src: 'assets/loading.svg',
-      width: '80',
-      height: '80'
-    })
-  ]);
-}
-
 const viewEmpty = (model, address) => {
   const {width, height} = model;
   return html.div({
-    className: 'chart',
+    className: 'chart split-view-content',
     style: {
       width: px(width),
       height: px(height)
