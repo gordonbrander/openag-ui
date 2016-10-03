@@ -355,7 +355,9 @@ const readRecord = record => record.rows.map(readRow);
 
 const readData = record => {
   const data = readRecord(record);
-  data.sort(compareByTimestamp);
+  if (data.length > 0) {
+    data.sort(compareByTimestamp);
+  }
   return data;
 };
 

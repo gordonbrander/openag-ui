@@ -71,7 +71,8 @@ export const init = (id) => {
       id,
       chart,
       exporter,
-      sidebar
+      sidebar,
+      isLoading: true
     },
     Effects.batch([
       chartFx.map(TagChart),
@@ -114,6 +115,11 @@ const updateChart = cursor({
 });
 
 const addData = (model, data) => {
+  const next = merge(model, {
+    // We've received data, so we're no longer in loading state.
+    isLoading: false
+  });
+
   const actions = [
     AddChartData(data)
   ];
@@ -131,13 +137,13 @@ const addData = (model, data) => {
     actions.push(SetRecipe(id, name));
   }
 
-  return batch(update, model, actions);
+  return batch(update, next, actions);
 }
 
 // View
 
 export const view = (model, address) =>
-  model.id ?
+  (model.id && !model.isLoading) ?
   viewReady(model, address) :
   viewUnready(model, address);
 
