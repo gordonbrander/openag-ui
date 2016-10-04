@@ -5,6 +5,7 @@
 
   "active_environment": "environment_1",
   "start_recipe_url": "{{api_url}}/service/{{environment}}/start_recipe",
+  "stop_recipe_url": "{{api_url}}/service/{{environment}}/stop_recipe",
 
   "environmental_data_point": {
     "local": "environmental_data_point",
