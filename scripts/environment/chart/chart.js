@@ -7,7 +7,7 @@ import {html, forward, Effects, thunk} from 'reflex';
 import {chart as CHART} from '../../../openag-config.json';
 import {localize} from '../../common/lang';
 import {mapOr} from '../../common/maybe';
-import {tag} from '../../common/prelude';
+import {tag, annotate} from '../../common/prelude';
 import {cursor} from '../../common/cursor';
 import * as Draggable from '../../common/draggable';
 import {classed} from '../../common/attr';
@@ -52,7 +52,6 @@ export const SetData = tag('SetData');
 export const AddData = tag('AddData');
 
 const ScrubberAction = tag('Scrubber');
-const MoveScrubber = compose(ScrubberAction, Draggable.Move);
 const HoldScrubber = ScrubberAction(Draggable.Hold);
 const ReleaseScrubber = ScrubberAction(Draggable.Release);
 
@@ -163,20 +162,29 @@ Model.changeMarkers = (model, markers) => new Model(
   model.xhairAt
 );
 
-export const init = () => [
-  new Model(
+export const init = () => {
+  const width = calcChartWidth(window.innerWidth);
+  const height = calcChartHeight(window.innerHeight);
+
+  const [scrubber, scrubberFx] = Draggable.init(false, [width, height]);
+
+  const model = new Model(
     SeriesView.from([], CHART, MAX_DATAPOINTS),
     [],
     null,
     null,
-    calcChartWidth(window.innerWidth),
-    calcChartHeight(window.innerHeight),
-    Draggable.Model(false, 1.0),
+    width,
+    height,
+    scrubber,
     0.5,
     true
-  ),
-  Effects.none
-];
+  );
+
+  return [
+    model,
+    scrubberFx.map(ScrubberAction)
+  ];
+}
 
 export const update = (model, action) =>
   action.type === 'Scrubber' ?
@@ -286,7 +294,8 @@ const viewData = (model, address) => {
   const [seriesMin, seriesMax] = SeriesView.extent(series, readX);
   const extentX = [seriesMin, Date.now()];
 
-  const scrubberAt = scrubber.coords;
+  const scrubberMaxX = width - 12;
+  const scrubberX = clamp(scrubber.coords[0], 0, scrubberMaxX);
   const isDragging = scrubber.isDragging;
 
   // Calculate dimensions
@@ -301,26 +310,19 @@ const viewData = (model, address) => {
     .domain(extentX)
     .range([0, plotWidth]);
 
-  const scrubberRatioToScrubberX = scaleLinear()
-    .domain(RATIO_DOMAIN)
-    .range([0, width - 12])
-    .clamp(true);
-
-  const scrubberX = scrubberRatioToScrubberX(scrubberAt);
-
   const xhairRatioToXhairX = scaleLinear()
     .domain(RATIO_DOMAIN)
     .range([0, width])
     .clamp(true);
 
-  const scrubberRatioToPlotX = scaleLinear()
-    .domain(RATIO_DOMAIN)
+  const scrubberToPlotX = scaleLinear()
+    .domain([0, scrubberMaxX])
     // Translate up to the point that the right side of the plot is adjacent
     // to the right side of the viewport.
     .range([0, plotWidth - width])
     .clamp(true);
 
-  const plotX = scrubberRatioToPlotX(scrubberAt);
+  const plotX = scrubberToPlotX(scrubberX);
 
   const xhairX = xhairRatioToXhairX(xhairAt);
   const tooltipX = calcTooltipX(xhairX, width, tooltipWidth);
@@ -372,7 +374,6 @@ const viewData = (model, address) => {
 
   return html.div({
     className: 'chart split-view-content',
-    onMouseUp: () => address(ReleaseScrubber),
     onMouseMove: event => {
       const [mouseX, mouseY] = calcRelativeMousePos(
         event.currentTarget,
@@ -381,9 +382,26 @@ const viewData = (model, address) => {
 
       const xhairAt = xhairRatioToXhairX.invert(mouseX);
       address(MoveXhair(xhairAt));
-
-      const scrubberAt = scrubberRatioToScrubberX.invert(mouseX);
-      address(MoveScrubber(scrubberAt));
+    },
+    onTouchStart: event => {
+      // Prevent from becoming a click event.
+      event.preventDefault();
+    },
+    onTouchMove: event => {
+      event.preventDefault();
+      const changedTouches = event.changedTouches;
+      if (changedTouches.length) {
+        // @TODO it might be better to find the common midpoint between multiple
+        // touches if touches > 1.
+        const touch = changedTouches.item(0);
+        const coords = calcRelativeMousePos(
+          event.currentTarget,
+          touch.clientX,
+          touch.clientY
+        );
+        const xhairAt = xhairRatioToXhairX.invert(coords[0]);
+        address(MoveXhair(xhairAt));
+      }
     },
     onResize: onWindow(address, () => {
       return Resize(
@@ -432,8 +450,20 @@ const viewData = (model, address) => {
       }, readouts)
     ]),
     html.div({
-      className: 'chart-scrubber'
+      className: classed({
+        'chart-scrubber': true,
+        'chart-scrubber--active': isDragging
+      }),
+      onMouseDown: onScrubberMouseDown(address),
+      onMouseMove: onScrubberMouseMove(address),
+      onMouseUp: onScrubberMouseUp(address),
+      onTouchStart: onScrubberTouchStart(address),
+      onTouchMove: onScrubberTouchMove(address),
+      onTouchEnd: onScrubberTouchEnd(address)
     }, [
+      html.div({
+        className: 'chart-scrubber--backing'
+      }),
       html.div({
         className: 'chart-progress',
         style: {
@@ -441,10 +471,6 @@ const viewData = (model, address) => {
         }
       }),
       html.div({
-        onMouseDown: (event) => {
-          event.preventDefault();
-          address(HoldScrubber);
-        },
         className: classed({
           'chart-handle': true,
           'chart-handle--dragging': isDragging
@@ -598,6 +624,15 @@ const renderUserMarkers = (markers, scale, height, readX) =>
     const text = formatTick(timestamp);
     return renderUserMarker(x, height, text);
   }));
+
+// Event ports
+
+const onScrubberMouseDown = annotate(Draggable.onMouseDown, ScrubberAction);
+const onScrubberMouseUp = annotate(Draggable.onMouseUp, ScrubberAction);
+const onScrubberMouseMove = annotate(Draggable.onMouseMove, ScrubberAction);
+const onScrubberTouchStart = annotate(Draggable.onTouchStart, ScrubberAction);
+const onScrubberTouchMove = annotate(Draggable.onTouchMove, ScrubberAction);
+const onScrubberTouchEnd = annotate(Draggable.onTouchEnd, ScrubberAction);
 
 // Helpers
 
