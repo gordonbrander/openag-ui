@@ -441,8 +441,10 @@ p {
   border-top: 0;
 }
 
-.menu-list a {
+.menu-list a,
+.menu-list-control {
   color: #00a5ed;
+  cursor: pointer;
   display: block;
   line-height: 48px;
   text-decoration: none;
@@ -450,7 +452,8 @@ p {
   padding: 0 24px;
 }
 
-.menu-list a:hover {
+.menu-list a:hover,
+.menu-list-control:hover {
   background-color: #f4f4f4;
 }
 
