@@ -5,7 +5,6 @@ import * as Template from './common/stache';
 import * as Database from './common/database';
 import * as Indexed from './common/indexed';
 import * as Unknown from './common/unknown';
-import * as Result from './common/result';
 import * as Banner from './common/banner';
 import {merge, tag, tagged, batch, annotate, port} from './common/prelude';
 import * as Modal from './common/modal';
@@ -17,8 +16,6 @@ import * as RecipesForm from './recipes/form';
 import * as Recipe from './recipe';
 
 const DB = new PouchDB(Config.recipes.local);
-
-const getPouchID = Indexed.getter('_id');
 
 // Actions and tagging functions
 
@@ -177,26 +174,26 @@ const syncedError = model => {
   return update(model, AlertDismissable(message));
 }
 
-const restoredRecipes = Result.updater(
-  (model, recipes) => [
-    merge(model, {
-      // Build an array of ordered recipe IDs
-      order: recipes.map(getPouchID),
-      // Index all recipes by ID
-      entries: Indexed.indexWith(recipes, getPouchID)
-    }),
-    Effects.none
-  ],
-  (model, error) => {
-    const message = localize("Hmm, couldn't read from your browser's database.");
-    return update(model, AlertRefreshable(message));
-  }
-);
+const restoredOk = (model, docs) => {
+  const recipes = docs.map(Recipe.fromDoc);
+  const next = merge(model, {
+    // Build an array of ordered recipe IDs
+    order: Indexed.pluckID(recipes),
+    // Index all recipes by ID
+    entries: Indexed.indexByID(recipes)
+  });
+  return [next, Effects.none];
+}
+
+const restoredError = (model, error) => {
+  const message = localize("Hmm, couldn't read from your browser's database.");
+  return update(model, AlertRefreshable(message));
+}
 
 // Activate recipe by id
 const startByID = (model, id) => {
   const [next, fx] = update(model, Activate(id));
-  const name = readRecipeName(next.entries[id]);
+  const name = next.entries[id].name;
 
   return [
     next,
@@ -210,12 +207,13 @@ const startByID = (model, id) => {
 const activatePanel = (model, id) =>
   [merge(model, {activePanel: id}), Effects.none];
 
-const put = (model, recipe) => {
+const put = (model, doc) => {
   // Insert recipe into in-memory model.
   // @TODO perhaps we should do this after succesful put.
-  const next = Indexed.add(model, recipe._id, recipe);
+  const recipe = Recipe.fromDoc(doc);
+  const next = Indexed.add(model, recipe.id, recipe);
   // Then attempt to store it in DB.
-  return [next, Database.put(DB, recipe).map(Putted)];
+  return [next, Database.put(DB, doc).map(Putted)];
 }
 
 const putted = (model, result) =>
@@ -250,7 +248,11 @@ export const update = (model, action) =>
   action.type === 'RestoreRecipes' ?
   [model, Database.restore(DB).map(RestoredRecipes)] :
   action.type === 'RestoredRecipes' ?
-  restoredRecipes(model, action.result) :
+  (
+    action.result.isOk ?
+    restoredOk(model, action.result.value) :
+    restoredError(model, action.result.error)
+  ) :
   action.type === 'StartByID' ?
   startByID(model, action.id) :
   action.type === 'ActivatePanel' ?
@@ -325,11 +327,8 @@ export const view = (model, address) => {
           html.div({
             className: 'panel--content'
           }, [
-            html.div({
-              className: classed({
-                'recipes-main': true,
-                'recipes-main-close': !model.isOpen
-              })
+            html.ul({
+              className: 'menu-list'
             }, model.order.map(id => thunk(
               id,
               Recipe.view,
@@ -358,8 +357,6 @@ const onRecipeForm = port(event => {
 })
 
 // Helpers
-
-const readRecipeName = recipe => (recipe.name || recipe.value || recipe._id);
 
 const templateRecipesDatabase = origin =>
   Template.render(Config.recipes.origin, {
