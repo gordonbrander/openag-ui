@@ -35,14 +35,21 @@ const TagBanner = source => ({
 
 const AlertRefreshable = compose(TagBanner, Banner.AlertRefreshable);
 const AlertDismissable = compose(TagBanner, Banner.AlertDismissable);
-const FailRecipeStart = AlertDismissable("Blarg! Couldn't start recipe");
+const FailRecipeStart = AlertDismissable("Couldn't start recipe");
 
-const RecipesFormAction = action =>
+const TagRecipesForm = action =>
   action.type === 'Back' ?
   ActivatePanel(null) :
   action.type === 'Submitted' ?
   Put(action.recipe) :
-  tagged('RecipesForm', action);
+  RecipesFormAction(action);
+
+const RecipesFormAction = action => ({
+  type: 'RecipesForm',
+  source: action
+});
+
+const AlertRecipesForm = compose(RecipesFormAction, RecipesForm.AlertDismissable);
 
 const RecipeAction = (id, action) =>
   action.type === 'Activate' ?
@@ -123,7 +130,7 @@ export const init = () => {
       banner
     },
     Effects.batch([
-      recipesFormFx.map(RecipesFormAction),
+      recipesFormFx.map(TagRecipesForm),
       bannerFx.map(TagBanner)
     ])
   ];
@@ -144,13 +151,13 @@ const updateBanner = cursor({
   set: (model, banner) => merge(model, {banner}),
   update: Banner.update,
   tag: TagBanner
-})
+});
 
 const updateRecipesForm = cursor({
   get: model => model.recipesForm,
   set: (model, recipesForm) => merge(model, {recipesForm}),
   update: RecipesForm.update,
-  tag: RecipesFormAction
+  tag: TagRecipesForm
 });
 
 const sync = model => {
@@ -216,10 +223,12 @@ const put = (model, doc) => {
   return [next, Database.put(DB, doc).map(Putted)];
 }
 
-const putted = (model, result) =>
-  result.isOk ?
-  [model, Effects.none] :
-  [model, Effects.none];
+const puttedOk = (model, value) => [model, Effects.none];
+
+const puttedError = (model, error) => {
+  const action = AlertRecipesForm(String(error));
+  return update(model, action);
+}
 
 const configure = (model, origin) => {
   const next = merge(model, {origin});
@@ -244,7 +253,11 @@ export const update = (model, action) =>
   action.type === 'Put' ?
   put(model, action.value) :
   action.type === 'Putted' ?
-  putted(model, action.result) :
+  (
+    action.result.isOk ?
+    puttedOk(model, action.result.value) :
+    puttedError(model, action.result.error)
+  ) :
   action.type === 'RestoreRecipes' ?
   [model, Database.restore(DB).map(RestoredRecipes)] :
   action.type === 'RestoredRecipes' ?
@@ -341,7 +354,7 @@ export const view = (model, address) => {
           'recipes-form',
           RecipesForm.view,
           model.recipesForm,
-          forward(address, RecipesFormAction),
+          forward(address, TagRecipesForm),
           model.activePanel === 'form'
         )
       ])

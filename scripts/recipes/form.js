@@ -9,6 +9,7 @@ import {merge, tag, batch, port} from '../common/prelude';
 import {cursor} from '../common/cursor';
 import {classed} from '../common/attr';
 import * as Input from '../common/input';
+import {compose} from '../lang/functional';
 import * as Recipes from '../recipes';
 
 // Action tagging functions
@@ -42,6 +43,8 @@ const TagBanner = source => ({
   type: 'Banner',
   source
 });
+
+export const AlertDismissable = compose(TagBanner, Banner.AlertDismissable);
 
 const FailRecipeParse = TagBanner(Banner.AlertDismissable("Uh-oh! Invalid JSON."));
 
