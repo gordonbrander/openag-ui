@@ -44,7 +44,8 @@ const TagBanner = source => ({
   source
 });
 
-export const AlertDismissable = compose(TagBanner, Banner.AlertDismissable);
+export const Alert = compose(TagBanner, Banner.AlertDismissable);
+export const Notify = compose(TagBanner, Banner.Notify);
 
 const FailRecipeParse = TagBanner(Banner.AlertDismissable("Uh-oh! Invalid JSON."));
 

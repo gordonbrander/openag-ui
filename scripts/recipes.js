@@ -33,6 +33,7 @@ const TagBanner = source => ({
   source
 });
 
+const Notify = compose(TagBanner, Banner.Notify);
 const AlertRefreshable = compose(TagBanner, Banner.AlertRefreshable);
 const AlertDismissable = compose(TagBanner, Banner.AlertDismissable);
 const FailRecipeStart = AlertDismissable("Couldn't start recipe");
@@ -49,7 +50,7 @@ const RecipesFormAction = action => ({
   source: action
 });
 
-const AlertRecipesForm = compose(RecipesFormAction, RecipesForm.AlertDismissable);
+const AlertRecipesForm = compose(RecipesFormAction, RecipesForm.Alert);
 
 const RecipeAction = (id, action) =>
   action.type === 'Activate' ?
@@ -215,15 +216,16 @@ const activatePanel = (model, id) =>
   [merge(model, {activePanel: id}), Effects.none];
 
 const put = (model, doc) => {
-  // Insert recipe into in-memory model.
-  // @TODO perhaps we should do this after succesful put.
-  const recipe = Recipe.fromDoc(doc);
-  const next = Indexed.add(model, recipe.id, recipe);
-  // Then attempt to store it in DB.
-  return [next, Database.put(DB, doc).map(Putted)];
+  // Attempt to store it in DB.
+  return [model, Database.put(DB, doc).map(Putted)];
 }
 
-const puttedOk = (model, value) => [model, Effects.none];
+const puttedOk = (model, value) =>
+  batch(update, model, [
+    RestoreRecipes,
+    ActivatePanel(null),
+    Notify(localize('Recipe Added'))
+  ]);
 
 const puttedError = (model, error) => {
   const action = AlertRecipesForm(String(error));
