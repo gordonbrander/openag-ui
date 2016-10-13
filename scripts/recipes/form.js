@@ -9,6 +9,7 @@ import {merge, tag, batch, port} from '../common/prelude';
 import {cursor} from '../common/cursor';
 import {classed} from '../common/attr';
 import * as Input from '../common/input';
+import {compose} from '../lang/functional';
 import * as Recipes from '../recipes';
 
 // Action tagging functions
@@ -42,6 +43,9 @@ const TagBanner = source => ({
   type: 'Banner',
   source
 });
+
+export const Alert = compose(TagBanner, Banner.AlertDismissable);
+export const Notify = compose(TagBanner, Banner.Notify);
 
 const FailRecipeParse = TagBanner(Banner.AlertDismissable("Uh-oh! Invalid JSON."));
 
@@ -78,15 +82,14 @@ const submit = (model, recipeJSON) => {
     const recipe = JSON.parse(recipeJSON);
     return [
       model,
-      Effects.batch([
-        // Send Submitted action up to parent
-        Effects.receive(Submitted(recipe)),
-        Effects.receive(Clear)
-      ])
+      // Send Submitted action up to parent
+      Effects.receive(Submitted(recipe))
     ];
   } catch (e) {
-    // @TODO throw up a banner for this case.
-    return [model, Effects.receive(FailRecipeParse)];
+    return [
+      model,
+      Effects.receive(FailRecipeParse)
+    ];
   }
 }
 
