@@ -145,6 +145,7 @@ export const viewTextarea = (model, address, id, className) =>
     id,
     className,
     placeholder: model.placeholder,
+    value: model.edit.value,
     disabled:
       ( model.control.isDisabled
       ? true
