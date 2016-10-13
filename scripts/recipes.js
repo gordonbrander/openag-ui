@@ -50,6 +50,7 @@ const RecipesFormAction = action => ({
   source: action
 });
 
+const ClearRecipesForm = RecipesFormAction(RecipesForm.Clear);
 const AlertRecipesForm = compose(RecipesFormAction, RecipesForm.Alert);
 
 const RecipeAction = (id, action) =>
@@ -222,7 +223,9 @@ const put = (model, doc) => {
 
 const puttedOk = (model, value) =>
   batch(update, model, [
+    ClearRecipesForm,
     RestoreRecipes,
+    Sync,
     ActivatePanel(null),
     Notify(localize('Recipe Added'))
   ]);
