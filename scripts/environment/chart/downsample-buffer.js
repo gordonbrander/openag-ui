@@ -2,7 +2,8 @@ import {genRandomInt} from '../../lang/math';
 
 /*
 A mutable buffer with a limited size.
-DownsampleBuffer will drop elements to the left when it overflows.
+DownsampleBuffer will remove an elements with simple random sampling to stay
+under a given `limit`.
 */
 export class DownsampleBuffer {
   constructor(array, limit) {
