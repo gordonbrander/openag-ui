@@ -2,9 +2,9 @@ import {genRandomInt} from '../../lang/math';
 
 /*
 A mutable buffer with a limited size.
-FixedBuffer will drop elements to the left when it overflows.
+DownsampleBuffer will drop elements to the left when it overflows.
 */
-export class FixedBuffer {
+export class DownsampleBuffer {
   constructor(array, limit) {
     if (limit == null || limit < 1) {
       throw new Error('Buffer limit must be greater than 0');
@@ -30,9 +30,9 @@ export class FixedBuffer {
   }
 }
 
-FixedBuffer.from = (array, limit) => new FixedBuffer(trimMut(array.slice(), limit), limit);
+DownsampleBuffer.from = (array, limit) => new DownsampleBuffer(trimMut(array.slice(), limit), limit);
 
 // Returns the array from buffer.
 // @NOTE NEVER MUTATE THIS VALUE DIRECTLY. Always use the provided methods
 // on Buffer.
-FixedBuffer.values = buffer => buffer.buffer;
+DownsampleBuffer.values = buffer => buffer.buffer;

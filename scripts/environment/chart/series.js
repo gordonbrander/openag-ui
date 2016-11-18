@@ -1,7 +1,7 @@
 import zipObject from 'lodash/zipObject';
 import last from 'lodash/last';
 import {LineGroup} from './line-group';
-import {FixedBuffer} from './fixed-buffer';
+import {DownsampleBuffer} from './downsample-buffer';
 import {isNullish} from '../../common/maybe';
 
 // Constructs a series of groups.
@@ -45,8 +45,8 @@ export class Series {
 Series.extent = (series, readX) =>
   series.reduce((extent, group) => {
     // Note that for these sorted buffers, left = old, right = new.
-    const measured = FixedBuffer.values(group.measured);
-    const desired = FixedBuffer.values(group.desired);
+    const measured = DownsampleBuffer.values(group.measured);
+    const desired = DownsampleBuffer.values(group.desired);
 
     if (measured.length > 0) {
       // Choose smaller and assign

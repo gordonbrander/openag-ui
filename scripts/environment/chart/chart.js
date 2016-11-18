@@ -16,7 +16,7 @@ import {listByKeys, indexWith} from '../../common/indexed';
 import {compose} from '../../lang/functional';
 import {onWindow} from '../../driver/virtual-dom';
 import {marker, isMarker, findRecipeStart, findRecipeEnd, readX, readY, readVariable} from '../datapoints';
-import {FixedBuffer} from './fixed-buffer';
+import {DownsampleBuffer} from './downsample-buffer';
 import {LineGroup} from './line-group';
 import {SeriesView} from './series';
 
@@ -493,8 +493,8 @@ const viewData = (model, address) => {
 const viewGroup = (model, address, x, plotHeight) => {
   const {color, min, max, measured, desired} = model;
 
-  const measuredValues = FixedBuffer.values(measured);
-  const desiredValues = FixedBuffer.values(desired);
+  const measuredValues = DownsampleBuffer.values(measured);
+  const desiredValues = DownsampleBuffer.values(desired);
 
   const domain = isNumber(min) && isNumber(max) ?
     [min, max] : extent(measuredValues, readY);
@@ -531,8 +531,8 @@ const viewGroup = (model, address, x, plotHeight) => {
 const renderReadout = (group, xhairTime) => {
   const unit = group.unit;
   const color = group.color;
-  const measured = FixedBuffer.values(group.measured);
-  const desired = FixedBuffer.values(group.desired);
+  const measured = DownsampleBuffer.values(group.measured);
+  const desired = DownsampleBuffer.values(group.desired);
   const measuredText = displayYValueFromX(measured, xhairTime, readX, readY, unit);
   const desiredText = displayYValueFromX(desired, xhairTime, readX, readY, unit);
 
