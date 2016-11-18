@@ -2,7 +2,7 @@
 Exports the Group class, which is used for chart groups.
 */
 import last from 'lodash/last';
-import {FixedBuffer} from './fixed-buffer';
+import {DownsampleBuffer} from './downsample-buffer';
 import {readX} from '../datapoints';
 
 // Construct a chart group
@@ -77,8 +77,8 @@ LineGroup.assemble = (
   color,
   limit
 ) => new LineGroup(
-  new FixedBuffer(measured, limit),
-  new FixedBuffer(desired, limit),
+  new DownsampleBuffer(measured, limit),
+  new DownsampleBuffer(desired, limit),
   variable,
   title,
   unit,
@@ -88,6 +88,6 @@ LineGroup.assemble = (
 );
 
 LineGroup.calcLength = group => (
-  FixedBuffer.values(group.measured).length +
-  FixedBuffer.values(group.desired).length
+  DownsampleBuffer.values(group.measured).length +
+  DownsampleBuffer.values(group.desired).length
 );
