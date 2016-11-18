@@ -33,7 +33,7 @@ export class LineGroup {
   shouldUpdate(datum) {
     if (datum.variable === this.variable) {
       const buffer = datum.is_desired ? this.desired : this.measured;
-      const prev = last(this.desired);
+      const prev = last(buffer);
       if (!prev) {
         return true;
       }
