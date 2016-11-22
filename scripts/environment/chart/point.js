@@ -17,6 +17,9 @@ export const x = point => point.timestamp;
 // Value is float
 export const y = point => point.value;
 
+// Create a bisector function for x accessor.
+const bisectDate = bisector(x);
+
 // Read document object to point instance
 // Note that database document timestamps are epoch in seconds, whereas points
 // use the JavaScript convention of epoch in MS.
@@ -33,9 +36,7 @@ export const carryForward = (point, timestamp) => new Point(
 // Returns point or undefined if nothing found.
 export const findPointForX = (points, xCoord) => {
   if (points.length > 0) {
-    // Used for deriving y value from x position.
-    const bisectDate = bisector(x).left;
-    const i = bisectDate(points, xCoord, 1);
+    const i = bisectDate.left(points, xCoord, 1);
     const p0 = points[i - 1];
     const p1 = points[i];
 
@@ -46,18 +47,10 @@ export const findPointForX = (points, xCoord) => {
   }
 }
 
-// Get y value for x coord. Returns a string.
-export const findYForX = (points, xCoord) => {
-  const point = findPointForX(points, xCoord);
-  if (point) {
-    return y(point);
-  }
-}
-
 // Display y value for x coord, suitable for display. Returns a string.
 export const displayYForX = (points, xCoord, unit) => {
-  const point = findYForX(points, xCoord);
-  if (point) {
+  const point = findPointForX(points, xCoord);
+  if (point != null) {
     const rounded = round2x(y(point));
     return rounded + unit + '';
   }

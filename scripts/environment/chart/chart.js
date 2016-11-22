@@ -413,8 +413,9 @@ const viewData = (model, address) => {
     }
   }, children);
 
-  //const readouts = lines.map(group => renderReadout(group, xhairTime));
-  const readouts = [];
+  const readouts = series
+    .asGroups()
+    .map(group => renderReadout(group, xhairTime));
 
   return html.div({
     className: 'chart split-view-content',
@@ -564,13 +565,13 @@ const viewLine = (model, address, x, plotHeight) => {
 }
 
 const renderReadout = (group, xhairTime) => {
-  const unit = group.unit;
-  const color = group.color;
-  const measured = DownsampleBuffer.values(group.measured);
-  const desired = DownsampleBuffer.values(group.desired);
+  const unit = group.measured.unit;
+  const color = group.measured.color;
+  const title = group.measured.title;
+  const measured = group.measured.points;
+  const desired = group.desired.points;
   const measuredText = Point.displayYForX(measured, xhairTime, unit);
   const desiredText = Point.displayYForX(desired, xhairTime, unit);
-
   return html.div({
     className: 'chart-readout'
   }, [
@@ -582,7 +583,7 @@ const renderReadout = (group, xhairTime) => {
     }),
     html.span({
       className: 'chart-readout--title',
-    }, [group.title]),
+    }, [title]),
     html.span({
       className: 'chart-readout--measured',
       style: {

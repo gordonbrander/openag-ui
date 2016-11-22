@@ -3,6 +3,7 @@ Timeseries is an array of line groups.
 */
 import {max, min} from 'd3-array';
 import flatMap from 'lodash/flatMap';
+import values from 'lodash/values';
 import get from 'lodash/get';
 import set from 'lodash/set';
 import * as Line from './line';
@@ -20,6 +21,18 @@ export class Series {
     this.min = min;
     this.max = max;
     this.rev = cid();
+  }
+
+  // Reads line list as a list of groups.
+  // WARNING: MUTATING THE LINES AFTER READING GROUPS OUT WILL MUTATE SERIES.
+  // ALWAYS USE METHODS ON SERIES FOR MUTATION.
+  asGroups() {
+    const subindexes = values(this.index);
+    const groups = subindexes.map(subindex => ({
+      measured: this.lines[subindex.measured],
+      desired: this.lines[subindex.desired]
+    }));
+    return groups;
   }
 
   // Look up line by index
