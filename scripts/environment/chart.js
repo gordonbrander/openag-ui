@@ -10,7 +10,7 @@ import {merge, tagged, tag, batch} from '../common/prelude';
 import {cursor} from '../common/cursor';
 import {update as updateUnknown} from '../common/unknown';
 import {compose} from '../lang/functional';
-import {findRunningRecipe, findAirTemperature} from './datapoints';
+import {findRunningRecipe, findAirTemperature} from './doc';
 
 // Import Chart d3 widget
 import * as Chart from './chart/chart';
