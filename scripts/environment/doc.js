@@ -13,6 +13,7 @@ export const MARKER = 'marker';
 // X and Y accessors for documents.
 // Timestamp is unix epoch in seconds.
 export const x = doc => doc.timestamp;
+export const xMs = doc => doc.timestamp * 1000;
 // Value is float
 export const y = doc => doc.value;
 export const isDesired = doc => doc.is_desired;

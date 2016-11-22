@@ -7,7 +7,6 @@ import get from 'lodash/get';
 import set from 'lodash/set';
 import * as Line from './line';
 import {cid} from '../../lang/cid';
-import {epochNow} from '../../lang/time';
 import * as Point from './point';
 import * as Doc from '../doc';
 
@@ -85,7 +84,7 @@ export class Series {
 // This function takes care of indexing lines, etc.
 export const assemble = (lines) => {
   const index = indexByVariableAndType(lines);
-  const s = epochNow();
+  const s = Date.now();
   return new Series(lines, index, s, s);
 }
 
@@ -141,9 +140,10 @@ export const calcLength = (series) =>
 export const advanceSeries = (series, docs, now, limit) => {
   for (var i = 0; i < docs.length; i++) {
     const doc = docs[i];
-    series.append(Doc.x(doc), Doc.y(doc), Doc.variable(doc), Doc.isDesired(doc));
+    // Note we read doc timestamp (seconds) as point timestamp (ms).
+    series.append(Doc.xMs(doc), Doc.y(doc), Doc.variable(doc), Doc.isDesired(doc));
   }
-  // Even the ends of all lines.
+  // Line up the ends of all lines.
   // series.downsample(limit);
   series.tick(now);
   return series;

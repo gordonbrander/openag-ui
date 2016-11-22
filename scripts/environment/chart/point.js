@@ -1,3 +1,4 @@
+import * as Doc from '../doc';
 import {bisector} from 'd3-array';
 import {round2x} from '../../lang/math';
 
@@ -17,7 +18,9 @@ export const x = point => point.timestamp;
 export const y = point => point.value;
 
 // Read document object to point instance
-export const docToPoint = doc => new Point(doc.timestamp, doc.value);
+// Note that database document timestamps are epoch in seconds, whereas points
+// use the JavaScript convention of epoch in MS.
+export const docToPoint = doc => new Point(Doc.xMs(doc), Doc.y(doc));
 
 // Carry a datapoint forward to `timestamp`. Copies the datapoint
 // `point` at a given time `timestamp`.

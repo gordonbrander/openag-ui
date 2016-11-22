@@ -3,7 +3,7 @@ import {scaleLinear, scaleTime} from 'd3-scale';
 import {line} from 'd3-shape';
 import {timeHour} from 'd3-time';
 import {timeFormat} from 'd3-time-format';
-import {html, forward, Effects, thunk} from 'reflex';
+import {html, Effects, Task} from 'reflex';
 import {chart as CHART} from '../../../openag-config.json';
 import {localize} from '../../common/lang';
 import {mapOr} from '../../common/maybe';
@@ -14,7 +14,6 @@ import {classed} from '../../common/attr';
 import * as Unknown from '../../common/unknown';
 import {listByKeys, indexWith} from '../../common/indexed';
 import {compose} from '../../lang/functional';
-import {epochNow} from '../../lang/time';
 import {clamp, isNumber} from '../../lang/math';
 import {onWindow} from '../../driver/virtual-dom';
 import {findRecipeStart, findRecipeEnd} from '../doc';
@@ -22,9 +21,12 @@ import * as Series from './timeseries';
 import * as Point from './point';
 import * as Doc from '../doc';
 
-// The number of pixels to show on the chart per minute (in seconds).
+// Tick chart every 5s
+const CHART_TICK_MS = 5000;
+
+// The number of pixels to show on the chart per ms.
 // We show the equivalent of 12px per minute.
-const PX_PER_MIN_S = (12 / 60);
+const PX_PER_MS = (12 / (60 * 1000));
 
 const SIDEBAR_WIDTH = 256;
 const HEADER_HEIGHT = 72;
@@ -44,6 +46,10 @@ export const Resize = (width, height) => ({
   width,
   height
 });
+
+// Tick the chart (advance all lines up to now)
+export const Tick = {type: 'Tick'};
+const AlwaysTick = () => Tick;
 
 export const DropMarker = {type: 'DropMarker'};
 
@@ -177,13 +183,20 @@ export const init = () => {
     true
   );
 
+  const TickEffect = Effects.perform(Task.sleep(CHART_TICK_MS)).map(AlwaysTick);
+
   return [
     model,
-    scrubberFx.map(ScrubberAction)
+    Effects.batch([
+      TickEffect,
+      scrubberFx.map(ScrubberAction)
+    ])
   ];
 }
 
 export const update = (model, action) =>
+  action.type === 'Tick' ?
+  updateTick(model) :
   action.type === 'Scrubber' ?
   updateScrub(model, action.source) :
   action.type === 'MoveXhair' ?
@@ -197,10 +210,10 @@ export const update = (model, action) =>
   Unknown.update(model, action);
 
 const addData = (model, docs) => {
-  const recipeStart = mapOr(findRecipeStart(docs), Doc.x, model.recipeStart);
-  const recipeEnd = mapOr(findRecipeEnd(docs), Doc.x, model.recipeEnd);
+  const recipeStart = mapOr(findRecipeStart(docs), Doc.xMs, model.recipeStart);
+  const recipeEnd = mapOr(findRecipeEnd(docs), Doc.xMs, model.recipeEnd);
   const revA = model.series.rev;
-  const series = Series.advanceSeries(model.series, docs, epochNow(), SERIES_LIMIT);
+  const series = Series.advanceSeries(model.series, docs, Date.now(), SERIES_LIMIT);
   const revB = series.rev;
 
   // If anything has changed, we should return a new model.
@@ -229,8 +242,37 @@ const addData = (model, docs) => {
   }
 }
 
+const updateTick = (model) => {
+  const series = model.series;
+  const revA = series.rev;
+  // Advance series to now
+  series.tick(Date.now());
+  const revB = series.rev;
+  const shouldUpdate = revA !== revB;
+
+  const effect = Effects.perform(Task.sleep(CHART_TICK_MS)).map(AlwaysTick);
+
+  if (shouldUpdate) {
+    const next = new Model(
+      series,
+      model.markers,
+      model.recipeStart,
+      model.recipeEnd,
+      model.width,
+      model.height,
+      model.scrubber,
+      model.xhairAt
+    );
+
+    return [next, effect];
+  }
+  else {
+    return [model, effect];
+  }
+}
+
 const dropMarker = model => {
-  const mark = new Point.Point(epochNow(), '');
+  const mark = new Point.Point(Date.now(), '');
 
   return [
     Model.changeMarkers(model, model.markers.concat(mark)),
@@ -444,13 +486,13 @@ const viewData = (model, address) => {
           className: 'chart-timestamp--time'
         }, [
           // Convert seconds to ms for formatTime
-          formatTime(xhairTime * 1000)
+          formatTime(xhairTime)
         ]),
         html.div({
           className: 'chart-timestamp--day'
         }, [
           // Convert seconds to ms for formatTime
-          formatDay(xhairTime * 1000)
+          formatDay(xhairTime)
         ]),
       ]),
       html.div({
@@ -655,8 +697,8 @@ const calcChartHeight = (height) =>
   height - HEADER_HEIGHT;
 
 const calcPlotWidth = (extent) => {
-  const durationMs = extent[1] - extent[0];
-  const plotWidth = durationMs * PX_PER_MIN_S;
+  const duration = extent[1] - extent[0];
+  const plotWidth = duration * PX_PER_MS;
   return Math.round(plotWidth);
 }
 
