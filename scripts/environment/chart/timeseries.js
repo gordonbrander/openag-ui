@@ -143,8 +143,9 @@ export const advanceSeries = (series, docs, now, limit) => {
     // Note we read doc timestamp (seconds) as point timestamp (ms).
     series.append(Doc.xMs(doc), Doc.y(doc), Doc.variable(doc), Doc.isDesired(doc));
   }
+  // Downsample lines if above limit
+  series.downsample(limit);
   // Line up the ends of all lines.
-  // series.downsample(limit);
   series.tick(now);
   return series;
 }
