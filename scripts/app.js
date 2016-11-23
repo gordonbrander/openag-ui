@@ -10,11 +10,12 @@ import {readRootUrl} from './common/url';
 import * as Request from './common/request';
 import * as Banner from './common/banner';
 import * as Persistence from './persistence';
-import * as AppNav from './app/nav';
+import * as AppNav from './app/nav';  
+import * as Settings from './app/settings';
 import * as Environments from './environments';
 import * as Environment from './environment';
 import * as Recipes from './recipes';
-import * as Settings from './first-time-use';
+import * as FirstTimeUse from './first-time-use';
 import {compose} from './lang/functional';
 
 // State ID is the id of the pouch record we use to persist state.
@@ -46,8 +47,8 @@ const TagFirstTimeUse = action =>
   ConfigureFirstTime(action.form) :
   tagged('FirstTimeUse', action);
 
-const OpenFirstTimeUse = TagFirstTimeUse(Settings.Open);
-const CloseFirstTimeUse = TagFirstTimeUse(Settings.Close);
+const OpenFirstTimeUse = TagFirstTimeUse(FirstTimeUse.Open);
+const CloseFirstTimeUse = TagFirstTimeUse(FirstTimeUse.Close);
 
 const TagPersistence = action =>
   action.type === 'NotifyRestore' ?
@@ -99,6 +100,8 @@ const ActivateEnvironmentState = compose(EnvironmentAction, Environment.Activate
 const TagAppNav = action =>
   action.type === 'ActivateState' ?
   ActivateState(action.id) :
+  action.type === 'ToggleSettings' ?
+  ToggleSettings :
   AppNavAction(action);
 
 const AppNavAction = action => ({
@@ -107,6 +110,13 @@ const AppNavAction = action => ({
 });
 
 const ActivateAppNavState = compose(AppNavAction, AppNav.ActivateState);
+
+const TagSettings = action => ({
+  type: 'Settings',
+  source: action
+});
+
+const ToggleSettings = TagSettings(Settings.Toggle);
 
 // Action sent to configure top level app state.
 // Driven by AppNav.Activate actions.
@@ -166,8 +176,9 @@ export const init = () => {
   const [environments, environmentsFx] = Environments.init();
   const [recipes, recipesFx] = Recipes.init();
   const [appNav, appNavFx] = AppNav.init(DASHBOARD);
+  const [settings, settingsFx] = Settings.init();
   const [banner, bannerFx] = Banner.init();
-  const [firstTimeUse, firstTimeUseFx] = Settings.init();
+  const [firstTimeUse, firstTimeUseFx] = FirstTimeUse.init();
 
   return [
     {
@@ -189,6 +200,7 @@ export const init = () => {
       environments,
       recipes,
       appNav,
+      settings,
       banner,
       firstTimeUse
     },
@@ -198,6 +210,7 @@ export const init = () => {
       environmentsFx.map(TagEnvironments),
       recipesFx.map(TagRecipes),
       appNavFx.map(TagAppNav),
+      settingsFx.map(TagSettings),
       bannerFx.map(TagBanner),
       firstTimeUseFx.map(TagFirstTimeUse)
     ])
@@ -211,6 +224,8 @@ export const update = (model, action) =>
   updateRecipes(model, action.source) :
   action.type === 'AppNav' ?
   updateAppNav(model, action.source) :
+  action.type === 'Settings' ?
+  updateSettings(model, action.source) :
   action.type === 'Banner' ?
   updateBanner(model, action.source) :
   action.type === 'Persistence' ?
@@ -256,7 +271,7 @@ const updatePersistence = cursor({
 const updateFirstTimeUse = cursor({
   get: model => model.firstTimeUse,
   set: (model, firstTimeUse) => merge(model, {firstTimeUse}),
-  update: Settings.update,
+  update: FirstTimeUse.update,
   tag: TagFirstTimeUse
 });
 
@@ -265,6 +280,13 @@ const updateAppNav = cursor({
   set: (model, appNav) => merge(model, {appNav}),
   update: AppNav.update,
   tag: TagAppNav
+});
+
+const updateSettings = cursor({
+  get: model => model.settings,
+  set: (model, settings) => merge(model, {settings}),
+  update: Settings.update,
+  tag: TagSettings
 });
 
 const updateBanner = cursor({
@@ -386,7 +408,7 @@ const configure = (model, {api, origin, environment}) => {
 
   return batch(update, next, [
     ConfigureAppNav(environment.name),
-    ConfigureEnvironment(environment.id, environment.name, origin),
+    ConfigureEnvironment(environment.id, environment.name, api, origin),
     ConfigureEnvironments(origin),
     ConfigureRecipes(origin)
   ]);
@@ -421,7 +443,7 @@ const viewFTU = (model, address) =>
   }, [
     thunk(
       'first-time-use',
-      Settings.viewFTU,
+      FirstTimeUse.viewFTU,
       model.firstTimeUse,
       forward(address, TagFirstTimeUse)
     )
@@ -436,6 +458,12 @@ const viewConfigured = (model, address) =>
       AppNav.view,
       model.appNav,
       forward(address, TagAppNav)
+    ),
+    thunk(
+      'settings',
+      Settings.view,
+      model.settings,
+      forward(address, TagSettings)
     ),
     thunk(
       'banner',

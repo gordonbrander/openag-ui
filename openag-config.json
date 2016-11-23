@@ -67,7 +67,7 @@
     },
     {
       "variable": "water_electrical_conductivity",
-      "title": "EC",
+      "title": "Nutrients",
       "unit": " mS/cm",
       "color": "#AB36B2",
       "min": 0,

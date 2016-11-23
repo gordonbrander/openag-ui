@@ -9,6 +9,8 @@ import {localize} from '../common/lang';
 export const DASHBOARD = 'dashboard';
 export const CHART = 'chart';
 
+export const ToggleSettings = {type: 'ToggleSettings'};
+
 export const ActivateState = id => ({
   type: 'ActivateState',
   id
@@ -74,7 +76,8 @@ export const view = (model, address) => {
           'ir': true,
           'nav-dash-icon': true,
           'nav-dash-icon-active': model.active === DASHBOARD
-        })
+        }),
+        title: localize('Dashboard')
       }, [
         localize('Dashboard')
       ]),
@@ -85,10 +88,22 @@ export const view = (model, address) => {
           'ir': true,
           'nav-chart-icon': true,
           'nav-chart-icon-active': model.active === CHART
-        })
+        }),
+        title: localize('Chart')
       }, [
         localize('Chart')
-      ])
+      ]),
+      html.a({
+        onClick: (event) => {
+          event.preventDefault();
+          address(ToggleSettings)
+        },
+        className: classed({
+          'ir': true,
+          'nav-hamburger-icon': true,
+          'nav-hamburger-icon--active': model.isHamburgerActive
+        })
+      })
     ])
   ]);
 }
