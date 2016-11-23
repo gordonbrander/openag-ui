@@ -42,9 +42,10 @@ export const ActivateState = id => ({
 });
 
 // Configure action received from parent.
-export const Configure = (environmentID, environmentName, origin) => ({
+export const Configure = (environmentID, environmentName, api, origin) => ({
   type: 'Configure',
-  origin: origin,
+  api,
+  origin,
   id: environmentID,
   name: environmentName
 });
@@ -267,7 +268,7 @@ const gotChangesError = (model, error) => {
   ];
 }
 
-const configure = (model, {origin, id, name}) => {
+const configure = (model, {api, origin, id, name}) => {
   const next = merge(model, {
     origin,
     id,
@@ -277,7 +278,7 @@ const configure = (model, {origin, id, name}) => {
   });
 
   return batch(update, next, [
-    // Forward restore down to chart widget module.
+    // Forward configuration down to submodules.
     ConfigureChart(origin),
     ConfigureDashboard(origin),
     // Now that we have the origin, get the backlog.
@@ -327,7 +328,7 @@ export const view = (model, address) =>
       hidden: toggle(model.state !== DASHBOARD, 'hidden')
     }, [
       thunk(
-        'dashboard',
+        'environment-dashboard',
         Dashboard.view,
         model.dashboard,
         forward(address, TagDashboard)
@@ -338,7 +339,7 @@ export const view = (model, address) =>
       hidden: toggle(model.state !== CHART, 'hidden')
     }, [
       thunk(
-        'chart-widget',
+        'environment-chart',
         Chart.view,
         model.chart,
         forward(address, TagChart)
