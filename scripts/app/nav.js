@@ -1,5 +1,5 @@
 import {html, forward, Effects, thunk} from 'reflex';
-import {merge, tagged, tag} from '../common/prelude';
+import {merge, port} from '../common/prelude';
 import * as Unknown from '../common/unknown';
 import {classed} from '../common/attr';
 import {localize} from '../common/lang';
@@ -9,6 +9,8 @@ import {localize} from '../common/lang';
 export const DASHBOARD = 'dashboard';
 export const CHART = 'chart';
 export const CONTROLS = 'controls';
+
+export const ToggleSettings = {type: 'ToggleSettings'};
 
 export const ToggleSettings = {type: 'ToggleSettings'};
 
@@ -56,8 +58,11 @@ const readName = model =>
   typeof model.name === 'string' ?
   model.name : '-';
 
-export const view = (model, address) =>
-  html.div({
+export const view = (model, address) => {
+  const sendPointDashboard = onPointDashboard(address);
+  const sendPointChart = onPointChart(address);
+
+  return html.div({
     className: 'nav-main'
   }, [
     html.nav({
@@ -69,7 +74,8 @@ export const view = (model, address) =>
         readName(model)
       ]),
       html.a({
-        onClick: () => address(ActivateDashboard),
+        onMouseDown: sendPointDashboard,
+        onTouchStart: sendPointDashboard,
         className: classed({
           'ir': true,
           'nav-dash-icon': true,
@@ -80,7 +86,8 @@ export const view = (model, address) =>
         localize('Dashboard')
       ]),
       html.a({
-        onClick: () => address(ActivateChart),
+        onMouseDown: sendPointChart,
+        onTouchStart: sendPointChart,
         className: classed({
           'ir': true,
           'nav-chart-icon': true,
@@ -114,7 +121,18 @@ export const view = (model, address) =>
       })
     ])
   ]);
+}
 
-// Utilities
+const onPointDashboard = port(event => {
+  // Prevent event from bubbling. This prevents touch events from
+  // transmogrifying into click events in iOS.
+  event.preventDefault();
+  return ActivateDashboard;
+});
 
-export const active = model => model.active;
+const onPointChart = port(event => {
+  // Prevent event from bubbling. This prevents touch events from
+  // transmogrifying into click events in iOS.
+  event.preventDefault();
+  return ActivateChart;
+});

@@ -1,5 +1,5 @@
 import {html, forward, Effects, Task, thunk} from 'reflex';
-import {merge} from '../../common/prelude';
+import {merge, annotate, port} from '../../common/prelude';
 import {localize} from '../../common/lang';
 import {update as updateUnknown} from '../../common/unknown';
 
@@ -56,14 +56,19 @@ export const view = (model, address) =>
     ]),
     html.a({
       className: 'current-recipe--name',
-      onClick: event => {
-        event.preventDefault();
-        address(RequestOpenRecipes)
-      }
+      onTouchStart: onPointStart(address),
+      onMouseDown: onPointStart(address)
     }, [
       readName(model)
     ])
   ])
+
+const onPointStart = port(event => {
+  // Prevent event from bubbling. This prevents touch events from
+  // transmogrifying into click events in iOS.
+  event.preventDefault();
+  return RequestOpenRecipes;
+});
 
 // Read name from model, or use fallback.
 const readName = model =>

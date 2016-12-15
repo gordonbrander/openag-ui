@@ -5,10 +5,11 @@ import {html, forward, Effects, thunk} from 'reflex';
 import * as Banner from '../common/banner';
 import * as Unknown from '../common/unknown';
 import {localize} from '../common/lang';
-import {merge, tag, batch} from '../common/prelude';
+import {merge, tag, batch, port} from '../common/prelude';
 import {cursor} from '../common/cursor';
 import {classed} from '../common/attr';
 import * as Input from '../common/input';
+import {compose} from '../lang/functional';
 import * as Recipes from '../recipes';
 
 // Action tagging functions
@@ -42,6 +43,9 @@ const TagBanner = source => ({
   type: 'Banner',
   source
 });
+
+export const Alert = compose(TagBanner, Banner.AlertDismissable);
+export const Notify = compose(TagBanner, Banner.Notify);
 
 const FailRecipeParse = TagBanner(Banner.AlertDismissable("Uh-oh! Invalid JSON."));
 
@@ -78,15 +82,14 @@ const submit = (model, recipeJSON) => {
     const recipe = JSON.parse(recipeJSON);
     return [
       model,
-      Effects.batch([
-        // Send Submitted action up to parent
-        Effects.receive(Submitted(recipe)),
-        Effects.receive(Clear)
-      ])
+      // Send Submitted action up to parent
+      Effects.receive(Submitted(recipe))
     ];
   } catch (e) {
-    // @TODO throw up a banner for this case.
-    return [model, Effects.receive(FailRecipeParse)];
+    return [
+      model,
+      Effects.receive(FailRecipeParse)
+    ];
   }
 }
 
@@ -106,8 +109,10 @@ const updateBanner = cursor({
 
 // View
 
-export const view = (model, address, isActive) =>
-  html.div({
+export const view = (model, address, isActive) => {
+  const sendBack = onBack(address);
+  const sendSubmit = onSubmit(address);
+  return html.div({
     className: classed({
       'panel--main': true,
       'panel--lv1': true,
@@ -127,7 +132,8 @@ export const view = (model, address, isActive) =>
       }, [
         html.a({
           className: 'recipes-back-icon',
-          onClick: () => address(Back)
+          onTouchStart: sendBack,
+          onMouseDown: sendBack
         })
       ]),
       html.div({
@@ -136,16 +142,8 @@ export const view = (model, address, isActive) =>
         html.button({
           className: 'btn-panel',
           type: 'submit',
-          onClick: (event) => {
-            // @TODO create a proper input module instead of kludging this in a
-            // brittle way. We want to be able to send an Effect that will
-            // focus, unfocus. We also want to read value changes from `onInput`.
-            // See https://github.com/browserhtml/browserhtml/blob/master/src/common/ref.js
-            // https://gist.github.com/Gozala/2b6a301846b151aafe807104304dbd06#file-focus-js
-            event.preventDefault();
-            const el = document.querySelector('#rform-textarea');
-            address(Submit(el.value));
-          }
+          onTouchStart: sendSubmit,
+          onMouseDown: sendSubmit
         }, [
           localize('Save')
         ])
@@ -179,3 +177,20 @@ export const view = (model, address, isActive) =>
       ])
     ])
   ]);
+}
+
+const onSubmit = port(event => {
+  // @TODO create a proper input module instead of kludging this in a
+  // brittle way. We want to be able to send an Effect that will
+  // focus, unfocus. We also want to read value changes from `onInput`.
+  // See https://github.com/browserhtml/browserhtml/blob/master/src/common/ref.js
+  // https://gist.github.com/Gozala/2b6a301846b151aafe807104304dbd06#file-focus-js
+  event.preventDefault();
+  const el = document.querySelector('#rform-textarea');
+  return Submit(el.value);
+});
+
+const onBack = port(event => {
+  event.preventDefault();
+  return Back;
+})

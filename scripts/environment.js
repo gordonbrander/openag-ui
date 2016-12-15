@@ -8,7 +8,7 @@ import * as Result from './common/result';
 import * as Unknown from './common/unknown';
 import {cursor} from './common/cursor';
 import {constant, compose} from './lang/functional';
-import {findRunningRecipe, findAirTemperature} from './environment/datapoints';
+import {findRunningRecipe, findAirTemperature} from './environment/doc';
 import * as Chart from './environment/chart';
 import * as Dashboard from './environment/dashboard';
 import * as Controls from './environment/controls';

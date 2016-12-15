@@ -1,31 +1,32 @@
-import {extent, max, min, bisector} from 'd3-array';
+import {extent, max, min} from 'd3-array';
 import {scaleLinear, scaleTime} from 'd3-scale';
 import {line} from 'd3-shape';
 import {timeHour} from 'd3-time';
 import {timeFormat} from 'd3-time-format';
-import {html, forward, Effects, thunk} from 'reflex';
+import {html, Effects, Task} from 'reflex';
 import {chart as CHART} from '../../../openag-config.json';
 import {localize} from '../../common/lang';
 import {mapOr} from '../../common/maybe';
-import {tag} from '../../common/prelude';
+import {tag, annotate} from '../../common/prelude';
 import {cursor} from '../../common/cursor';
 import * as Draggable from '../../common/draggable';
 import {classed} from '../../common/attr';
 import * as Unknown from '../../common/unknown';
 import {listByKeys, indexWith} from '../../common/indexed';
 import {compose} from '../../lang/functional';
-import {clamp, isNumber, round2x} from '../../lang/number';
+import {clamp, isNumber} from '../../lang/math';
 import {onWindow} from '../../driver/virtual-dom';
-import {marker, isMarker, findRecipeStart, findRecipeEnd, readX, readY, readVariable} from '../datapoints';
-import {FixedBuffer} from './fixed-buffer';
-import {LineGroup} from './line-group';
-import {SeriesView} from './series';
+import {findRecipeStart, findRecipeEnd} from '../doc';
+import * as Series from './timeseries';
+import * as Point from './point';
+import * as Doc from '../doc';
 
-const S_MS = 1000;
-const MIN_MS = S_MS * 60;
+// Tick chart every 5s
+const CHART_TICK_MS = 5000;
+
 // The number of pixels to show on the chart per ms.
 // We show the equivalent of 12px per minute.
-const PX_PER_MS = (12 / MIN_MS);
+const PX_PER_MS = (12 / (60 * 1000));
 
 const SIDEBAR_WIDTH = 256;
 const HEADER_HEIGHT = 72;
@@ -36,7 +37,7 @@ const TOOLTIP_PADDING = 20;
 const RATIO_DOMAIN = [0, 1.0];
 
 // Max number of datapoints per line buffer.
-const MAX_DATAPOINTS = 500;
+const SERIES_LIMIT = 500;
 
 // Actions
 
@@ -46,6 +47,10 @@ export const Resize = (width, height) => ({
   height
 });
 
+// Tick the chart (advance all lines up to now)
+export const Tick = {type: 'Tick'};
+const AlwaysTick = () => Tick;
+
 export const DropMarker = {type: 'DropMarker'};
 
 export const MoveXhair = tag('MoveXhair');
@@ -53,7 +58,6 @@ export const SetData = tag('SetData');
 export const AddData = tag('AddData');
 
 const ScrubberAction = tag('Scrubber');
-const MoveScrubber = compose(ScrubberAction, Draggable.Move);
 const HoldScrubber = ScrubberAction(Draggable.Hold);
 const ReleaseScrubber = ScrubberAction(Draggable.Release);
 
@@ -96,11 +100,7 @@ class Model {
 }
 
 Model.isEmpty = model => {
-  const tally = model.series.reduce(
-    (state, group) => state + LineGroup.calcLength(group),
-    0
-  );
-
+  const tally = Series.calcLength(model.series);
   return tally < 1;
 }
 
@@ -164,22 +164,39 @@ Model.changeMarkers = (model, markers) => new Model(
   model.xhairAt
 );
 
-export const init = () => [
-  new Model(
-    SeriesView.from([], CHART, MAX_DATAPOINTS),
+export const init = () => {
+  const width = calcChartWidth(window.innerWidth);
+  const height = calcChartHeight(window.innerHeight);
+
+  const [scrubber, scrubberFx] = Draggable.init(false, [width, height]);
+  const series = Series.fromConfigs(CHART);
+
+  const model = new Model(
+    series,
     [],
     null,
     null,
-    calcChartWidth(window.innerWidth),
-    calcChartHeight(window.innerHeight),
-    Draggable.Model(false, 1.0),
+    width,
+    height,
+    scrubber,
     0.5,
     true
-  ),
-  Effects.none
-];
+  );
+
+  const TickEffect = Effects.perform(Task.sleep(CHART_TICK_MS)).map(AlwaysTick);
+
+  return [
+    model,
+    Effects.batch([
+      TickEffect,
+      scrubberFx.map(ScrubberAction)
+    ])
+  ];
+}
 
 export const update = (model, action) =>
+  action.type === 'Tick' ?
+  updateTick(model) :
   action.type === 'Scrubber' ?
   updateScrub(model, action.source) :
   action.type === 'MoveXhair' ?
@@ -192,16 +209,18 @@ export const update = (model, action) =>
   dropMarker(model) :
   Unknown.update(model, action);
 
-const addData = (model, data) => {
-  const recipeStart = mapOr(findRecipeStart(data), readX, model.recipeStart);
-  const recipeEnd = mapOr(findRecipeEnd(data), readX, model.recipeEnd);
-  const series = model.series.advanceMany(data);
+const addData = (model, docs) => {
+  const recipeStart = mapOr(findRecipeStart(docs), Doc.xMs, model.recipeStart);
+  const recipeEnd = mapOr(findRecipeEnd(docs), Doc.xMs, model.recipeEnd);
+  const revA = model.series.rev;
+  const series = Series.advanceSeries(model.series, docs, Date.now(), SERIES_LIMIT);
+  const revB = series.rev;
 
   // If anything has changed, we should return a new model.
   const shouldUpdate = (
     recipeStart !== model.recipeStart ||
     recipeEnd !== model.recipeEnd ||
-    series !== model.series
+    revA !== revB
   );
 
   if (shouldUpdate) {
@@ -216,15 +235,44 @@ const addData = (model, data) => {
       model.xhairAt
     );
 
-    return[next, Effects.none]
+    return [next, Effects.none];
   }
   else {
     return [model, Effects.none];
   }
 }
 
+const updateTick = (model) => {
+  const series = model.series;
+  const revA = series.rev;
+  // Advance series to now
+  series.tick(Date.now());
+  const revB = series.rev;
+  const shouldUpdate = revA !== revB;
+
+  const effect = Effects.perform(Task.sleep(CHART_TICK_MS)).map(AlwaysTick);
+
+  if (shouldUpdate) {
+    const next = new Model(
+      series,
+      model.markers,
+      model.recipeStart,
+      model.recipeEnd,
+      model.width,
+      model.height,
+      model.scrubber,
+      model.xhairAt
+    );
+
+    return [next, effect];
+  }
+  else {
+    return [model, effect];
+  }
+}
+
 const dropMarker = model => {
-  const mark = marker(secondsNow(), '');
+  const mark = new Point.Point(Date.now(), '');
 
   return [
     Model.changeMarkers(model, model.markers.concat(mark)),
@@ -282,16 +330,19 @@ const viewData = (model, address) => {
   const {series, width, height, tooltipWidth,
     scrubber, xhairAt, recipeStart, recipeEnd, markers} = model;
 
-  // Read out series class into array.
-  const groups = SeriesView.groups(series);
-  const [seriesMin, seriesMax] = SeriesView.extent(series, readX);
-  const extentX = [seriesMin, Date.now()];
+  const lines = series.lines;
 
-  const scrubberAt = scrubber.coords;
+  // Read out series class into array.
+  const extentX = [series.min, series.max];
+
+  const scrubberMaxX = width - 12;
+  const scrubberX = clamp(scrubber.coords[0], 0, scrubberMaxX);
   const isDragging = scrubber.isDragging;
 
   // Calculate dimensions
-  const tooltipHeight = (groups.length * READOUT_HEIGHT) + (TOOLTIP_PADDING * 2);
+  // We need to have one row per group of 2 lines
+  const nTooltipRow = Math.floor(lines.length / 2);
+  const tooltipHeight = (nTooltipRow * READOUT_HEIGHT) + (TOOLTIP_PADDING * 2);
   const plotWidth = calcPlotWidth(extentX);
   const plotHeight = calcPlotHeight(height, tooltipHeight);
   const svgHeight = calcSvgHeight(height);
@@ -302,26 +353,19 @@ const viewData = (model, address) => {
     .domain(extentX)
     .range([0, plotWidth]);
 
-  const scrubberRatioToScrubberX = scaleLinear()
-    .domain(RATIO_DOMAIN)
-    .range([0, width - 12])
-    .clamp(true);
-
-  const scrubberX = scrubberRatioToScrubberX(scrubberAt);
-
   const xhairRatioToXhairX = scaleLinear()
     .domain(RATIO_DOMAIN)
     .range([0, width])
     .clamp(true);
 
-  const scrubberRatioToPlotX = scaleLinear()
-    .domain(RATIO_DOMAIN)
+  const scrubberToPlotX = scaleLinear()
+    .domain([0, scrubberMaxX])
     // Translate up to the point that the right side of the plot is adjacent
     // to the right side of the viewport.
     .range([0, plotWidth - width])
     .clamp(true);
 
-  const plotX = scrubberRatioToPlotX(scrubberAt);
+  const plotX = scrubberToPlotX(scrubberX);
 
   const xhairX = xhairRatioToXhairX(xhairAt);
   const tooltipX = calcTooltipX(xhairX, width, tooltipWidth);
@@ -331,12 +375,12 @@ const viewData = (model, address) => {
   // value (time) under xhair.
   const xhairTime = x.invert(plotX + xhairX);
 
-  const children = groups.map(group => viewGroup(group, address, x, plotHeight));
+  const children = lines.map(line => viewLine(line, address, x, plotHeight));
 
   const axis = renderAxis(x, svgHeight);
   children.push(axis);
 
-  const userMarkers = renderUserMarkers(markers, x, svgHeight, readX);
+  const userMarkers = renderUserMarkers(markers, x, svgHeight);
   children.push(userMarkers);
 
   if (recipeStart) {
@@ -369,11 +413,12 @@ const viewData = (model, address) => {
     }
   }, children);
 
-  const readouts = groups.map(group => renderReadout(group, xhairTime));
+  const readouts = series
+    .asGroups()
+    .map(group => renderReadout(group, xhairTime));
 
   return html.div({
     className: 'chart split-view-content',
-    onMouseUp: () => address(ReleaseScrubber),
     onMouseMove: event => {
       const [mouseX, mouseY] = calcRelativeMousePos(
         event.currentTarget,
@@ -382,9 +427,26 @@ const viewData = (model, address) => {
 
       const xhairAt = xhairRatioToXhairX.invert(mouseX);
       address(MoveXhair(xhairAt));
-
-      const scrubberAt = scrubberRatioToScrubberX.invert(mouseX);
-      address(MoveScrubber(scrubberAt));
+    },
+    onTouchStart: event => {
+      // Prevent from becoming a click event.
+      event.preventDefault();
+    },
+    onTouchMove: event => {
+      event.preventDefault();
+      const changedTouches = event.changedTouches;
+      if (changedTouches.length) {
+        // @TODO it might be better to find the common midpoint between multiple
+        // touches if touches > 1.
+        const touch = changedTouches.item(0);
+        const coords = calcRelativeMousePos(
+          event.currentTarget,
+          touch.clientX,
+          touch.clientY
+        );
+        const xhairAt = xhairRatioToXhairX.invert(coords[0]);
+        address(MoveXhair(xhairAt));
+      }
     },
     onResize: onWindow(address, () => {
       return Resize(
@@ -423,18 +485,36 @@ const viewData = (model, address) => {
       }, [
         html.div({
           className: 'chart-timestamp--time'
-        }, [formatTime(xhairTime)]),
+        }, [
+          // Convert seconds to ms for formatTime
+          formatTime(xhairTime)
+        ]),
         html.div({
           className: 'chart-timestamp--day'
-        }, [formatDay(xhairTime)]),
+        }, [
+          // Convert seconds to ms for formatTime
+          formatDay(xhairTime)
+        ]),
       ]),
       html.div({
         className: 'chart-readouts'
       }, readouts)
     ]),
     html.div({
-      className: 'chart-scrubber'
+      className: classed({
+        'chart-scrubber': true,
+        'chart-scrubber--active': isDragging
+      }),
+      onMouseDown: onScrubberMouseDown(address),
+      onMouseMove: onScrubberMouseMove(address),
+      onMouseUp: onScrubberMouseUp(address),
+      onTouchStart: onScrubberTouchStart(address),
+      onTouchMove: onScrubberTouchMove(address),
+      onTouchEnd: onScrubberTouchEnd(address)
     }, [
+      html.div({
+        className: 'chart-scrubber--backing'
+      }),
       html.div({
         className: 'chart-progress',
         style: {
@@ -442,10 +522,6 @@ const viewData = (model, address) => {
         }
       }),
       html.div({
-        onMouseDown: (event) => {
-          event.preventDefault();
-          address(HoldScrubber);
-        },
         className: classed({
           'chart-handle': true,
           'chart-handle--dragging': isDragging
@@ -465,52 +541,37 @@ const viewData = (model, address) => {
   ]);
 }
 
-const viewGroup = (model, address, x, plotHeight) => {
-  const {color, min, max, measured, desired} = model;
-
-  const measuredValues = FixedBuffer.values(measured);
-  const desiredValues = FixedBuffer.values(desired);
+const viewLine = (model, address, x, plotHeight) => {
+  const {color, min, max, points} = model;
 
   const domain = isNumber(min) && isNumber(max) ?
-    [min, max] : extent(measuredValues, readY);
+    [min, max] : extent(points, Point.y);
 
   const y = scaleLinear()
     .range([plotHeight, 0])
     .domain(domain);
 
   const calcLine = line()
-    .x(compose(x, readX))
-    .y(compose(y, readY));
+    .x(compose(x, Point.x))
+    .y(compose(y, Point.y));
 
-  const desiredPath = svgPath({
-    d: calcLine(desiredValues),
-    className: 'chart-desired',
+  return svgPath({
+    d: calcLine(points),
+    className: (model.is_desired ? 'chart-desired' : 'chart-measured'),
     style: {
       stroke: color
     }
   });
-
-  const measuredPath = svgPath({
-    d: calcLine(measuredValues),
-    className: 'chart-measured',
-    style: {
-      stroke: color
-    }
-  });
-
-  return svgG({
-    className: 'chart-group'
-  }, [desiredPath, measuredPath]);
 }
 
 const renderReadout = (group, xhairTime) => {
-  const unit = group.unit;
-  const color = group.color;
-  const measured = FixedBuffer.values(group.measured);
-  const desired = FixedBuffer.values(group.desired);
-  const measuredText = displayYValueFromX(measured, xhairTime, readX, readY, unit);
-  const desiredText = displayYValueFromX(desired, xhairTime, readX, readY, unit);
-
+  const unit = group.measured.unit;
+  const color = group.measured.color;
+  const title = group.measured.title;
+  const measured = group.measured.points;
+  const desired = group.desired.points;
+  const measuredText = Point.displayYForX(measured, xhairTime, unit);
+  const desiredText = Point.displayYForX(desired, xhairTime, unit);
   return html.div({
     className: 'chart-readout'
   }, [
@@ -522,7 +583,7 @@ const renderReadout = (group, xhairTime) => {
     }),
     html.span({
       className: 'chart-readout--title',
-    }, [group.title]),
+    }, [title]),
     html.span({
       className: 'chart-readout--measured',
       style: {
@@ -590,15 +651,24 @@ const renderAxis = (scale, height) => {
   }, ticks.map(tick => renderAxisMarker(scale(tick), height, formatTick(tick))));
 }
 
-const renderUserMarkers = (markers, scale, height, readX) =>
+const renderUserMarkers = (markers, scale, height) =>
   svgG({
     className: 'chart-user-markers'
   }, markers.map(marker => {
-    const timestamp = readX(marker);
+    const timestamp = Point.x(marker);
     const x = scale(timestamp);
     const text = formatTick(timestamp);
     return renderUserMarker(x, height, text);
   }));
+
+// Event ports
+
+const onScrubberMouseDown = annotate(Draggable.onMouseDown, ScrubberAction);
+const onScrubberMouseUp = annotate(Draggable.onMouseUp, ScrubberAction);
+const onScrubberMouseMove = annotate(Draggable.onMouseMove, ScrubberAction);
+const onScrubberTouchStart = annotate(Draggable.onTouchStart, ScrubberAction);
+const onScrubberTouchMove = annotate(Draggable.onTouchMove, ScrubberAction);
+const onScrubberTouchEnd = annotate(Draggable.onTouchEnd, ScrubberAction);
 
 // Helpers
 
@@ -628,8 +698,8 @@ const calcChartHeight = (height) =>
   height - HEADER_HEIGHT;
 
 const calcPlotWidth = (extent) => {
-  const durationMs = extent[1] - extent[0];
-  const plotWidth = durationMs * PX_PER_MS;
+  const duration = extent[1] - extent[0];
+  const plotWidth = duration * PX_PER_MS;
   return Math.round(plotWidth);
 }
 
@@ -645,33 +715,6 @@ const calcXhairTickTop = (height, tooltipHeight) =>
 const calcTooltipX = (x, width, tooltipWidth) =>
   clamp(x - (tooltipWidth / 2), 0, width - (tooltipWidth));
 
-const findDataPointFromX = (data, currX, readX) => {
-  if (data.length > 0) {
-    // Used for deriving y value from x position.
-    const bisectDate = bisector(readX).left;
-    const i = bisectDate(data, currX, 1);
-    const d0 = data[i - 1];
-    const d1 = data[i];
-
-    if (d0 && d1) {
-      // Pick closer of the two.
-      return (currX - readX(d0)) > (readX(d1) - currX) ? d1 : d0;      
-    }
-  }
-}
-
-// Display y value for x coord. Returns a string.
-const displayYValueFromX = (data, currX, readX, readY, unit) => {
-  const d = findDataPointFromX(data, currX, readX);
-  if (d) {
-    const yv = round2x(readY(d));
-    return yv + unit + '';
-  }
-  else {
-    return '-';
-  }
-}
-
 const formatTick = timeFormat("%I:%M %p %A, %b %e");
 const formatTime = timeFormat('%I:%M %p');
 const formatDay = timeFormat("%A %b %e, %Y");
@@ -684,6 +727,3 @@ const calcRelativeMousePos = (node, clientX, clientY) => {
   const rect = node.getBoundingClientRect();
   return [(clientX - rect.left - node.clientLeft), (clientY - rect.top - node.clientTop)];
 }
-
-// Read Date.now() in seconds.
-const secondsNow = () => Date.now() / 1000;
