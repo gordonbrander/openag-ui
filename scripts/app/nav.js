@@ -12,8 +12,6 @@ export const CONTROLS = 'controls';
 
 export const ToggleSettings = {type: 'ToggleSettings'};
 
-export const ToggleSettings = {type: 'ToggleSettings'};
-
 export const ActivateState = id => ({
   type: 'ActivateState',
   id
