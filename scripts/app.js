@@ -339,7 +339,7 @@ const postStartRecipe = (model, environmentID, recipeID) => {
 
   return [
     model,
-    Request.post(url, {recipe_id: recipeID}).map(RecipeStartPosted)
+    Request.post(url, [recipeID]).map(RecipeStartPosted)
   ];
 }
 
