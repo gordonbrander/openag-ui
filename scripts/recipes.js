@@ -103,6 +103,12 @@ export const RequestStart = (id, name) => ({
   name
 });
 
+export const RequestStopStart = (id, name) => ({
+  type: 'RequestStopStart',
+  id,
+  name
+});
+
 const ActivatePanel = id => ({
   type: 'ActivatePanel',
   id
@@ -208,7 +214,9 @@ const startByID = (model, id) => {
     next,
     Effects.batch([
       fx,
-      Effects.receive(RequestStart(id, name))
+      model.active === null ?
+      Effects.receive(RequestStart(id, name)) :
+      Effects.receive(RequestStopStart(id, name))
     ])
   ];
 }
