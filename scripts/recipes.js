@@ -163,7 +163,7 @@ const updateRecipesForm = cursor({
 });
 
 const sync = model => {
-  if (model.origin) {
+  if (model.origin != null) {
     const origin = templateRecipesDatabase(model.origin);
     return [model, Database.sync(DB, origin).map(Synced)];
   }
