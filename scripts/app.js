@@ -10,7 +10,6 @@ import {readRootUrl} from './common/url';
 import * as Request from './common/request';
 import * as Banner from './common/banner';
 import * as AppNav from './app/nav';  
-import * as Settings from './app/settings';
 import * as Environments from './environments';
 import * as Environment from './environment';
 import * as Recipes from './recipes';
@@ -74,8 +73,6 @@ const ActivateEnvironmentState = compose(EnvironmentAction, Environment.Activate
 const TagAppNav = action =>
   action.type === 'ActivateState' ?
   ActivateState(action.id) :
-  action.type === 'ToggleSettings' ?
-  ToggleSettings :
   AppNavAction(action);
 
 const AppNavAction = action => ({
@@ -84,13 +81,6 @@ const AppNavAction = action => ({
 });
 
 const ActivateAppNavState = compose(AppNavAction, AppNav.ActivateState);
-
-const TagSettings = action => ({
-  type: 'Settings',
-  source: action
-});
-
-const ToggleSettings = TagSettings(Settings.Toggle);
 
 // Action sent to configure top level app state.
 // Driven by AppNav.Activate actions.
@@ -147,7 +137,6 @@ export const init = () => {
   const [environments, environmentsFx] = Environments.init();
   const [recipes, recipesFx] = Recipes.init();
   const [appNav, appNavFx] = AppNav.init(DASHBOARD);
-  const [settings, settingsFx] = Settings.init();
   const [banner, bannerFx] = Banner.init();
 
   // Create configure action. We'll send this below.
@@ -170,7 +159,6 @@ export const init = () => {
       environments,
       recipes,
       appNav,
-      settings,
       banner
     },
     Effects.batch([
@@ -179,7 +167,6 @@ export const init = () => {
       environmentsFx.map(TagEnvironments),
       recipesFx.map(TagRecipes),
       appNavFx.map(TagAppNav),
-      settingsFx.map(TagSettings),
       bannerFx.map(TagBanner)
     ])
   ];
@@ -192,8 +179,6 @@ export const update = (model, action) =>
   updateRecipes(model, action.source) :
   action.type === 'AppNav' ?
   updateAppNav(model, action.source) :
-  action.type === 'Settings' ?
-  updateSettings(model, action.source) :
   action.type === 'Banner' ?
   updateBanner(model, action.source) :
   action.type === 'Environments' ?
@@ -230,13 +215,6 @@ const updateAppNav = cursor({
   set: (model, appNav) => merge(model, {appNav}),
   update: AppNav.update,
   tag: TagAppNav
-});
-
-const updateSettings = cursor({
-  get: model => model.settings,
-  set: (model, settings) => merge(model, {settings}),
-  update: Settings.update,
-  tag: TagSettings
 });
 
 const updateBanner = cursor({
@@ -342,12 +320,6 @@ export const view = (model, address) =>
       AppNav.view,
       model.appNav,
       forward(address, TagAppNav)
-    ),
-    thunk(
-      'settings',
-      Settings.view,
-      model.settings,
-      forward(address, TagSettings)
     ),
     thunk(
       'banner',
