@@ -3,9 +3,6 @@
 
   "api_url": "{{root_url}}/_openag/api/0.0.1",
   "origin_url": "{{root_url}}",
-  "default_environment_id": "environment_1",
-  "default_environment_name": "Food Computer",
-
   "start_recipe_url": "{{api_url}}/service/{{environment}}/start_recipe",
   "stop_recipe_url": "{{api_url}}/service/{{environment}}/stop_recipe",
 
@@ -25,7 +22,10 @@
   },
 
   "environments": {
-    "default": "environment_1",
+    "default": {
+      "id": "environment_1",
+      "name": "Food Computer"
+    },
     "local": "environment",
     "origin": "{{origin_url}}/environment"
   },
