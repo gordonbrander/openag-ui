@@ -1,11 +1,13 @@
 module.exports = function (grunt) {
+  var appDbUrl = grunt.option('app_db_url') || 'http://raspberrypi:5984/app';
+
   // Configuration for the CouchApp grunt plugin.
   // We set this configuration object on properties of `grunt.initConfig`
   // below.
   // https://www.npmjs.com/package/grunt-couchapp.
   var couch = {
     openag_ui: {
-      db: 'http://raspberrypi:5984/app',
+      db: appDbUrl,
       app: './couchapp.js',
       options: {
         okay_if_missing: true,
