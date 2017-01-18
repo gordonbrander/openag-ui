@@ -22,8 +22,8 @@ const ORIGIN_URL = Template.render(Config.origin_url, _url_template);
 // personal food computers manage just one environment. This should be
 // kept in the app state instead. We can pick a default, but let the user
 // choose between environments when there is only one.
-const ENVIRONMENT_ID = Config.default_environment_id;
-const ENVIRONMENT_NAME = Config.default_environment_name;
+const ENVIRONMENT_ID = Config.environments.default.id;
+const ENVIRONMENT_NAME = Config.environments.default.name;
 const DASHBOARD = AppNav.DASHBOARD;
 
 // Actions and tagging functions
