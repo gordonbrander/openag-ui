@@ -42,7 +42,8 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "grunt build",
     "develop": "grunt develop",
-    "watch": "grunt watch"
+    "watch": "grunt watch",
+    "couchapp_deploy": "grunt couchapp_deploy"
   },
   "keywords": [
     "openag",
