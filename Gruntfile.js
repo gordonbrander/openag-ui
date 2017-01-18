@@ -5,7 +5,7 @@ module.exports = function (grunt) {
   // https://www.npmjs.com/package/grunt-couchapp.
   var couch = {
     openag_ui: {
-      db: 'http://localhost:5984/openag',
+      db: 'http://raspberrypi:5984/app',
       app: './couchapp.js',
       options: {
         okay_if_missing: true,
