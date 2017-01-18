@@ -1,5 +1,5 @@
 {
-  "root_url": "http://raspberrypi:5984",
+  "root_url": "",
 
   "api_url": "{{root_url}}/_openag/api/0.0.1",
   "origin_url": "{{root_url}}",
