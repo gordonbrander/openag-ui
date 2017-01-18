@@ -3,15 +3,11 @@ OpenAg UI
 
 The control panel for the OpenAg Food Computer (v1.1 and above).
 
-[Launch UI](http://openaginitiative.github.io/openag_ui/).
-
 
 Using
 -----
 
-You can use the hosted [web client](http://openaginitiative.github.io/openag_ui/). Each Food Computer also ships with a copy of the UI. Visiting the Food Computer's IP address will launch the UI.
-
-[openaginitiative.github.io/openag_ui](http://openaginitiative.github.io/openag_ui/) will host the latest tagged release of the UI. Right now the UI is in-development, so it hosts the latest stable-ish prerelease.
+Each Food Computer will ship with a copy of the UI. Visiting a Food Computer's IP address will launch the UI. You shouldn't need to use this repository unless you're doing development work on the UI.
 
 
 Browser Support
