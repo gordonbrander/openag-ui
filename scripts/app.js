@@ -9,18 +9,22 @@ import * as Template from './common/stache';
 import {readRootUrl} from './common/url';
 import * as Request from './common/request';
 import * as Banner from './common/banner';
-import * as Persistence from './persistence';
 import * as AppNav from './app/nav';  
 import * as Settings from './app/settings';
 import * as Environments from './environments';
 import * as Environment from './environment';
 import * as Recipes from './recipes';
-import * as FirstTimeUse from './first-time-use';
 import {compose} from './lang/functional';
 
-// State ID is the id of the pouch record we use to persist state.
-const STATE_ID = Config.app.state_id;
-
+const _url_template = {root_url: Config.root_url}
+const API_URL = Template.render(Config.api_url, _url_template);
+const ORIGIN_URL = Template.render(Config.origin_url, _url_template);
+// @FIXME we hardcode active environment for the moment. This works because
+// personal food computers manage just one environment. This should be
+// kept in the app state instead. We can pick a default, but let the user
+// choose between environments when there is only one.
+const ENVIRONMENT_ID = Config.default_environment_id;
+const ENVIRONMENT_NAME = Config.default_environment_name;
 const DASHBOARD = AppNav.DASHBOARD;
 
 // Actions and tagging functions
@@ -30,41 +34,11 @@ const Configure = value => ({
   value
 });
 
-// Sent when First Run Experience is successfully completed.
-const ConfigureFirstTime = form => ({
-  type: 'ConfigureFirstTime',
-  form
-});
-
 // Update address of Food Computer.
 const UpdateAddress = url => ({
   type: 'UpdateAddress',
   url
 });
-
-const TagFirstTimeUse = action =>
-  action.type === 'NotifySubmit' ?
-  ConfigureFirstTime(action.form) :
-  tagged('FirstTimeUse', action);
-
-const OpenFirstTimeUse = TagFirstTimeUse(FirstTimeUse.Open);
-const CloseFirstTimeUse = TagFirstTimeUse(FirstTimeUse.Close);
-
-const TagPersistence = action =>
-  action.type === 'NotifyRestore' ?
-  Configure(action.value) :
-  // If we were notified of any errors, forward them to the banner module.
-  action.type === 'NotifyBanner' ?
-  AlertRefreshableBanner(action.message) :
-  action.type === 'NotifyFirstTimeUse' ?
-  OpenFirstTimeUse :
-  tagged('Persistence', action);
-
-const GetState = TagPersistence(Persistence.GetState);
-const PutState = compose(TagPersistence, Persistence.PutState);
-
-// Request a state put.
-const SaveState = {type: 'SaveState'};
 
 const TagRecipes = action =>
   action.type === 'RequestStart' ?
@@ -169,31 +143,27 @@ const RecipeStopStartPosted = (result) => ({
 // Init and update
 
 export const init = () => {
-  // @FIXME we hardcode active environment for the moment. This should be
-  // kept in an environments db instead.
-  const activeEnvironment = Config.active_environment;
-  const [environment, environmentFx] = Environment.init(activeEnvironment, DASHBOARD);
+  const [environment, environmentFx] = Environment.init(ENVIRONMENT_ID, DASHBOARD);
   const [environments, environmentsFx] = Environments.init();
   const [recipes, recipesFx] = Recipes.init();
   const [appNav, appNavFx] = AppNav.init(DASHBOARD);
   const [settings, settingsFx] = Settings.init();
   const [banner, bannerFx] = Banner.init();
-  const [firstTimeUse, firstTimeUseFx] = FirstTimeUse.init();
+
+  // Create configure action. We'll send this below.
+  // It passes the API and origin down to submodules, so they can make
+  // http calls to them.
+  const configure = Configure({
+    api: API_URL,
+    origin: ORIGIN_URL,
+    environmentID: ENVIRONMENT_ID,
+    environmentName: ENVIRONMENT_NAME
+  });
 
   return [
     {
-      // Tag model with _id and _rev for PouchDB. Handled in persistence module
-      // update function.
-      // _id is used to retreive the app state record.
-      _id: STATE_ID,
-      // These fields are restored from the local PouchDB settings database.
-      _rev: null,
-      api: null,
-      origin: null,
-      // Tag model with version from package.json. We use this with
-      // persistence module to make sure we're loading a state in a schema
-      // we understand.
-      version,
+      api: API_URL,
+      origin: ORIGIN_URL,
 
       // Store submodule states.
       environment,
@@ -201,18 +171,16 @@ export const init = () => {
       recipes,
       appNav,
       settings,
-      banner,
-      firstTimeUse
+      banner
     },
     Effects.batch([
-      Effects.receive(GetState),
+      Effects.receive(configure),
       environmentFx.map(TagEnvironment),
       environmentsFx.map(TagEnvironments),
       recipesFx.map(TagRecipes),
       appNavFx.map(TagAppNav),
       settingsFx.map(TagSettings),
-      bannerFx.map(TagBanner),
-      firstTimeUseFx.map(TagFirstTimeUse)
+      bannerFx.map(TagBanner)
     ])
   ];
 }
@@ -228,10 +196,6 @@ export const update = (model, action) =>
   updateSettings(model, action.source) :
   action.type === 'Banner' ?
   updateBanner(model, action.source) :
-  action.type === 'Persistence' ?
-  updatePersistence(model, action.source) :
-  action.type === 'FirstTimeUse' ?
-  updateFirstTimeUse(model, action.source) :
   action.type === 'Environments' ?
   updateEnvironments(model, action.source) :
 
@@ -240,8 +204,6 @@ export const update = (model, action) =>
   activateState(model, action.id) :
   action.type === 'Configure' ?
   configure(model, action.value) :
-  action.type === 'ConfigureFirstTime' ?
-  configureFirstTime(model, action.form) :
   action.type === 'StartRecipe' ?
   startRecipe(model, action.id, action.name) :
   action.type === 'PostStartRecipe' ?
@@ -262,18 +224,6 @@ export const update = (model, action) =>
   action.type === 'SaveState' ?
   saveState(model) :
   Unknown.update(model, action);
-
-const updatePersistence = cursor({
-  update: Persistence.update,
-  tag: TagPersistence
-});
-
-const updateFirstTimeUse = cursor({
-  get: model => model.firstTimeUse,
-  set: (model, firstTimeUse) => merge(model, {firstTimeUse}),
-  update: FirstTimeUse.update,
-  tag: TagFirstTimeUse
-});
 
 const updateAppNav = cursor({
   get: model => model.appNav,
@@ -365,40 +315,7 @@ const recipePostedError = (model, error) => {
   return update(model, AlertRefreshableBanner(message));
 }
 
-const configureFirstTime = (model, form) => {
-  // 1. First send configure actions to the module and submodule.
-  // 2. Then serialize and store the configuration in PouchDB with Putstate.
-
-  // Construct a faux record of the same shape we would get back from the db.
-  const record = serialize({
-    // Use any of this information if already on the model (_id and _rev)
-    // should be empty.
-    _id: model._id,
-    _rev: model._rev,
-    version: model.version,
-
-    // This comes from the FTU.
-    api: form.api,
-    origin: form.origin,
-    environment: {
-      id: form.environment.id,
-      name: form.environment.name
-    }
-  });
-
-  return batch(update, model, [
-    // Send the configuration info to in-memory model.
-    // This is the action we would typically send after getting back record from
-    // local DB.
-    Configure(record),
-    // Close FTU
-    CloseFirstTimeUse,
-    // Save updated model to local database.
-    SaveState
-  ]);
-}
-
-const configure = (model, {api, origin, environment}) => {
+const configure = (model, {api, origin, environmentID, environmentName}) => {
   // Restore serialized data from stored record.
   // Merge into in-memory app model.
   const next = merge(model, {
@@ -407,49 +324,16 @@ const configure = (model, {api, origin, environment}) => {
   });
 
   return batch(update, next, [
-    ConfigureAppNav(environment.name),
-    ConfigureEnvironment(environment.id, environment.name, api, origin),
+    ConfigureAppNav(environmentName),
+    ConfigureEnvironment(environmentID, environmentName, api, origin),
     ConfigureEnvironments(origin),
     ConfigureRecipes(origin)
   ]);
 }
 
-const saveState = model => {
-  // Serialize the model and Put it.
-  const record = serialize(model);
-  return update(model, PutState(record));
-}
-
-// Serialize data stored in persistence module.
-const serialize = model => ({
-  _id: model._id,
-  _rev: model._rev,
-  version: model.version,
-  api: model.api,
-  origin: model.origin,
-  environment: Environment.serialize(model.environment)
-});
-
 // View
 
 export const view = (model, address) =>
-  model.origin ?
-  viewConfigured(model, address) :
-  viewFTU(model, address);
-
-const viewFTU = (model, address) =>
-  html.div({
-    className: 'app-main'
-  }, [
-    thunk(
-      'first-time-use',
-      FirstTimeUse.viewFTU,
-      model.firstTimeUse,
-      forward(address, TagFirstTimeUse)
-    )
-  ]);
-
-const viewConfigured = (model, address) =>
   html.div({
     className: 'app-main app-main--ready'
   }, [
