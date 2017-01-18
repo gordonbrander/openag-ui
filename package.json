@@ -30,11 +30,13 @@
     "babel-preset-es2015": "^6.6.0",
     "babelify": "^7.2.0",
     "browserify": "^13.0.0",
+    "couchapp": "^0.11.0",
     "grunt": "^1.0.1",
     "grunt-browserify": "^5.0.0",
     "grunt-cli": "^1.2.0",
     "grunt-contrib-copy": "^1.0.0",
-    "grunt-contrib-watch": "^1.0.0"
+    "grunt-contrib-watch": "^1.0.0",
+    "grunt-couchapp": "^0.2.1"
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
