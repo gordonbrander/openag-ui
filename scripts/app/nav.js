@@ -9,8 +9,6 @@ import {localize} from '../common/lang';
 export const DASHBOARD = 'dashboard';
 export const CHART = 'chart';
 
-export const ToggleSettings = {type: 'ToggleSettings'};
-
 export const ActivateState = id => ({
   type: 'ActivateState',
   id
@@ -92,18 +90,7 @@ export const view = (model, address) => {
         title: localize('Chart')
       }, [
         localize('Chart')
-      ]),
-      html.a({
-        onClick: (event) => {
-          event.preventDefault();
-          address(ToggleSettings)
-        },
-        className: classed({
-          'ir': true,
-          'nav-hamburger-icon': true,
-          'nav-hamburger-icon--active': model.isHamburgerActive
-        })
-      })
+      ])
     ])
   ]);
 }

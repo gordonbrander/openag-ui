@@ -162,7 +162,7 @@ export const update = (model, action) =>
   Unknown.update(model, action);
 
 const getBacklog = model => {
-  if (model.origin && model.id) {
+  if (model.origin != null && model.id) {
     const url = templateRecentUrl(model.origin, model.id);
     return [model, Request.get(url).map(GotBacklog)];
   }

@@ -1,9 +1,8 @@
 {
-  "api": "{{root_url}}:5984/_openag/api/0.0.1",
-  "origin": "{{root_url}}:5984",
-  "heartbeat": "{{root_url}}:5984",
+  "root_url": "",
 
-  "active_environment": "environment_1",
+  "api_url": "{{root_url}}/_openag/api/0.0.1",
+  "origin_url": "{{root_url}}",
   "start_recipe_url": "{{api_url}}/service/{{environment}}/start_recipe",
   "stop_recipe_url": "{{api_url}}/service/{{environment}}/stop_recipe",
 
@@ -23,6 +22,10 @@
   },
 
   "environments": {
+    "default": {
+      "id": "environment_1",
+      "name": "Food Computer"
+    },
     "local": "environment",
     "origin": "{{origin_url}}/environment"
   },
