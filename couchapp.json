@@ -6,5 +6,8 @@
     {"from": "/api/*", "to": "../../*"},
     {"from": "/*", "to": "*"}
   ],
-  "_attachments": "dist"
+  "_attachments": {
+    "path": "dist",
+    "ignore": [".*"]
+  }
 }
