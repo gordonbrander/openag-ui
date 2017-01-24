@@ -1,0 +1,13 @@
+{
+  "_id": "_design/app",
+  "rewrites": [
+    {"from": "/", "to": "index.html"},
+    {"from": "/api", "to": "../../"},
+    {"from": "/api/*", "to": "../../*"},
+    {"from": "/*", "to": "*"}
+  ],
+  "_attachments": {
+    "path": "dist",
+    "ignore": [".*"]
+  }
+}
