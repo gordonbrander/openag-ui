@@ -27,6 +27,11 @@ html {
   font: 16px/1.5 Helvetica, sans-serif;
 }
 
+html,
+body {
+  min-height: 100%;
+}
+
 /* Reset standard dialog styles */
 dialog {
   border: 0;
@@ -719,18 +724,26 @@ p {
 
 .split-view {
   width: calc(100vw);
-  height: calc(100vh - 72px);
+  height: 100vh;
   position: relative;
+}
+
+.app--has-nav .split-view {
+  height: calc(100vh - 72px);
 }
 
 .split-view-content {
   /* Height of viewport - the height of the app header */
-  height: calc(100vh - 72px);
+  height: 100vh;
   width: calc(100vw - 256px);
   top: 0;
   left: 256px;
   overflow: hidden;
   position: absolute;
+}
+
+.app--has-nav .split-view-content {
+  height: calc(100vh - 72px);
 }
 
 .split-view-content--loading {
@@ -744,8 +757,12 @@ p {
   left: 0;
   position: absolute;
   top: 0;
-  height: calc(100vh - 72px);
+  height: 100vh;
   width: 256px;
+}
+
+.app--has-nav .split-view-sidebar {
+  height: calc(100vh - 72px);
 }
 
 /* Full View - content only layout
@@ -753,9 +770,13 @@ p {
 
 .full-view {
   width: calc(100vw);
-  height: calc(100vh - 72px);
+  height: 100vh;
   position: relative;
   overflow: auto;
+}
+
+.app--has-nav .full-view {
+  height: calc(100vh - 72px);
 }
 
 /* Panel
@@ -869,8 +890,6 @@ p {
 
 .chart-view {
   background-color: #f4f4f4;
-  /* Full height minus the app header */
-  height: calc(100vh - 72px);
   position: relative;
 }
 

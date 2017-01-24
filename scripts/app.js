@@ -9,6 +9,7 @@ import * as Template from './common/stache';
 import {readRootUrl} from './common/url';
 import * as Request from './common/request';
 import * as Banner from './common/banner';
+import {classed} from './common/attr';
 import * as AppNav from './app/nav';  
 import * as Environments from './environments';
 import * as Environment from './environment';
@@ -24,7 +25,6 @@ const ORIGIN_URL = Template.render(Config.origin_url, _url_template);
 // choose between environments when there is only one.
 const ENVIRONMENT_ID = Config.environments.default.id;
 const ENVIRONMENT_NAME = Config.environments.default.name;
-const DASHBOARD = AppNav.DASHBOARD;
 
 // Actions and tagging functions
 
@@ -133,10 +133,11 @@ const RecipeStopStartPosted = (result) => ({
 // Init and update
 
 export const init = () => {
-  const [environment, environmentFx] = Environment.init(ENVIRONMENT_ID, DASHBOARD);
+  const navState = Config.app_nav.default_state;
+  const [environment, environmentFx] = Environment.init(ENVIRONMENT_ID, navState);
   const [environments, environmentsFx] = Environments.init();
   const [recipes, recipesFx] = Recipes.init();
-  const [appNav, appNavFx] = AppNav.init(DASHBOARD);
+  const [appNav, appNavFx] = AppNav.init(navState);
   const [banner, bannerFx] = Banner.init();
 
   // Create configure action. We'll send this below.
@@ -311,16 +312,8 @@ const configure = (model, {api, origin, environmentID, environmentName}) => {
 
 // View
 
-export const view = (model, address) =>
-  html.div({
-    className: 'app-main app-main--ready'
-  }, [
-    thunk(
-      'app-nav',
-      AppNav.view,
-      model.appNav,
-      forward(address, TagAppNav)
-    ),
+export const view = (model, address) => {
+  const children = [
     thunk(
       'banner',
       Banner.view,
@@ -340,4 +333,23 @@ export const view = (model, address) =>
       model.recipes,
       forward(address, TagRecipes)
     )
-  ]);
+  ];
+
+  // Include app nav if needed
+  if (Config.app_nav.display) {
+    children.unshift(thunk(
+      'app-nav',
+      AppNav.view,
+      model.appNav,
+      forward(address, TagAppNav)
+    ))
+  }
+
+  return html.div({
+    className: classed({
+      'app-main': true,
+      'app-main--ready': true,
+      'app--has-nav': Config.app_nav.display
+    })
+  }, children);
+};

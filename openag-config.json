@@ -92,5 +92,10 @@
       "max": 100,
       "color": "#00a5ed"
     }
-  ]
+  ],
+
+  "app_nav": {
+    "default_state": "chart",
+    "display": true
+  }
 }
