@@ -42,6 +42,8 @@ const UpdateAddress = url => ({
 const TagRecipes = action =>
   action.type === 'RequestStart' ?
   StartRecipe(action.id, action.name) :
+  action.type === 'RequestStopStart' ?
+  StopStartRecipe(action.id, action.name) :
   tagged('Recipes', action);
 
 const ConfigureRecipes = compose(TagRecipes, Recipes.Configure);
@@ -97,6 +99,12 @@ const NotifyBanner = compose(TagBanner, Banner.Notify);
 
 const StartRecipe = (id, name) => ({
   type: 'StartRecipe',
+  id,
+  name
+});
+
+const StopStartRecipe = (id, name) => ({
+  type: 'StopStartRecipe',
   id,
   name
 });
@@ -190,6 +198,8 @@ export const update = (model, action) =>
   configure(model, action.value) :
   action.type === 'StartRecipe' ?
   startRecipe(model, action.id, action.name) :
+  action.type === 'StopStartRecipe' ?
+  stopStartRecipe(model, action.id, action.name) :
   action.type === 'PostStartRecipe' ?
   postStartRecipe(model, action.environmentID, action.recipeID) :
   action.type === 'PostStopStartRecipe' ?
@@ -253,8 +263,15 @@ const activateState = (model, id) =>
 
 const startRecipe = (model, id, name) =>
   batch(update, model, [
+    PostStartRecipe(model.environment.id, id),
     SetRecipeForEnvironment(id, name),
+    CloseRecipes
+  ]);
+
+const stopStartRecipe = (model, id, name) =>
+  batch(update, model, [
     PostStopStartRecipe(model.environment.id, id),
+    SetRecipeForEnvironment(id, name),
     CloseRecipes
   ]);
 
@@ -266,7 +283,7 @@ const postStartRecipe = (model, environmentID, recipeID) => {
 
   return [
     model,
-    Request.post(url, {recipe_id: recipeID}).map(RecipeStartPosted)
+    Request.post(url, [recipeID]).map(RecipeStartPosted)
   ];
 }
 
