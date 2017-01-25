@@ -56,7 +56,7 @@ const ConfigureEnvironments = compose(TagEnvironments, Environments.Configure);
 
 const TagEnvironment = action =>
   action.type === 'AlertBanner' ?
-  AlertRefreshableBanner(action.source) :
+  AlertDismissableBanner(action.source) :
   action.type === 'RequestOpenRecipes' ?
   OpenRecipes :
   EnvironmentAction(action);
@@ -92,8 +92,6 @@ const ActivateState = id => ({
 const ConfigureAppNav = compose(TagAppNav, AppNav.Configure);
 
 const TagBanner = tag('Banner');
-const AlertBanner = compose(TagBanner, Banner.Alert);
-const AlertRefreshableBanner = compose(TagBanner, Banner.AlertRefreshable);
 const AlertDismissableBanner = compose(TagBanner, Banner.AlertDismissable);
 const NotifyBanner = compose(TagBanner, Banner.Notify);
 
@@ -291,7 +289,7 @@ const recipePostedOk = (model, value) => {
 
 const recipePostedError = (model, error) => {
   const message = localize('Food computer was unable to start recipe');
-  return update(model, AlertRefreshableBanner(message));
+  return update(model, AlertDismissableBanner(message));
 }
 
 const configure = (model, {api, origin, environmentID, environmentName}) => {
