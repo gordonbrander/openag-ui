@@ -56,9 +56,9 @@ If you're doing active development, and want your JS files to automatically rebu
 
 This command will also generate source maps for the Javascript files.
 
-The front-end can also log all the messages that go through the system to the console. This is useful for debugging, since the UI is deterministic and will reproduce the same UI for the same messages. To turn on this feature, add `?debug=true` to the end of the url.
+The front-end can also log all the messages that go through the system to the console. This is useful for debugging, since the UI is deterministic and will reproduce the same UI for the same messages. To turn on this feature, add `?log=true` to the end of the url.
 
-    http://example.com/?debug=true
+    http://example.com/?log=true
 
 Deploying CouchApp
 ------------------
