@@ -427,6 +427,7 @@ p {
   color: #fff;
   height: 72px;
   position: relative;
+  padding-left: 288px;
 }
 
 .nav-name {
@@ -443,6 +444,12 @@ p {
   text-overflow: ellipsis;
 }
 
+.nav-dash-icon,
+.nav-chart-icon,
+.nav-ctl-icon {
+  float: left;
+}
+
 .nav-dash-icon {
   background: url(./sprite.png) 0 -300px no-repeat;
   background-size: 100px auto;
@@ -451,8 +458,6 @@ p {
   display: block;
   height: 72px;
   width: 72px;
-  left: 288px;
-  position: absolute;
 }
 
 .nav-dash-icon-active {
@@ -467,8 +472,6 @@ p {
   cursor: pointer;
   height: 72px;
   width: 72px;
-  left: 376px;
-  position: absolute;
 }
 
 .nav-chart-icon-active {
@@ -483,27 +486,9 @@ p {
   cursor: pointer;
   height: 72px;
   width: 72px;
-  left: 464px;
-  position: absolute;
 }
 
 .nav-ctl-icon-active {
-  background-position: 0 -1300px;
-  opacity: 1;
-}
-
-.nav-hamburger-icon {
-  background: url(./sprite.png) 0 -1400px no-repeat;
-  background-size: 100px auto;
-  opacity: 0.6;
-  cursor: pointer;
-  height: 72px;
-  width: 72px;
-  right: 0;
-  position: absolute;
-}
-
-.nav-hamburger-icon--active {
   background-position: 0 -1300px;
   opacity: 1;
 }
