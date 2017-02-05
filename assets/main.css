@@ -1094,3 +1094,28 @@ p {
 .env-temperature--unit {
   margin-right: -0.3em;
 }
+
+/* Actuators for controls view
+----------------------------------------------------------------------------- */
+
+.actuator {
+  background-color: #F4F4F4;
+  padding: 48px;
+}
+
+.actuator:nth-child(even) {
+  background-color: #EDEDED;
+}
+
+.actuator-title {
+  font-size: 13px;
+  line-height: 24px;
+  color: #989898;
+  text-transform: uppercase;
+}
+
+.actuator-slider {
+  display: block;
+  width: 100%;
+  margin: 12px 0;
+}
