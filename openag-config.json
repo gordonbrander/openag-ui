@@ -101,57 +101,69 @@
 
   "actuators": [
     {
-      "id": "red_light",
-      "topic": "{{api}}/topic/actuators/red_light_1/cmd",
+      "id": "led_red_1",
+      "topic": "{{api}}/topic/actuators/led_red_1/cmd",
       "title": "Red Light",
       "type": "pwm_actuator"
     },
     {
-      "id": "blue_light",
-      "topic": "{{api}}/topic/actuators/blue_light_1/cmd",
+      "id": "led_blue_1",
+      "topic": "{{api}}/topic/actuators/led_blue_1/cmd",
       "title": "Blue Light",
       "type": "pwm_actuator"
     },
     {
-      "id": "white_light",
-      "topic": "{{api}}/topic/actuators/white_light_1/cmd",
+      "id": "led_white_1",
+      "topic": "{{api}}/topic/actuators/led_white_1/cmd",
       "title": "White Light",
       "type": "pwm_actuator"
     },
     {
-      "id": "pump_1",
-      "topic": "{{api}}/topic/actuators/pump_1/cmd",
-      "title": "Pump 1",
+      "id": "pump_1_nutrient_a_1",
+      "topic": "{{api}}/topic/actuators/pump_1_nutrient_a_1/cmd",
+      "title": "Nutrient A",
       "type": "binary_actuator"
     },
     {
-      "id": "pump_2",
-      "topic": "{{api}}/topic/actuators/pump_2/cmd",
-      "title": "Pump 2",
+      "id": "pump_2_nutrient_b_1",
+      "topic": "{{api}}/topic/actuators/pump_2_nutrient_b_1/cmd",
+      "title": "Nutrient B",
       "type": "binary_actuator"
     },
     {
-      "id": "pump_3",
-      "topic": "{{api}}/topic/actuators/pump_3/cmd",
-      "title": "Pump 3",
+      "id": "pump_3_ph_up_1",
+      "topic": "{{api}}/topic/actuators/pump_3_ph_up_1/cmd",
+      "title": "pH Up",
       "type": "binary_actuator"
     },
     {
-      "id": "pump_4",
-      "topic": "{{api}}/topic/actuators/pump_4/cmd",
-      "title": "Pump 4",
+      "id": "pump_4_ph_down_1",
+      "topic": "{{api}}/topic/actuators/pump_4_ph_down_1/cmd",
+      "title": "pH Down",
       "type": "binary_actuator"
     },
     {
-      "id": "pump_5",
-      "topic": "{{api}}/topic/actuators/pump_5/cmd",
-      "title": "Pump 5",
+      "id": "pump_5_water_1",
+      "topic": "{{api}}/topic/actuators/pump_5_water_1/cmd",
+      "title": "Water",
       "type": "binary_actuator"
     },
     {
-      "id": "humidifier",
-      "topic": "{{api}}/topic/actuators/humidifier/cmd",
-      "title": "Humidifier",
+      "id": "heater_core_1_1",
+      "topic": "{{api}}/topic/actuators/heater_core_1_1/cmd",
+      "title": "Heater Core 1",
+      "type": "binary_actuator"
+    },
+    {
+      "id": "heater_core_2_1",
+      "topic": "{{api}}/topic/actuators/heater_core_2_1/cmd",
+      "title": "Heater Core 2",
+      "type": "binary_actuator"
+    },
+    {
+      "id": "air_flush_1",
+      "topic": "{{api}}/topic/actuators/air_flush_1/cmd",
+      "title": "Air Flush",
       "type": "binary_actuator"
     }
   ]
