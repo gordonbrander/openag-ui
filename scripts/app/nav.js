@@ -103,18 +103,7 @@ export const view = (model, address) => {
         title: localize('Manual Controls')
       }, [
         localize('Manual Controls')
-      ]),
-      html.a({
-        onClick: (event) => {
-          event.preventDefault();
-          address(ToggleSettings)
-        },
-        className: classed({
-          'ir': true,
-          'nav-hamburger-icon': true,
-          'nav-hamburger-icon--active': model.isHamburgerActive
-        })
-      })
+      ])
     ])
   ]);
 }
