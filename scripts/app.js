@@ -139,7 +139,7 @@ const RecipeStopStartPosted = (result) => ({
 // Init and update
 
 export const init = () => {
-  const navState = Config.app_nav.default_state;
+  const navState = Config.app.default_state;
   const [environment, environmentFx] = Environment.init(ENVIRONMENT_ID, navState);
   const [environments, environmentsFx] = Environments.init();
   const [recipes, recipesFx] = Recipes.init();
@@ -351,7 +351,7 @@ export const view = (model, address) => {
   ];
 
   // Include app nav if needed
-  if (Config.app_nav.display) {
+  if (Config.app.show_nav) {
     children.unshift(thunk(
       'app-nav',
       AppNav.view,
@@ -364,7 +364,7 @@ export const view = (model, address) => {
     className: classed({
       'app-main': true,
       'app-main--ready': true,
-      'app--has-nav': Config.app_nav.display
+      'app--has-nav': Config.app.show_nav
     })
   }, children);
 };

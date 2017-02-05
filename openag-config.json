@@ -32,12 +32,12 @@
 
   "app": {
     "local": "openag",
-    "state_id": "state"
-  },
-
-  "app_nav": {
+    "state_id": "state",
     "default_state": "chart",
-    "display": true
+    "show_nav": true,
+    "show_dashboard": true,
+    "show_chart": true,
+    "show_controls": true
   },
 
   "chart": [

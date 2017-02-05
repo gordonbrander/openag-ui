@@ -1,4 +1,5 @@
 import {html, forward, Effects, thunk} from 'reflex';
+import * as Config from '../../openag-config.json';
 import {merge, port} from '../common/prelude';
 import * as Unknown from '../common/unknown';
 import {classed} from '../common/attr';
@@ -58,17 +59,18 @@ export const view = (model, address) => {
   const sendPointDashboard = onPointDashboard(address);
   const sendPointChart = onPointChart(address);
 
-  return html.div({
-    className: 'nav-main'
-  }, [
-    html.nav({
-      className: 'nav-toolbar'
+  const children = [];
+
+  children.push(
+    html.a({
+      className: 'nav-name'
     }, [
-      html.a({
-        className: 'nav-name'
-      }, [
-        readName(model)
-      ]),
+      readName(model)
+    ])
+  );
+
+  if (Config.app.show_dashboard) {
+    children.push(
       html.a({
         onMouseDown: sendPointDashboard,
         onTouchStart: sendPointDashboard,
@@ -80,7 +82,12 @@ export const view = (model, address) => {
         title: localize('Dashboard')
       }, [
         localize('Dashboard')
-      ]),
+      ])
+    );
+  }
+
+  if (Config.app.show_chart) {
+    children.push(
       html.a({
         onMouseDown: sendPointChart,
         onTouchStart: sendPointChart,
@@ -92,7 +99,12 @@ export const view = (model, address) => {
         title: localize('Chart')
       }, [
         localize('Chart')
-      ]),
+      ])
+    );
+  }
+
+  if (Config.app.show_controls) {
+    children.push(
       html.a({
         onClick: () => address(ActivateControls),
         className: classed({
@@ -104,7 +116,15 @@ export const view = (model, address) => {
       }, [
         localize('Manual Controls')
       ])
-    ])
+    );
+  }
+
+  return html.div({
+    className: 'nav-main'
+  }, [
+    html.nav({
+      className: 'nav-toolbar'
+    }, children)
   ]);
 }
 
