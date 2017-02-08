@@ -3,8 +3,8 @@
 
   "api_url": "{{root_url}}/_openag/api/0.0.1",
   "origin_url": "{{root_url}}",
-  "start_recipe_url": "{{api_url}}/service/{{environment}}/start_recipe",
-  "stop_recipe_url": "{{api_url}}/service/{{environment}}/stop_recipe",
+  "start_recipe_url": "{{api_url}}/service/environments/{{environment}}/start_recipe",
+  "stop_recipe_url": "{{api_url}}/service/environments/{{environment}}/stop_recipe",
 
   "environmental_data_point": {
     "local": "environmental_data_point",
