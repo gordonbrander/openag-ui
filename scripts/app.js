@@ -16,7 +16,7 @@ import * as Environment from './environment';
 import * as Recipes from './recipes';
 import {compose} from './lang/functional';
 
-const _url_template = {root_url: Config.root_url}
+const _url_template = {root_url: Config.root_url || window.location.origin};
 const API_URL = Template.render(Config.api_url, _url_template);
 const ORIGIN_URL = Template.render(Config.origin_url, _url_template);
 // @FIXME we hardcode active environment for the moment. This works because

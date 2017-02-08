@@ -169,7 +169,9 @@ const updateRecipesForm = cursor({
 });
 
 const sync = model => {
-  if (model.origin != null) {
+  // @NOTE the strict equality check is important, since origin is allowed
+  // to be an empty string!
+  if (model.origin !== null) {
     const origin = templateRecipesDatabase(model.origin);
     return [model, Database.sync(DB, origin).map(Synced)];
   }
