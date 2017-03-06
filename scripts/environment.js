@@ -8,7 +8,7 @@ import * as Result from './common/result';
 import * as Unknown from './common/unknown';
 import {cursor} from './common/cursor';
 import {constant, compose} from './lang/functional';
-import {findRunningRecipe, findAirTemperature} from './environment/doc';
+import {findRunningRecipe, findAirTemperature, findAerialImage} from './environment/doc';
 import * as Chart from './environment/chart';
 import * as Dashboard from './environment/dashboard';
 import * as Controls from './environment/controls';
@@ -84,6 +84,7 @@ const DashboardAction = action => ({
   source: action
 });
 
+const UpdateAerialImage = compose(DashboardAction, Dashboard.UpdateAerialImage);
 const ConfigureDashboard = compose(DashboardAction, Dashboard.Configure);
 const SetDashboardRecipe = compose(DashboardAction, Dashboard.SetRecipe);
 const decodeDashboardRecipe = compose(DashboardAction, Dashboard.decodeRecipe);
@@ -213,6 +214,11 @@ const updateBacklog = Result.updater(
       actions.push(SetDashboardAirTemperature(airTemperature));
     }
 
+    const aerialImage = findAerialImage(data);
+    if (aerialImage) {
+      actions.push(UpdateAerialImage(aerialImage));
+    }
+
     actions.push(GetChanges);
 
     return batch(update, model, actions);
@@ -265,6 +271,11 @@ const gotChangesOk = (model, record) => {
   const airTemperature = findAirTemperature(data);
   if (airTemperature) {
     actions.push(SetDashboardAirTemperature(airTemperature));
+  }
+
+  const aerialImage = findAerialImage(data);
+  if (aerialImage) {
+    actions.push(UpdateAerialImage(aerialImage));
   }
 
   actions.push(GetChanges);

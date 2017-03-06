@@ -20,6 +20,13 @@ const RequestOpenRecipes = {
 // will not be coming.
 export const FinishLoading = {type: 'FinishLoading'};
 
+// Send a doc describing aerial image to update.
+// We'll still need to fetch the attachment itself.
+export const UpdateAerialImage = doc => ({
+  type: 'UpdateAerialImage',
+  doc
+});
+
 export const SetRecipe = (id, name, hasTimelapse) => ({
   type: 'SetRecipe',
   id,
@@ -67,7 +74,8 @@ class Model {
     recipeStartID,
     hasTimelapse,
     isLoading,
-    sidebar
+    sidebar,
+    imageID
   ) {
     this.origin = origin;
     this.recipeStartID = recipeStartID;
@@ -79,6 +87,7 @@ class Model {
     this.hasTimelapse = hasTimelapse;
     this.isLoading = isLoading;
     this.sidebar = sidebar;
+    this.imageID = imageID;
   }
 }
 
@@ -93,24 +102,32 @@ export const init = () => {
       null,
       hasTimelapse,
       isLoading,
-      sidebar
+      sidebar,
+      null
     ),
     Effects.none
   ];
 }
 
 export const update = (model, action) =>
+  action.type === 'UpdateAerialImage' ?
+  swapImageID(model, action.doc._id) :
   action.type === 'Sidebar' ?
   delegateSidebarUpdate(model, action.source) :
   action.type === 'SetRecipe' ?
-  setRecipe(model, action.id, action.name, action.hasTimelapse) :
+  setRecipe(model, action.id, action.name) :
   action.type === 'Configure' ?
   configure(model, action.origin) :
   action.type === 'FinishLoading' ?
   finishLoading(model) :
   updateUnknown(model, action);
 
-const setRecipe = (model, id, name, hasTimelapse) => {
+const updateAerialImage = (model, doc) => {
+
+}
+
+
+const setRecipe = (model, id, name) => {
   // Update sidebar model with id and name
   const [sidebar, sidebarFx] = Sidebar.update(
     model.sidebar,
@@ -123,9 +140,10 @@ const setRecipe = (model, id, name, hasTimelapse) => {
   const next = new Model(
     model.origin,
     id,
-    hasTimelapse,
+    model.hasTimelapse,
     isLoading,
-    sidebar
+    sidebar,
+    model.imageID
   );
 
   // return next model and make sure to map sidebarFx.
@@ -139,7 +157,8 @@ const configure = (model, origin) => [
     model.recipeStartID,
     model.hasTimelapse,
     model.isLoading,
-    model.sidebar
+    model.sidebar,
+    model.imageID
   ),
   Effects.none
 ];
@@ -152,10 +171,23 @@ const finishLoading = model => [
     model.hasTimelapse,
     // Set loading to false.
     false,
-    model.sidebar
+    model.sidebar,
+    model.imageID
   ),
   Effects.none
 ];
+
+const swapImageID = (model, imageID) => [
+  new Model(
+    model.origin,
+    model.recipeStartID,
+    model.hasTimelapse,
+    model.isLoading,
+    model.sidebar,
+    imageID
+  ),
+  Effects.none
+]
 
 const swapSidebar = (model, [sidebar, fx]) => [
   new Model(
@@ -163,7 +195,8 @@ const swapSidebar = (model, [sidebar, fx]) => [
     model.recipeStartID,
     model.hasTimelapse,
     model.isLoading,
-    sidebar
+    sidebar,
+    model.imageID
   ),
   fx.map(TagSidebar)
 ];
@@ -176,7 +209,7 @@ const delegateSidebarUpdate = (model, action) =>
 export const view = (model, address) =>
   model.isLoading ?
   viewLoading(model, address) :
-  !model.hasTimelapse ?
+  !model.imageID ?
   viewEmpty(model, address) :
   viewReady(model, address);
 
@@ -196,13 +229,9 @@ const viewReady = (model, address) =>
       html.div({
         className: 'timelapse--mask'
       }, [
-        html.video({
+        html.img({
           className: 'timelapse--video',
-          src: templateVideoUrl(model),
-          autoplay: true,
-          preload: 'auto',
-          loop: true,
-          muted: true
+          src: templateImgUrl(model)
         })
       ])
     ])
@@ -252,6 +281,11 @@ const viewEmpty = (model, address) =>
   ]);
 
 // Utils
+const templateImgUrl = model =>
+  renderTemplate(ENVIRONMENTAL_DATA_POINT.image, {
+    origin_url: model.origin,
+    id: model.imageID
+  });
 
 const templateVideoUrl = model =>
   renderTemplate(ENVIRONMENTAL_DATA_POINT.timelapse, {

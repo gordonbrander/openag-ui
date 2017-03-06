@@ -13,6 +13,7 @@
     "origin_range": "{{origin_url}}/environmental_data_point/_design/openag/_view/by_timestamp?startkey={{startkey}}&endkey={{endkey}}&limit={{limit}}&descending={{descending}}&stale=update_after",
     "origin_by_variable_csv": "{{origin_url}}/environmental_data_point/_design/openag/_list/csv/by_variable?group_level={{group_level}}&startkey={{startkey}}&endkey={{endkey}}&limit={{limit}}&descending={{descending}}&stale=update_after",
     "timelapse": "{{origin_url}}/environmental_data_point/{{recipe_start_id}}/timelapse",
+    "image": "{{origin_url}}/environmental_data_point/{{id}}/image",
     "changes": "{{origin_url}}/environmental_data_point/_changes?feed=longpoll&include_docs=true&heartbeat=true&since=now"
   },
 
@@ -35,7 +36,7 @@
     "state_id": "state",
     "default_state": "chart",
     "show_nav": true,
-    "show_dashboard": false,
+    "show_dashboard": true,
     "show_chart": true,
     "show_controls": true
   },

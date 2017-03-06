@@ -9,6 +9,7 @@ export const RECIPE_START = 'recipe_start';
 export const RECIPE_END = 'recipe_end';
 export const AIR_TEMPERATURE = 'air_temperature';
 export const MARKER = 'marker';
+export const AERIAL_IMAGE = 'aerial_image';
 
 // X and Y accessors for documents.
 // Timestamp is unix epoch in seconds.
@@ -21,6 +22,10 @@ export const variable = doc => doc.variable;
 
 export const isRecipeStart = dataPoint => dataPoint.variable === RECIPE_START;
 export const isRecipeEnd = dataPoint => dataPoint.variable === RECIPE_END;
+
+// Check if a database document is of type aerial image.
+export const isAerialImage = doc => doc.variable === AERIAL_IMAGE;
+
 
 export const isRecipeRunning = (recipeStart, recipeEnd) => {
   // If we have both a recipe start and a recipe end, check that the recipe
@@ -40,6 +45,7 @@ export const isRecipeRunning = (recipeStart, recipeEnd) => {
 // more efficient, given our list is sorted.
 export const findRecipeStart = data => findLast(data, isRecipeStart);
 export const findRecipeEnd = data => findLast(data, isRecipeEnd);
+export const findAerialImage = data => findLast(data, isAerialImage);
 
 // Given a list of datapoints, find a running recipe (if any) within them.
 export const findRunningRecipe = data => {
